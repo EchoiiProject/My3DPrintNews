@@ -11,6 +11,63 @@ import {
   STORAGE_KEY,
 } from "../preferences";
 
+const scoringKeywords: Record<string, string[]> = {
+  Bambu: ["bambu", "x1 carbon", "p1s", "a1 mini", "bambu a1"],
+  Prusa: ["prusa", "mk4s", "prusa xl"],
+  Creality: ["creality", "k1", "k2 plus"],
+  Elegoo: ["elegoo"],
+  Anycubic: ["anycubic"],
+  Flashforge: ["flashforge"],
+  "New Printers": ["new printer", "launch", "announces", "released", "debut"],
+  Reviews: ["review", "reviews", "tested", "hands-on", "benchmark"],
+  Firmware: ["firmware", "software update", "input shaping"],
+  Models: ["model", "models", "design", "printables", "makerworld"],
+  Materials: ["material", "materials", "filament", "pla", "petg", "nylon"],
+  Accessories: ["accessory", "accessories", "upgrade", "hotend", "build plate"],
+  Deals: ["deal", "deals", "discount", "sale", "bundle", "coupon"],
+  Tutorials: ["tutorial", "tutorials", "guide", "how to", "calibration"],
+  FDM: ["fdm", "fff", "filament"],
+  Resin: ["resin", "sla", "msla", "dlp"],
+  SLS: ["sls", "mjf", "powder bed"],
+  Industrial: ["industrial", "professional", "production", "service bureau"],
+};
+
+const printerBrands: Record<string, string> = {
+  "Bambu X1 Carbon": "Bambu",
+  "Bambu P1S": "Bambu",
+  "Bambu A1": "Bambu",
+  "Bambu A1 Mini": "Bambu",
+  "Prusa MK4S": "Prusa",
+  "Prusa XL": "Prusa",
+  "Creality K1": "Creality",
+  "Creality K2 Plus": "Creality",
+};
+
+const topicTags: Record<string, string> = {
+  "New Printers": "New Printers",
+  Reviews: "Reviews",
+  "Firmware Updates": "Firmware",
+  "3D Models / Designs": "Models",
+  "Filament & Materials": "Materials",
+  Accessories: "Accessories",
+  "Deals & Discounts": "Deals",
+  "Tutorials & Guides": "Tutorials",
+};
+
+const technologyTags: Record<string, string> = {
+  "FDM / FFF": "FDM",
+  Resin: "Resin",
+  "SLS / MJF": "SLS",
+  "Industrial / Professional": "Industrial",
+};
+
+type ScoredArticle = {
+  article: Article;
+  generatedTags: string[];
+  matchedBecause: string[];
+  score: number;
+};
+
 function PreferenceSection({
   label,
   values,
@@ -45,24 +102,55 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-function articleMatchesPreferences(article: Article, preferences: Preferences) {
-  const text = [article.title, article.summary, article.source, ...article.tags]
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function generateArticleTags(article: Article): string[] {
+  const text = [article.title, article.summary, ...article.tags]
     .join(" ")
     .toLowerCase();
-  const printerMatch = preferences.printers.some((printer) =>
-    text.includes(printer.toLowerCase().replace("bambu ", "").replace("prusa ", "")),
-  );
-  const sourceMatch = preferences.sources.some((source) =>
-    text.includes(source.toLowerCase()),
-  );
-  const topicMatch = preferences.topics.some((topic) =>
-    article.tags.includes(topic.replace("Firmware Updates", "Firmware")),
-  );
-  const technologyMatch = preferences.technology.some((technology) =>
-    article.tags.includes(technology.split(" ")[0]),
+
+  return unique([
+    ...article.tags,
+    ...Object.entries(scoringKeywords)
+      .filter(([, keywords]) =>
+        keywords.some((keyword) => text.includes(keyword)),
+      )
+      .map(([tag]) => tag),
+  ]);
+}
+
+function selectedPreferenceTags(preferences: Preferences): string[] {
+  return unique([
+    ...preferences.printers
+      .map((printer) => printerBrands[printer])
+      .filter((brand): brand is string => Boolean(brand)),
+    ...preferences.topics
+      .map((topic) => topicTags[topic])
+      .filter((topic): topic is string => Boolean(topic)),
+    ...preferences.technology
+      .map((technology) => technologyTags[technology])
+      .filter((technology): technology is string => Boolean(technology)),
+  ]);
+}
+
+function scoreArticle(
+  article: Article,
+  preferences: Preferences,
+): ScoredArticle {
+  const generatedTags = generateArticleTags(article);
+  const selectedTags = selectedPreferenceTags(preferences);
+  const matchedBecause = selectedTags.filter((tag) =>
+    generatedTags.includes(tag),
   );
 
-  return printerMatch || sourceMatch || topicMatch || technologyMatch;
+  return {
+    article,
+    generatedTags,
+    matchedBecause,
+    score: matchedBecause.length,
+  };
 }
 
 export function FeedClient({
@@ -98,30 +186,36 @@ export function FeedClient({
     ].join(" with ");
   }, [preferences]);
 
-  const personalisedArticles = useMemo(() => {
-    const matched = articles.filter((article) =>
-      articleMatchesPreferences(article, preferences),
-    );
+  const scoredArticles = useMemo(() => {
+    const scored = articles.map((article) => scoreArticle(article, preferences));
+    const matched = scored.filter((article) => article.score > 0);
+    const sorted = (matched.length ? matched : scored).sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
 
-    return (matched.length ? matched : articles).slice(
-      0,
-      Number(preferences.storiesPerUpdate),
-    );
+      return (
+        new Date(b.article.publishedAt).getTime() -
+        new Date(a.article.publishedAt).getTime()
+      );
+    });
+
+    return sorted.slice(0, Number(preferences.storiesPerUpdate));
   }, [articles, preferences]);
 
   const groupedArticles = useMemo(() => {
-    return personalisedArticles.reduce<Record<string, Article[]>>(
-      (groups, article) => {
-        const groupName = articleMatchesPreferences(article, preferences)
+    return scoredArticles.reduce<Record<string, ScoredArticle[]>>(
+      (groups, scoredArticle) => {
+        const groupName = scoredArticle.score > 0
           ? "Matched to your preferences"
           : "Latest general stories";
 
-        groups[groupName] = [...(groups[groupName] ?? []), article];
+        groups[groupName] = [...(groups[groupName] ?? []), scoredArticle];
         return groups;
       },
       {},
     );
-  }, [personalisedArticles, preferences]);
+  }, [scoredArticles]);
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
@@ -257,18 +351,19 @@ export function FeedClient({
                 </div>
 
                 <div className="space-y-4">
-                  {stories.map((article) => (
+                  {stories.map((scoredArticle) => (
                     <article
                       className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40"
-                      key={`${article.source}-${article.link}`}
+                      key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-                          {article.source} / {formatDate(article.publishedAt)}
+                          {scoredArticle.article.source} /{" "}
+                          {formatDate(scoredArticle.article.publishedAt)}
                         </p>
                         <a
                           className="text-sm font-bold text-blue-700 hover:text-blue-900"
-                          href={article.link}
+                          href={scoredArticle.article.link}
                           rel="noreferrer"
                           target="_blank"
                         >
@@ -276,26 +371,45 @@ export function FeedClient({
                         </a>
                       </div>
                       <h3 className="mt-3 text-2xl font-bold leading-8 text-slate-950">
-                        {article.title}
+                        {scoredArticle.article.title}
                       </h3>
                       <p className="mt-3 text-base leading-7 text-slate-600">
-                        {article.summary}
+                        {scoredArticle.article.summary}
                       </p>
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {(article.tags.length ? article.tags : ["General"]).map(
-                          (tag) => (
+                        {(scoredArticle.generatedTags.length
+                          ? scoredArticle.generatedTags
+                          : ["General"]
+                        ).map((tag) => (
+                          <span
+                            className="rounded-md bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600"
+                            key={tag}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-3">
+                        <p className="text-sm font-bold text-blue-950">
+                          Matched because:
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {(scoredArticle.matchedBecause.length
+                            ? scoredArticle.matchedBecause
+                            : ["Latest general story"]
+                          ).map((reason) => (
                             <span
-                              className="rounded-md bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600"
-                              key={tag}
+                              className="text-sm font-semibold text-blue-900"
+                              key={reason}
                             >
-                              {tag}
+                              ✓ {reason}
                             </span>
-                          ),
-                        )}
+                          ))}
+                        </div>
                       </div>
                       <p className="mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
-                        Publisher attribution: {article.source}. Summary and
-                        metadata are attributed to the source above.
+                        Publisher attribution: {scoredArticle.article.source}.
+                        Summary and metadata are attributed to the source above.
                       </p>
                     </article>
                   ))}

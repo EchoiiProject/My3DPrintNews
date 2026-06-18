@@ -56,13 +56,22 @@ export const feedRegistry: FeedSource[] = [
 const tagKeywords: Record<string, string[]> = {
   Bambu: ["bambu", "x1 carbon", "p1s", "bambu a1", "a1 mini"],
   Prusa: ["prusa", "mk4s", "prusa xl"],
+  Creality: ["creality", "k1", "k2 plus"],
+  Elegoo: ["elegoo"],
+  Anycubic: ["anycubic"],
+  Flashforge: ["flashforge"],
   "New Printers": ["new printer", "launch", "announces", "released", "debut"],
   Reviews: ["review", "tested", "hands-on", "benchmark"],
   Firmware: ["firmware", "software update", "input shaping"],
   Materials: ["material", "filament", "resin", "pla", "petg", "nylon"],
   Models: ["model", "design", "printables", "makerworld", "thingiverse"],
+  Accessories: ["accessory", "accessories", "upgrade", "hotend", "build plate"],
+  Deals: ["deal", "discount", "sale", "bundle", "coupon"],
+  Tutorials: ["tutorial", "guide", "how to", "calibration", "beginner"],
   FDM: ["fdm", "fff", "filament"],
   Resin: ["resin", "sla", "msla", "dlp"],
+  SLS: ["sls", "mjf", "powder bed"],
+  Industrial: ["industrial", "professional", "production", "service bureau"],
 };
 
 const parser = new Parser<unknown, ParsedItem>({
