@@ -49,21 +49,10 @@ export default function Home() {
           >
             My3DPrintNews
           </Link>
-          <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
-            <a className="hidden hover:text-blue-700 sm:inline" href="#topics">
-              Topics
-            </a>
-            <a className="hidden hover:text-blue-700 sm:inline" href="#delivery">
-              Delivery
-            </a>
-            <Link className="hover:text-blue-700" href="/publishers">
-              Publishers
-            </Link>
-          </div>
         </nav>
 
-        <div className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[0.94fr_1.06fr] lg:py-16">
-          <div className="max-w-3xl">
+        <div className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-12">
+          <div className="max-w-3xl lg:sticky lg:top-6">
             <p className="mb-5 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
               Personalised additive manufacturing intelligence
             </p>
@@ -79,82 +68,15 @@ export default function Home() {
               then generate a focused 3D printing news feed.
             </p>
 
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <button
-                className="inline-flex min-h-14 items-center justify-center rounded-md bg-blue-600 px-7 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-                onClick={buildFeed}
-                type="button"
-              >
-                Build My Feed
-              </button>
-              <span className="text-sm font-medium text-slate-500">
-                Saved locally on this device.
-              </span>
-            </div>
-          </div>
-
-          <section
-            aria-label="Preference selector"
-            className="relative rounded-lg border border-slate-200 bg-white/88 p-4 shadow-2xl shadow-blue-950/10 backdrop-blur sm:p-5"
-            id="topics"
-          >
-            <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <p className="text-sm font-semibold text-blue-700">
-                  Feed Builder
-                </p>
-                <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                  Tune your update
-                </h2>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {preferenceGroups.map((group) => (
-                <div key={group.key}>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                    {group.title}
-                  </h3>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {group.options.map((option) => {
-                      const selected =
-                        preferences[group.key as MultiSelectKey].includes(
-                          option,
-                        );
-
-                      return (
-                        <button
-                          className={[
-                            "min-h-12 rounded-md border px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                            selected
-                              ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
-                              : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60",
-                          ].join(" ")}
-                          key={option}
-                          onClick={() =>
-                            updateMultiSelect(
-                              group.key as MultiSelectKey,
-                              option,
-                            )
-                          }
-                          type="button"
-                        >
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-
-              <div
-                className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2"
-                id="delivery"
-              >
+            <div
+              className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur sm:p-5"
+              id="delivery"
+            >
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     Frequency
-                  </h3>
+                  </h2>
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {frequencyOptions.map((option) => (
                       <button
@@ -180,9 +102,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                    Stories per update
-                  </h3>
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                    Stories
+                  </h2>
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {storyCountOptions.map((option) => (
                       <button
@@ -207,6 +129,75 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                className="inline-flex min-h-14 items-center justify-center rounded-md bg-blue-600 px-7 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                onClick={buildFeed}
+                type="button"
+              >
+                Build My Feed
+              </button>
+              <span className="text-sm font-medium text-slate-500">
+                Saved locally on this device.
+              </span>
+            </div>
+          </div>
+
+          <section
+            aria-label="Preference selector"
+            className="relative rounded-lg border border-slate-200 bg-white/88 p-4 shadow-2xl shadow-blue-950/10 backdrop-blur sm:p-5"
+            id="topics"
+          >
+            <div className="mb-5 border-b border-slate-100 pb-4">
+              <div>
+                <p className="text-sm font-semibold text-blue-700">
+                  Feed Builder
+                </p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                  Customise Your Feed
+                </h2>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {preferenceGroups.map((group) => (
+                <div key={group.key}>
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                    {group.title}
+                  </h3>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {group.options.map((option) => {
+                      const selected =
+                        preferences[group.key as MultiSelectKey].includes(
+                          option,
+                        );
+
+                      return (
+                        <button
+                          className={[
+                            "min-h-12 rounded-md border px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            selected
+                              ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
+                              : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
+                          ].join(" ")}
+                          key={option}
+                          onClick={() =>
+                            updateMultiSelect(
+                              group.key as MultiSelectKey,
+                              option,
+                            )
+                          }
+                          type="button"
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         </div>
