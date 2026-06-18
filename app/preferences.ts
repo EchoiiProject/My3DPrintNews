@@ -1,7 +1,8 @@
 export const STORAGE_KEY = "my3dprintnews-preferences";
 
 export type Preferences = {
-  brands: string[];
+  printers: string[];
+  sources: string[];
   topics: string[];
   technology: string[];
   frequency: string;
@@ -9,24 +10,64 @@ export type Preferences = {
 };
 
 export const defaultPreferences: Preferences = {
-  brands: ["Bambu Lab"],
+  printers: ["Bambu X1 Carbon"],
+  sources: ["Printables"],
   topics: ["New Printers", "Reviews"],
   technology: ["FDM / FFF"],
   frequency: "Daily",
   storiesPerUpdate: "10",
 };
 
+const legacyBrandPrinters: Record<string, string[]> = {
+  "Bambu Lab": ["Bambu X1 Carbon", "Bambu P1S"],
+  "Prusa Research": ["Prusa MK4S", "Prusa XL"],
+  Creality: ["Creality K1", "Creality K2 Plus"],
+};
+
+type SavedPreferences = Partial<Preferences> & {
+  brands?: string[];
+};
+
+export function normalisePreferences(saved: SavedPreferences): Preferences {
+  const legacyPrinters =
+    saved.brands?.flatMap((brand) => legacyBrandPrinters[brand] ?? []) ?? [];
+
+  return {
+    ...defaultPreferences,
+    ...saved,
+    printers: saved.printers?.length
+      ? saved.printers
+      : legacyPrinters.length
+        ? legacyPrinters
+        : defaultPreferences.printers,
+    sources: saved.sources?.length ? saved.sources : defaultPreferences.sources,
+  };
+}
+
 export const preferenceGroups = [
   {
-    key: "brands",
-    title: "Brands",
+    key: "printers",
+    title: "Printers",
     options: [
-      "Bambu Lab",
-      "Prusa Research",
-      "Creality",
-      "Elegoo",
-      "Anycubic",
-      "Flashforge",
+      "Bambu X1 Carbon",
+      "Bambu P1S",
+      "Bambu A1",
+      "Bambu A1 Mini",
+      "Prusa MK4S",
+      "Prusa XL",
+      "Creality K1",
+      "Creality K2 Plus",
+    ],
+  },
+  {
+    key: "sources",
+    title: "Sources",
+    options: [
+      "Printables",
+      "MakerWorld",
+      "Thingiverse",
+      "Thangs",
+      "Cults3D",
     ],
   },
   {

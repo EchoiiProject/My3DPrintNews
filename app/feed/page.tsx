@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   defaultPreferences,
   frequencyOptions,
+  normalisePreferences,
   Preferences,
   STORAGE_KEY,
 } from "../preferences";
@@ -12,41 +13,53 @@ import {
 const storyLibrary = [
   {
     category: "New Printers",
+    printers: ["Bambu X1 Carbon", "Bambu P1S"],
+    sourcePlatform: "MakerWorld",
     source: "Printer Industry Wire",
-    title: "Bambu Lab-style speed expectations reshape desktop printer launches",
+    title: "Bambu X1 Carbon and P1S expectations reshape desktop launches",
     summary:
       "Manufacturers are positioning enclosed CoreXY machines, faster calibration, and integrated monitoring as baseline expectations for serious home and studio users.",
   },
   {
     category: "New Printers",
+    printers: ["Prusa XL", "Prusa MK4S"],
+    sourcePlatform: "Printables",
     source: "Additive Hardware Brief",
-    title: "Compact resin systems target dental, jewellery, and prototyping desks",
+    title: "Prusa XL and MK4S coverage tracks modular production workflows",
     summary:
-      "New benchtop resin platforms are emphasizing cleaner workflows, higher resolution panels, and validated material profiles for professional buyers.",
+      "Professional users are watching toolchanger workflows, enclosure options, and validated print profiles for mixed material jobs.",
   },
   {
     category: "Reviews",
+    printers: ["Creality K1", "Creality K2 Plus"],
+    sourcePlatform: "Thingiverse",
     source: "Maker Review Journal",
-    title: "Long-run reliability tests focus on thermal stability and maintenance",
+    title: "Creality K1 and K2 Plus reviews focus on thermal stability",
     summary:
       "Reviewers are moving beyond first prints to examine nozzle wear, belt tension, chamber temperatures, and firmware recovery after failed jobs.",
   },
   {
     category: "Firmware Updates",
+    printers: ["Bambu A1", "Bambu A1 Mini"],
+    sourcePlatform: "MakerWorld",
     source: "Open Motion Notes",
-    title: "Firmware updates improve input shaping and remote print recovery",
+    title: "Bambu A1 firmware updates improve calibration and recovery",
     summary:
       "Recent placeholder release notes highlight tuning assistants, clearer error states, and safer pause/resume behavior for unattended prints.",
   },
   {
     category: "3D Models / Designs",
+    printers: ["Prusa MK4S", "Bambu A1 Mini"],
+    sourcePlatform: "Printables",
     source: "Model Library Digest",
-    title: "Functional storage systems and printer mods trend across model hubs",
+    title: "Printables model trends highlight MK4S and A1 Mini workshop mods",
     summary:
       "Designers are publishing modular organisers, spool management upgrades, and calibration fixtures with better documentation and remix permissions.",
   },
   {
     category: "Filament & Materials",
+    printers: ["Bambu X1 Carbon", "Creality K2 Plus"],
+    sourcePlatform: "Thangs",
     source: "Materials Desk",
     title: "High-flow PLA blends and carbon-filled nylon get broader print profiles",
     summary:
@@ -54,6 +67,8 @@ const storyLibrary = [
   },
   {
     category: "Accessories",
+    printers: ["Bambu P1S", "Prusa XL"],
+    sourcePlatform: "Thangs",
     source: "Workshop Equipment Review",
     title: "Dry boxes, build plates, and hotend upgrades dominate accessory demand",
     summary:
@@ -61,6 +76,8 @@ const storyLibrary = [
   },
   {
     category: "Deals & Discounts",
+    printers: ["Creality K1", "Bambu A1"],
+    sourcePlatform: "Cults3D",
     source: "3D Printing Deals Monitor",
     title: "Bundle pricing shifts toward filament, spare parts, and starter kits",
     summary:
@@ -68,6 +85,8 @@ const storyLibrary = [
   },
   {
     category: "Tutorials & Guides",
+    printers: ["Bambu A1 Mini", "Prusa MK4S"],
+    sourcePlatform: "Thingiverse",
     source: "Print Process Lab",
     title: "Beginner guides put more emphasis on calibration and material storage",
     summary:
@@ -75,6 +94,8 @@ const storyLibrary = [
   },
   {
     category: "Industrial / Professional",
+    printers: ["Prusa XL", "Creality K2 Plus"],
+    sourcePlatform: "Cults3D",
     source: "Production AM Weekly",
     title: "Service bureaus add automated quoting and traceability to print orders",
     summary:
@@ -121,21 +142,35 @@ export default function FeedPage() {
     }
 
     try {
-      setPreferences({ ...defaultPreferences, ...JSON.parse(saved) });
+      setPreferences(normalisePreferences(JSON.parse(saved)));
     } catch {
       setPreferences(defaultPreferences);
     }
   }, []);
 
+  const feedSummary = useMemo(() => {
+    return [
+      `${preferences.printers.join(", ")} printer coverage`,
+      `${preferences.sources.join(", ")} source monitoring`,
+      `${preferences.topics.join(", ")} topics`,
+    ].join(" with ");
+  }, [preferences]);
+
   const groupedStories = useMemo(() => {
     return storyLibrary.reduce<Record<string, typeof storyLibrary>>(
       (groups, story) => {
         const selectedTopic = preferences.topics.includes(story.category);
+        const selectedPrinter = story.printers.some((printer) =>
+          preferences.printers.includes(printer),
+        );
+        const selectedSource = preferences.sources.includes(story.sourcePlatform);
         const selectedTechnology = preferences.technology.some((technology) =>
           story.title.includes(technology.split(" ")[0]),
         );
         const groupName =
-          selectedTopic || selectedTechnology ? "Matched to you" : story.category;
+          selectedTopic || selectedPrinter || selectedSource || selectedTechnology
+            ? "Matched to your printers and sources"
+            : story.category;
 
         groups[groupName] = [...(groups[groupName] ?? []), story];
         return groups;
@@ -172,8 +207,8 @@ export default function FeedPage() {
             Your Personalised Feed
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
-            Ten placeholder stories are organised around your selected brands,
-            topics, technologies, and preferred update rhythm.
+            Ten placeholder stories are organised around {feedSummary} and your
+            preferred update rhythm.
           </p>
         </header>
 
@@ -190,7 +225,14 @@ export default function FeedPage() {
               </div>
 
               <div className="space-y-5">
-                <PreferenceSection label="Brands" values={preferences.brands} />
+                <PreferenceSection
+                  label="Printers"
+                  values={preferences.printers}
+                />
+                <PreferenceSection
+                  label="Sources"
+                  values={preferences.sources}
+                />
                 <PreferenceSection label="Topics" values={preferences.topics} />
                 <PreferenceSection
                   label="Technology"
@@ -278,7 +320,7 @@ export default function FeedPage() {
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-                          {story.category}
+                          {story.category} / {story.sourcePlatform}
                         </p>
                         <a
                           className="text-sm font-bold text-blue-700 hover:text-blue-900"
@@ -298,7 +340,8 @@ export default function FeedPage() {
                         id="source-placeholder"
                       >
                         Original source: {story.source}. Placeholder source
-                        link and attribution text.
+                        link and attribution text. Matched printers:{" "}
+                        {story.printers.join(", ")}.
                       </div>
                     </article>
                   ))}

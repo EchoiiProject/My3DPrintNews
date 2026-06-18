@@ -12,7 +12,7 @@ import {
 } from "./preferences";
 import { useState } from "react";
 
-type MultiSelectKey = "brands" | "topics" | "technology";
+type MultiSelectKey = "printers" | "sources" | "topics" | "technology";
 
 function toggleSelection(
   current: string[],
@@ -81,7 +81,7 @@ export default function Home() {
               Your Personalised 3D Printing News
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Choose the brands, technologies, and story types you care about,
+              Choose the printers, sources, technologies, and story types you care about,
               then generate a focused 3D printing news feed.
             </p>
 
@@ -114,7 +114,7 @@ export default function Home() {
                 </h2>
               </div>
               <div className="rounded-md bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">
-                Sprint 2B
+                Sprint 2C
               </div>
             </div>
 
