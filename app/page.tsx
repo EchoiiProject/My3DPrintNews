@@ -114,7 +114,7 @@ export default function Home() {
                 </h2>
               </div>
               <div className="rounded-md bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">
-                Sprint 2A
+                Sprint 2B
               </div>
             </div>
 
