@@ -1,8 +1,8 @@
 export const STORAGE_KEY = "my3dprintnews-preferences";
 
 export type Preferences = {
-  printers: string[];
-  sources: string[];
+  brands: string[];
+  models: string[];
   topics: string[];
   technology: string[];
   frequency: string;
@@ -10,58 +10,66 @@ export type Preferences = {
 };
 
 export const defaultPreferences: Preferences = {
-  printers: ["Bambu X1 Carbon"],
-  sources: ["Printables"],
+  brands: ["Bambu Lab"],
+  models: ["Printables"],
   topics: ["New Printers", "Reviews"],
   technology: ["FDM / FFF"],
   frequency: "Daily",
   storiesPerUpdate: "10",
 };
 
-const legacyBrandPrinters: Record<string, string[]> = {
-  "Bambu Lab": ["Bambu X1 Carbon", "Bambu P1S"],
-  "Prusa Research": ["Prusa MK4S", "Prusa XL"],
-  Creality: ["Creality K1", "Creality K2 Plus"],
+const printerBrands: Record<string, string> = {
+  "Bambu X1 Carbon": "Bambu Lab",
+  "Bambu P1S": "Bambu Lab",
+  "Bambu A1": "Bambu Lab",
+  "Bambu A1 Mini": "Bambu Lab",
+  "Prusa MK4S": "Prusa Research",
+  "Prusa XL": "Prusa Research",
+  "Creality K1": "Creality",
+  "Creality K2 Plus": "Creality",
 };
 
 type SavedPreferences = Partial<Preferences> & {
-  brands?: string[];
+  printers?: string[];
+  sources?: string[];
 };
 
 export function normalisePreferences(saved: SavedPreferences): Preferences {
-  const legacyPrinters =
-    saved.brands?.flatMap((brand) => legacyBrandPrinters[brand] ?? []) ?? [];
+  const legacyBrands =
+    saved.printers?.map((printer) => printerBrands[printer] ?? printer) ?? [];
 
   return {
     ...defaultPreferences,
     ...saved,
-    printers: saved.printers?.length
-      ? saved.printers
-      : legacyPrinters.length
-        ? legacyPrinters
-        : defaultPreferences.printers,
-    sources: saved.sources?.length ? saved.sources : defaultPreferences.sources,
+    brands: saved.brands?.length
+      ? saved.brands
+      : legacyBrands.length
+        ? Array.from(new Set(legacyBrands))
+        : defaultPreferences.brands,
+    models: saved.models?.length
+      ? saved.models
+      : saved.sources?.length
+        ? saved.sources
+        : defaultPreferences.models,
   };
 }
 
 export const preferenceGroups = [
   {
-    key: "printers",
-    title: "Printers",
+    key: "brands",
+    title: "Brands",
     options: [
-      "Bambu X1 Carbon",
-      "Bambu P1S",
-      "Bambu A1",
-      "Bambu A1 Mini",
-      "Prusa MK4S",
-      "Prusa XL",
-      "Creality K1",
-      "Creality K2 Plus",
+      "Bambu Lab",
+      "Prusa Research",
+      "Creality",
+      "Elegoo",
+      "Anycubic",
+      "Flashforge",
     ],
   },
   {
-    key: "sources",
-    title: "Sources",
+    key: "models",
+    title: "Models",
     options: [
       "Printables",
       "MakerWorld",

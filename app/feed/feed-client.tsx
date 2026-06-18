@@ -32,15 +32,13 @@ const scoringKeywords: Record<string, string[]> = {
   Industrial: ["industrial", "professional", "production", "service bureau"],
 };
 
-const printerBrands: Record<string, string> = {
-  "Bambu X1 Carbon": "Bambu",
-  "Bambu P1S": "Bambu",
-  "Bambu A1": "Bambu",
-  "Bambu A1 Mini": "Bambu",
-  "Prusa MK4S": "Prusa",
-  "Prusa XL": "Prusa",
-  "Creality K1": "Creality",
-  "Creality K2 Plus": "Creality",
+const brandTags: Record<string, string> = {
+  "Bambu Lab": "Bambu",
+  "Prusa Research": "Prusa",
+  Creality: "Creality",
+  Elegoo: "Elegoo",
+  Anycubic: "Anycubic",
+  Flashforge: "Flashforge",
 };
 
 const topicTags: Record<string, string> = {
@@ -123,8 +121,8 @@ function generateArticleTags(article: Article): string[] {
 
 function selectedPreferenceTags(preferences: Preferences): string[] {
   return unique([
-    ...preferences.printers
-      .map((printer) => printerBrands[printer])
+    ...preferences.brands
+      .map((brand) => brandTags[brand])
       .filter((brand): brand is string => Boolean(brand)),
     ...preferences.topics
       .map((topic) => topicTags[topic])
@@ -180,8 +178,8 @@ export function FeedClient({
 
   const feedSummary = useMemo(() => {
     return [
-      `${preferences.printers.join(", ")} printer coverage`,
-      `${preferences.sources.join(", ")} source monitoring`,
+      `${preferences.brands.join(", ") || "all brands"} brand coverage`,
+      `${preferences.models.join(", ") || "all model libraries"} model monitoring`,
       `${preferences.topics.join(", ")} topics`,
     ].join(" with ");
   }, [preferences]);
@@ -264,12 +262,12 @@ export function FeedClient({
 
               <div className="space-y-5">
                 <PreferenceSection
-                  label="Printers"
-                  values={preferences.printers}
+                  label="Brands"
+                  values={preferences.brands}
                 />
                 <PreferenceSection
-                  label="Sources"
-                  values={preferences.sources}
+                  label="Models"
+                  values={preferences.models}
                 />
                 <PreferenceSection label="Topics" values={preferences.topics} />
                 <PreferenceSection
@@ -297,7 +295,7 @@ export function FeedClient({
                 {frequencyOptions.map((option) => (
                   <button
                     className={[
-                      "min-h-11 rounded-md border px-3 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-blue-100",
+                      "min-h-11 rounded-md border px-3 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                       emailFrequency === option
                         ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                         : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -319,13 +317,13 @@ export function FeedClient({
                   Newsletter signup
                 </label>
                 <input
-                  className="min-h-12 w-full rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="min-h-12 w-full rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="newsletter-email"
                   placeholder="you@example.com"
                   type="email"
                 />
                 <button
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                   type="button"
                 >
                   Sign up for {emailFrequency.toLowerCase()} updates

@@ -12,16 +12,11 @@ import {
 } from "./preferences";
 import { useState } from "react";
 
-type MultiSelectKey = "printers" | "sources" | "topics" | "technology";
+type MultiSelectKey = "brands" | "models" | "topics" | "technology";
 
-function toggleSelection(
-  current: string[],
-  value: string,
-  fallback: string,
-): string[] {
+function toggleSelection(current: string[], value: string): string[] {
   if (current.includes(value)) {
-    const next = current.filter((item) => item !== value);
-    return next.length ? next : [fallback];
+    return current.filter((item) => item !== value);
   }
 
   return [...current, value];
@@ -33,11 +28,9 @@ export default function Home() {
     useState<Preferences>(defaultPreferences);
 
   function updateMultiSelect(key: MultiSelectKey, value: string) {
-    const fallback = defaultPreferences[key][0];
-
     setPreferences((current) => ({
       ...current,
-      [key]: toggleSelection(current[key], value, fallback),
+      [key]: toggleSelection(current[key], value),
     }));
   }
 
@@ -81,13 +74,14 @@ export default function Home() {
               Your Personalised 3D Printing News
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Choose the printers, sources, technologies, and story types you care about,
+              Choose the brands, model libraries, technologies, and story types
+              you care about,
               then generate a focused 3D printing news feed.
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
-                className="inline-flex min-h-14 items-center justify-center rounded-md bg-blue-600 px-7 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200"
+                className="inline-flex min-h-14 items-center justify-center rounded-md bg-blue-600 px-7 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                 onClick={buildFeed}
                 type="button"
               >
@@ -113,9 +107,6 @@ export default function Home() {
                   Tune your update
                 </h2>
               </div>
-              <div className="rounded-md bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">
-                Sprint 2C
-              </div>
             </div>
 
             <div className="space-y-6">
@@ -134,7 +125,7 @@ export default function Home() {
                       return (
                         <button
                           className={[
-                            "min-h-12 rounded-md border px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-blue-100",
+                            "min-h-12 rounded-md border px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                             selected
                               ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
                               : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60",
@@ -168,7 +159,7 @@ export default function Home() {
                     {frequencyOptions.map((option) => (
                       <button
                         className={[
-                          "min-h-11 rounded-md border px-3 text-center text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-blue-100",
+                          "min-h-11 rounded-md border px-3 text-center text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                           preferences.frequency === option
                             ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                             : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -196,7 +187,7 @@ export default function Home() {
                     {storyCountOptions.map((option) => (
                       <button
                         className={[
-                          "min-h-11 rounded-md border px-3 text-center text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-blue-100",
+                          "min-h-11 rounded-md border px-3 text-center text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                           preferences.storiesPerUpdate === option
                             ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                             : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
