@@ -87,6 +87,34 @@ const technologyTags: Record<string, string> = {
   "Industrial / Professional": "Industrial",
 };
 
+const focusTagAliases: Record<string, string> = {
+  "3d models designs": "models",
+  "3d models": "models",
+  designs: "models",
+  design: "models",
+  model: "models",
+  firmwareupdates: "firmware",
+  "firmware updates": "firmware",
+  "filament materials": "materials",
+  filament: "materials",
+  material: "materials",
+  "deals discounts": "deals",
+  discounts: "deals",
+  "tutorials guides": "tutorials",
+  guides: "tutorials",
+  "fdm fff": "fdm",
+  fff: "fdm",
+  "sls mjf": "sls",
+  mjf: "sls",
+  "industrial professional": "industrial",
+  professional: "industrial",
+  "bambu lab": "bambu",
+  "prusa research": "prusa",
+  "maker world": "makerworld",
+  cults: "cults3d",
+  "makers muse": "maker's muse",
+};
+
 type ScoredArticle = {
   article: Article;
   generatedTags: string[];
@@ -133,9 +161,7 @@ function PreferenceSection({
                     : "border-blue-100 bg-blue-50 text-blue-800 hover:border-blue-200 hover:bg-white",
                 ].join(" ")}
                 key={value}
-                onClick={() =>
-                  onToggleFocus({ label: value, tag: value })
-                }
+                onClick={() => onToggleFocus({ label: value, tag: value })}
                 type="button"
               >
                 {value} {counts[value] ?? 0}
@@ -169,6 +195,18 @@ function formatDate(value: string): string {
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values));
+}
+
+function normaliseTag(value: string): string {
+  const normalized = value
+    .toLowerCase()
+    .replace(/&/g, " ")
+    .replace(/\//g, " ")
+    .replace(/[^a-z0-9']+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  return focusTagAliases[normalized] ?? normalized;
 }
 
 function generateArticleTags(article: Article): string[] {
@@ -231,14 +269,23 @@ function preferenceFocusFilters(preferences: Preferences): FocusFilter[] {
   ];
 }
 
+function matchesFocus(scoredArticle: ScoredArticle, filter: FocusFilter) {
+  const filterTag = normaliseTag(filter.tag);
+
+  return scoredArticle.generatedTags.some(
+    (tag) => normaliseTag(tag) === filterTag,
+  );
+}
+
 function scoreArticle(
   article: Article,
   preferences: Preferences,
 ): ScoredArticle {
   const generatedTags = generateArticleTags(article);
   const selectedTags = selectedPreferenceTags(preferences);
+  const normalizedGeneratedTags = generatedTags.map((tag) => normaliseTag(tag));
   const matchedBecause = selectedTags.filter((tag) =>
-    generatedTags.includes(tag),
+    normalizedGeneratedTags.includes(normaliseTag(tag)),
   );
 
   return {
@@ -297,7 +344,7 @@ export function FeedClient({
 
     return filters.reduce<Record<string, number>>((counts, filter) => {
       counts[filter.label] = scoredArticles.filter((scoredArticle) =>
-        scoredArticle.generatedTags.includes(filter.tag),
+        matchesFocus(scoredArticle, filter),
       ).length;
 
       return counts;
@@ -310,7 +357,7 @@ export function FeedClient({
     }
 
     return scoredArticles.filter((scoredArticle) =>
-      scoredArticle.generatedTags.includes(activeFocus.tag),
+      matchesFocus(scoredArticle, activeFocus),
     );
   }, [activeFocus, scoredArticles]);
 
@@ -500,6 +547,24 @@ export function FeedClient({
                 </h2>
                 <button
                   className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-800 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                  onClick={() => setActiveFocus(null)}
+                  type="button"
+                >
+                  Clear Focus
+                </button>
+              </div>
+            ) : null}
+            {activeFocus && focusedArticles.length === 0 ? (
+              <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+                <h2 className="text-xl font-bold text-slate-950">
+                  No stories found for {activeFocus.label}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Try clearing the focus filter to return to your full
+                  personalised feed.
+                </p>
+                <button
+                  className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                   onClick={() => setActiveFocus(null)}
                   type="button"
                 >
