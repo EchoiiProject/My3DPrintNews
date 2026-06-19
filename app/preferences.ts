@@ -1,4 +1,5 @@
 export const STORAGE_KEY = "my3dprintnews-preferences";
+export const FAVOURITES_KEY = "my3dprintnews-favourites";
 
 export type Preferences = {
   brands: string[];
@@ -10,6 +11,12 @@ export type Preferences = {
   storiesPerUpdate: string;
 };
 
+export type Favourites = {
+  brands: string[];
+  models: string[];
+  creators: string[];
+};
+
 export const defaultPreferences: Preferences = {
   brands: [],
   models: [],
@@ -18,6 +25,12 @@ export const defaultPreferences: Preferences = {
   technology: [],
   frequency: "Daily",
   storiesPerUpdate: "10",
+};
+
+export const defaultFavourites: Favourites = {
+  brands: [],
+  models: [],
+  creators: [],
 };
 
 const printerBrands: Record<string, string> = {
@@ -42,6 +55,8 @@ type ArrayPreferenceKey =
   | "creators"
   | "topics"
   | "technology";
+
+type FavouriteKey = keyof Favourites;
 
 function savedArray(
   saved: SavedPreferences,
@@ -79,6 +94,41 @@ export function normalisePreferences(saved: SavedPreferences): Preferences {
       ? savedCreators
       : defaultPreferences.creators,
   };
+}
+
+export function normaliseFavourites(saved: Partial<Favourites>): Favourites {
+  return {
+    brands: Array.isArray(saved.brands) ? saved.brands : defaultFavourites.brands,
+    models: Array.isArray(saved.models) ? saved.models : defaultFavourites.models,
+    creators: Array.isArray(saved.creators)
+      ? saved.creators
+      : defaultFavourites.creators,
+  };
+}
+
+export function isFavouriteKey(value: string): value is FavouriteKey {
+  return value === "brands" || value === "models" || value === "creators";
+}
+
+export function toggleFavourite(
+  favourites: Favourites,
+  key: FavouriteKey,
+  value: string,
+): Favourites {
+  const current = favourites[key];
+
+  return {
+    ...favourites,
+    [key]: current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value],
+  };
+}
+
+// Future ranking can translate these favourites into feed boosts without
+// changing the stored shape or the user's selected feed preferences.
+export function favouriteBoostValues(favourites: Favourites): string[] {
+  return [...favourites.brands, ...favourites.models, ...favourites.creators];
 }
 
 export const preferenceGroups = [

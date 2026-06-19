@@ -4,13 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FooterLinks } from "./footer-links";
 import {
+  defaultFavourites,
   defaultPreferences,
+  FAVOURITES_KEY,
+  Favourites,
   frequencyOptions,
+  isFavouriteKey,
   normalisePreferences,
+  normaliseFavourites,
   preferenceGroups,
   Preferences,
   STORAGE_KEY,
   storyCountOptions,
+  toggleFavourite,
 } from "./preferences";
 import { useEffect, useState } from "react";
 
@@ -29,22 +35,49 @@ function toggleSelection(current: string[], value: string): string[] {
   return [...current, value];
 }
 
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6Z" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [preferences, setPreferences] =
     useState<Preferences>(defaultPreferences);
+  const [favourites, setFavourites] =
+    useState<Favourites>(defaultFavourites);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
 
-    if (!saved) {
-      return;
+    if (saved) {
+      try {
+        setPreferences(normalisePreferences(JSON.parse(saved)));
+      } catch {
+        setPreferences(defaultPreferences);
+      }
     }
 
-    try {
-      setPreferences(normalisePreferences(JSON.parse(saved)));
-    } catch {
-      setPreferences(defaultPreferences);
+    const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
+
+    if (savedFavourites) {
+      try {
+        setFavourites(normaliseFavourites(JSON.parse(savedFavourites)));
+      } catch {
+        setFavourites(defaultFavourites);
+      }
     }
   }, []);
 
@@ -57,9 +90,20 @@ export default function Home() {
 
   function buildFeed() {
     const latestPreferences = normalisePreferences(preferences);
+    const latestFavourites = normaliseFavourites(favourites);
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(latestPreferences));
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify(latestFavourites));
     router.push("/feed");
+  }
+
+  function updateFavourite(key: keyof Favourites, value: string) {
+    setFavourites((current) => {
+      const updated = toggleFavourite(current, key, value);
+
+      localStorage.setItem(FAVOURITES_KEY, JSON.stringify(updated));
+      return updated;
+    });
   }
 
   return (
@@ -192,30 +236,58 @@ export default function Home() {
                   </h3>
                   <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
                     {group.options.map((option) => {
+                      const favouriteKey = isFavouriteKey(group.key)
+                        ? group.key
+                        : null;
                       const selected =
                         preferences[group.key as MultiSelectKey].includes(
                           option,
                         );
+                      const favourited = favouriteKey
+                        ? favourites[favouriteKey].includes(option)
+                        : false;
 
                       return (
-                        <button
-                          className={[
-                            "min-h-10 rounded-md border px-3 py-2 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                            selected
-                              ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
-                              : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
-                          ].join(" ")}
-                          key={option}
-                          onClick={() =>
-                            updateMultiSelect(
-                              group.key as MultiSelectKey,
-                              option,
-                            )
-                          }
-                          type="button"
-                        >
-                          {option}
-                        </button>
+                        <div className="relative" key={option}>
+                          <button
+                            className={[
+                              "min-h-10 w-full rounded-md border px-3 py-2 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                              favouriteKey ? "pr-10" : "",
+                              selected
+                                ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
+                                : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
+                            ].join(" ")}
+                            onClick={() =>
+                              updateMultiSelect(
+                                group.key as MultiSelectKey,
+                                option,
+                              )
+                            }
+                            type="button"
+                          >
+                            {option}
+                          </button>
+                          {favouriteKey ? (
+                            <button
+                              aria-label={
+                                favourited
+                                  ? `Remove ${option} from favourites`
+                                  : `Add ${option} to favourites`
+                              }
+                              aria-pressed={favourited}
+                              className={[
+                                "absolute right-2 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                                favourited
+                                  ? "text-blue-700 hover:bg-blue-100"
+                                  : "text-slate-400 hover:bg-white hover:text-blue-700",
+                              ].join(" ")}
+                              onClick={() => updateFavourite(favouriteKey, option)}
+                              type="button"
+                            >
+                              <HeartIcon filled={favourited} />
+                            </button>
+                          ) : null}
+                        </div>
                       );
                     })}
                   </div>

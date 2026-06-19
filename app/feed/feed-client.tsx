@@ -5,9 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { Article } from "@/lib/rss";
 import { FooterLinks } from "../footer-links";
 import {
+  defaultFavourites,
   defaultPreferences,
+  FAVOURITES_KEY,
+  Favourites,
   frequencyOptions,
   normalisePreferences,
+  normaliseFavourites,
   Preferences,
   STORAGE_KEY,
 } from "../preferences";
@@ -129,9 +133,23 @@ type FocusFilter = {
   tag: string;
 };
 
+function MiniHeartIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-3 w-3"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6Z" />
+    </svg>
+  );
+}
+
 function PreferenceSection({
   label,
   values,
+  favouriteValues = [],
   activeFocus,
   counts,
   focusable = true,
@@ -139,6 +157,7 @@ function PreferenceSection({
 }: {
   label: string;
   values: string[];
+  favouriteValues?: string[];
   activeFocus: string | null;
   counts: Record<string, number>;
   focusable?: boolean;
@@ -153,6 +172,7 @@ function PreferenceSection({
         {values.length ? (
           values.map((value) => {
             const active = activeFocus === value;
+            const favourited = favouriteValues.includes(value);
 
             return focusable ? (
               <button
@@ -166,14 +186,28 @@ function PreferenceSection({
                 onClick={() => onToggleFocus({ label: value, tag: value })}
                 type="button"
               >
-                {value} {counts[value] ?? 0}
+                <span className="inline-flex items-center gap-1.5">
+                  {value} {counts[value] ?? 0}
+                  {favourited ? (
+                    <span className="text-blue-700" title="Favourite">
+                      <MiniHeartIcon />
+                    </span>
+                  ) : null}
+                </span>
               </button>
             ) : (
               <span
                 className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800"
                 key={value}
               >
-                {value}
+                <span className="inline-flex items-center gap-1.5">
+                  {value}
+                  {favourited ? (
+                    <span className="text-blue-700" title="Favourite">
+                      <MiniHeartIcon />
+                    </span>
+                  ) : null}
+                </span>
               </span>
             );
           })
@@ -342,6 +376,8 @@ export function FeedClient({
 }) {
   const [preferences, setPreferences] =
     useState<Preferences>(defaultPreferences);
+  const [favourites, setFavourites] =
+    useState<Favourites>(defaultFavourites);
   const [emailFrequency, setEmailFrequency] = useState("Weekly");
   const [activeFocus, setActiveFocus] = useState<FocusFilter | null>(null);
 
@@ -349,6 +385,16 @@ export function FeedClient({
     const saved = localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
+      const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
+
+      if (savedFavourites) {
+        try {
+          setFavourites(normaliseFavourites(JSON.parse(savedFavourites)));
+        } catch {
+          setFavourites(defaultFavourites);
+        }
+      }
+
       return;
     }
 
@@ -356,6 +402,18 @@ export function FeedClient({
       setPreferences(normalisePreferences(JSON.parse(saved)));
     } catch {
       setPreferences(defaultPreferences);
+    }
+
+    const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
+
+    if (!savedFavourites) {
+      return;
+    }
+
+    try {
+      setFavourites(normaliseFavourites(JSON.parse(savedFavourites)));
+    } catch {
+      setFavourites(defaultFavourites);
     }
   }, []);
 
@@ -472,6 +530,7 @@ export function FeedClient({
                 <PreferenceSection
                   activeFocus={activeFocus?.label ?? null}
                   counts={focusCounts}
+                  favouriteValues={favourites.brands}
                   label="Brands"
                   onToggleFocus={toggleFocus}
                   values={preferences.brands}
@@ -479,6 +538,7 @@ export function FeedClient({
                 <PreferenceSection
                   activeFocus={activeFocus?.label ?? null}
                   counts={focusCounts}
+                  favouriteValues={favourites.models}
                   label="Models"
                   onToggleFocus={toggleFocus}
                   values={preferences.models}
@@ -486,6 +546,7 @@ export function FeedClient({
                 <PreferenceSection
                   activeFocus={activeFocus?.label ?? null}
                   counts={focusCounts}
+                  favouriteValues={favourites.creators}
                   label="Creators"
                   onToggleFocus={toggleFocus}
                   values={preferences.creators}
