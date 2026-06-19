@@ -366,32 +366,45 @@ export function FeedClient({
 
     // Future ranking logic can add favourite/source boosts here, after
     // date ordering remains the default news-feed baseline.
-    const sorted = scored.sort(sortByPublishedDateDesc);
-
-    return sorted.slice(0, Number(preferences.storiesPerUpdate));
+    return scored.sort(sortByPublishedDateDesc);
   }, [articles, preferences]);
+
+  const selectedTags = useMemo(
+    () => selectedPreferenceTags(preferences),
+    [preferences],
+  );
+  const hasPreferenceTags = selectedTags.length > 0;
+  const requestedStoryCount = Number(preferences.storiesPerUpdate);
+
+  const matchedStories = useMemo(() => {
+    const sourceStories = hasPreferenceTags
+      ? scoredArticles.filter((article) => article.score > 0)
+      : scoredArticles;
+
+    return sourceStories.slice(0, requestedStoryCount);
+  }, [hasPreferenceTags, requestedStoryCount, scoredArticles]);
 
   const focusCounts = useMemo(() => {
     const filters = preferenceFocusFilters(preferences);
 
     return filters.reduce<Record<string, number>>((counts, filter) => {
-      counts[filter.label] = scoredArticles.filter((scoredArticle) =>
+      counts[filter.label] = matchedStories.filter((scoredArticle) =>
         matchesFocus(scoredArticle, filter),
       ).length;
 
       return counts;
     }, {});
-  }, [preferences, scoredArticles]);
+  }, [preferences, matchedStories]);
 
-  const focusedArticles = useMemo(() => {
+  const focusedStories = useMemo(() => {
     if (!activeFocus) {
-      return scoredArticles;
+      return matchedStories;
     }
 
-    return scoredArticles.filter((scoredArticle) =>
+    return matchedStories.filter((scoredArticle) =>
       matchesFocus(scoredArticle, activeFocus),
     );
-  }, [activeFocus, scoredArticles]);
+  }, [activeFocus, matchedStories]);
 
   function toggleFocus(filter: FocusFilter) {
     setActiveFocus((current) =>
@@ -572,7 +585,7 @@ export function FeedClient({
                 </button>
               </div>
             ) : null}
-            {activeFocus && focusedArticles.length === 0 ? (
+            {activeFocus && focusedStories.length === 0 ? (
               <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
                 <h2 className="text-xl font-bold text-slate-950">
                   No stories found for {activeFocus.label}
@@ -593,15 +606,18 @@ export function FeedClient({
             <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-950">
-                    Latest timeline
+                    {hasPreferenceTags
+                      ? "Matched to your preferences"
+                      : "Latest general stories"}
                   </h2>
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {focusedArticles.length} stories
+                    {focusedStories.length}{" "}
+                    {hasPreferenceTags ? "matching stories" : "stories"}
                   </span>
                 </div>
 
                 <div className="space-y-4">
-                  {focusedArticles.map((scoredArticle) => (
+                  {focusedStories.map((scoredArticle) => (
                     <article
                       className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5"
                       key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
