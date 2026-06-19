@@ -91,18 +91,18 @@ function PreferenceSection({
       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
         {values.length ? (
           values.map((value) => (
             <span
-              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800"
+              className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800"
               key={value}
             >
               {value}
             </span>
           ))
         ) : (
-          <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-500">
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
             No selection
           </span>
         )}
@@ -269,18 +269,18 @@ export function FeedClient({
           </div>
         </nav>
 
-        <header className="py-12 sm:py-16">
-          <p className="mb-5 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
+        <header className="py-9 sm:py-12">
+          <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
             {usingFallback ? "Placeholder briefing" : "Live RSS briefing"}
           </p>
           <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
             Your Personalised Feed
           </h1>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
             Stories are organised around {feedSummary}. Every card keeps source
             attribution visible and links back to the original publisher.
           </p>
-          <div className="mt-7">
+          <div className="mt-5">
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
               href="/"
@@ -290,19 +290,19 @@ export function FeedClient({
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
-          <aside className="space-y-5">
-            <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
-              <div className="mb-5 border-b border-slate-100 pb-4">
+        <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr]">
+          <aside className="space-y-4">
+            <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
+              <div className="mb-4 border-b border-slate-100 pb-3">
                 <p className="text-sm font-semibold text-blue-700">
                   Selected Preferences
                 </p>
-                <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                <h2 className="mt-1 text-xl font-bold text-slate-950">
                   Your signal
                 </h2>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-3">
                 <PreferenceSection
                   label="Brands"
                   values={preferences.brands}
@@ -326,18 +326,18 @@ export function FeedClient({
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
               <p className="text-sm font-semibold text-blue-700">
                 Get email updates
               </p>
-              <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                Newsletter cadence
+              <h2 className="mt-1 text-xl font-bold text-slate-950">
+                Get personalised updates
               </h2>
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
                 {frequencyOptions.map((option) => (
                   <button
                     className={[
-                      "min-h-11 rounded-md border px-3 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                      "min-h-10 rounded-md border px-2.5 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                       emailFrequency === option
                         ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                         : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -351,7 +351,7 @@ export function FeedClient({
                 ))}
               </div>
 
-              <form className="mt-5 space-y-3">
+              <form className="mt-4 space-y-2.5">
                 <label
                   className="block text-sm font-bold text-slate-700"
                   htmlFor="newsletter-email"
@@ -359,18 +359,18 @@ export function FeedClient({
                   Newsletter signup
                 </label>
                 <input
-                  className="min-h-12 w-full rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
+                  className="min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="newsletter-email"
                   placeholder="you@example.com"
                   type="email"
                 />
                 <button
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                   type="button"
                 >
                   Sign up for {emailFrequency.toLowerCase()} updates
                 </button>
-                <p className="text-sm leading-6 text-slate-500">
+                <p className="text-xs leading-5 text-slate-500">
                   UI only for now. Backend delivery and subscription management
                   will be wired in a later sprint.
                 </p>
@@ -378,14 +378,14 @@ export function FeedClient({
             </section>
           </aside>
 
-          <section className="space-y-6" aria-label="Personalised stories">
+          <section className="space-y-5" aria-label="Personalised stories">
             {Object.entries(groupedArticles).map(([category, stories]) => (
               <div key={category}>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-950">
                     {category}
                   </h2>
-                  <span className="rounded-md bg-blue-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-blue-700">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     {stories.length} stories
                   </span>
                 </div>
@@ -393,15 +393,15 @@ export function FeedClient({
                 <div className="space-y-4">
                   {stories.map((scoredArticle) => (
                     <article
-                      className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40"
+                      className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5"
                       key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
                     >
                       {scoredArticle.article.imageUrl ? (
-                        <div className="mb-5 overflow-hidden rounded-md border border-slate-100 bg-slate-50">
+                        <div className="mb-4 aspect-video overflow-hidden rounded-md border border-slate-100 bg-slate-50">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             alt={scoredArticle.article.title}
-                            className="h-48 w-full object-cover"
+                            className="h-full w-full object-cover"
                             loading="lazy"
                             src={scoredArticle.article.imageUrl}
                           />
