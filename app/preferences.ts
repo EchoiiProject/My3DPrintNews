@@ -1,6 +1,16 @@
 export const STORAGE_KEY = "my3dprintnews-preferences";
 export const FAVOURITES_KEY = "my3dprintnews-favourites";
 
+export type DeliveryFrequency = "daily" | "weekly" | "monthly";
+export type WeeklyDay = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+export type MonthlyTiming = "first" | "middle" | "last";
+
+export type DeliveryPreferences = {
+  frequency: DeliveryFrequency;
+  weeklyDay?: WeeklyDay;
+  monthlyTiming?: MonthlyTiming;
+};
+
 export type Preferences = {
   brands: string[];
   models: string[];
@@ -9,6 +19,7 @@ export type Preferences = {
   technology: string[];
   frequency: string;
   storiesPerUpdate: string;
+  delivery: DeliveryPreferences;
 };
 
 export type Favourites = {
@@ -25,6 +36,11 @@ export const defaultPreferences: Preferences = {
   technology: [],
   frequency: "Daily",
   storiesPerUpdate: "10",
+  delivery: {
+    frequency: "daily",
+    weeklyDay: "mon",
+    monthlyTiming: "first",
+  },
 };
 
 export const defaultFavourites: Favourites = {
@@ -70,6 +86,44 @@ function savedArray(
     : undefined;
 }
 
+function normaliseDelivery(saved: SavedPreferences): DeliveryPreferences {
+  const savedDelivery = saved.delivery;
+  const frequencyFromLegacy = saved.frequency?.toLowerCase();
+  const frequency =
+    savedDelivery?.frequency === "weekly" ||
+    savedDelivery?.frequency === "monthly" ||
+    savedDelivery?.frequency === "daily"
+      ? savedDelivery.frequency
+      : frequencyFromLegacy === "weekly" ||
+          frequencyFromLegacy === "monthly" ||
+          frequencyFromLegacy === "daily"
+        ? frequencyFromLegacy
+        : defaultPreferences.delivery.frequency;
+
+  const weeklyDay =
+    savedDelivery?.weeklyDay === "tue" ||
+    savedDelivery?.weeklyDay === "wed" ||
+    savedDelivery?.weeklyDay === "thu" ||
+    savedDelivery?.weeklyDay === "fri" ||
+    savedDelivery?.weeklyDay === "sat" ||
+    savedDelivery?.weeklyDay === "sun" ||
+    savedDelivery?.weeklyDay === "mon"
+      ? savedDelivery.weeklyDay
+      : defaultPreferences.delivery.weeklyDay;
+  const monthlyTiming =
+    savedDelivery?.monthlyTiming === "middle" ||
+    savedDelivery?.monthlyTiming === "last" ||
+    savedDelivery?.monthlyTiming === "first"
+      ? savedDelivery.monthlyTiming
+      : defaultPreferences.delivery.monthlyTiming;
+
+  return {
+    frequency,
+    weeklyDay,
+    monthlyTiming,
+  };
+}
+
 export function normalisePreferences(saved: SavedPreferences): Preferences {
   const legacyBrands =
     saved.printers?.map((printer) => printerBrands[printer] ?? printer) ?? [];
@@ -77,9 +131,18 @@ export function normalisePreferences(saved: SavedPreferences): Preferences {
   const savedModels = savedArray(saved, "models");
   const savedCreators = savedArray(saved, "creators");
 
+  const delivery = normaliseDelivery(saved);
+
   return {
     ...defaultPreferences,
     ...saved,
+    frequency:
+      delivery.frequency === "weekly"
+        ? "Weekly"
+        : delivery.frequency === "monthly"
+          ? "Monthly"
+          : "Daily",
+    delivery,
     brands: Array.isArray(savedBrands)
       ? savedBrands
       : legacyBrands.length
@@ -144,9 +207,9 @@ export const preferenceGroups = [
       "Flashforge",
     ],
   },
-  {
+    {
     key: "models",
-    title: "Models",
+    title: "Model Platforms",
     options: [
       "Printables",
       "MakerWorld",
@@ -189,5 +252,29 @@ export const preferenceGroups = [
 ] as const;
 
 export const frequencyOptions = ["Daily", "Weekly", "Monthly"];
+
+export const weeklyDayOptions: { value: WeeklyDay; label: string; long: string }[] = [
+  { value: "mon", label: "Mon", long: "Monday" },
+  { value: "tue", label: "Tue", long: "Tuesday" },
+  { value: "wed", label: "Wed", long: "Wednesday" },
+  { value: "thu", label: "Thu", long: "Thursday" },
+  { value: "fri", label: "Fri", long: "Friday" },
+  { value: "sat", label: "Sat", long: "Saturday" },
+  { value: "sun", label: "Sun", long: "Sunday" },
+];
+
+export const monthlyTimingOptions: {
+  value: MonthlyTiming;
+  label: string;
+  summary: string;
+}[] = [
+  { value: "first", label: "1st", summary: "Monthly on the 1st" },
+  {
+    value: "middle",
+    label: "Middle",
+    summary: "Monthly in the middle of the month",
+  },
+  { value: "last", label: "Last day", summary: "Monthly on the last day" },
+];
 
 export const storyCountOptions = ["5", "10", "20"];

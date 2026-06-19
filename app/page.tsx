@@ -10,6 +10,7 @@ import {
   Favourites,
   frequencyOptions,
   isFavouriteKey,
+  monthlyTimingOptions,
   normalisePreferences,
   normaliseFavourites,
   preferenceGroups,
@@ -17,6 +18,10 @@ import {
   STORAGE_KEY,
   storyCountOptions,
   toggleFavourite,
+  weeklyDayOptions,
+  DeliveryFrequency,
+  MonthlyTiming,
+  WeeklyDay,
 } from "./preferences";
 import { useEffect, useState } from "react";
 
@@ -33,6 +38,10 @@ function toggleSelection(current: string[], value: string): string[] {
   }
 
   return [...current, value];
+}
+
+function frequencyValue(option: string): DeliveryFrequency {
+  return option.toLowerCase() as DeliveryFrequency;
 }
 
 function HeartIcon({ filled }: { filled: boolean }) {
@@ -88,6 +97,41 @@ export default function Home() {
     }));
   }
 
+  function updateDeliveryFrequency(option: string) {
+    const nextFrequency = frequencyValue(option);
+
+    setPreferences((current) => ({
+      ...current,
+      frequency: option,
+      delivery: {
+        ...current.delivery,
+        frequency: nextFrequency,
+        weeklyDay: current.delivery.weeklyDay ?? "mon",
+        monthlyTiming: current.delivery.monthlyTiming ?? "first",
+      },
+    }));
+  }
+
+  function updateWeeklyDay(weeklyDay: WeeklyDay) {
+    setPreferences((current) => ({
+      ...current,
+      delivery: {
+        ...current.delivery,
+        weeklyDay,
+      },
+    }));
+  }
+
+  function updateMonthlyTiming(monthlyTiming: MonthlyTiming) {
+    setPreferences((current) => ({
+      ...current,
+      delivery: {
+        ...current.delivery,
+        monthlyTiming,
+      },
+    }));
+  }
+
   function buildFeed() {
     const latestPreferences = normalisePreferences(preferences);
     const latestFavourites = normaliseFavourites(favourites);
@@ -130,7 +174,7 @@ export default function Home() {
               Your Personalised 3D Printing News
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Choose the brands, model libraries, technologies, and story types
+              Choose the brands, model platforms, technologies, and story types
               you care about,
               then generate a focused 3D printing news feed.
             </p>
@@ -154,18 +198,51 @@ export default function Home() {
                             : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
                         ].join(" ")}
                         key={option}
-                        onClick={() =>
-                          setPreferences((current) => ({
-                            ...current,
-                            frequency: option,
-                          }))
-                        }
+                        onClick={() => updateDeliveryFrequency(option)}
                         type="button"
                       >
                         {option}
                       </button>
                     ))}
                   </div>
+                  {preferences.delivery.frequency === "weekly" ? (
+                    <div className="mt-3 grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+                      {weeklyDayOptions.map((option) => (
+                        <button
+                          className={[
+                            "min-h-9 rounded-md border px-2 text-center text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            preferences.delivery.weeklyDay === option.value
+                              ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
+                          ].join(" ")}
+                          key={option.value}
+                          onClick={() => updateWeeklyDay(option.value)}
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {preferences.delivery.frequency === "monthly" ? (
+                    <div className="mt-3 grid grid-cols-3 gap-1.5">
+                      {monthlyTimingOptions.map((option) => (
+                        <button
+                          className={[
+                            "min-h-9 rounded-md border px-2 text-center text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            preferences.delivery.monthlyTiming === option.value
+                              ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
+                          ].join(" ")}
+                          key={option.value}
+                          onClick={() => updateMonthlyTiming(option.value)}
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div>
@@ -278,8 +355,8 @@ export default function Home() {
                               className={[
                                 "absolute right-2 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                                 favourited
-                                  ? "text-blue-700 hover:bg-blue-100"
-                                  : "text-slate-400 hover:bg-white hover:text-blue-700",
+                                  ? "text-red-600 hover:bg-red-50"
+                                  : "text-slate-600 hover:bg-white hover:text-red-600",
                               ].join(" ")}
                               onClick={() => updateFavourite(favouriteKey, option)}
                               type="button"

@@ -10,10 +10,12 @@ import {
   FAVOURITES_KEY,
   Favourites,
   frequencyOptions,
+  monthlyTimingOptions,
   normalisePreferences,
   normaliseFavourites,
   Preferences,
   STORAGE_KEY,
+  weeklyDayOptions,
 } from "../preferences";
 
 const scoringKeywords: Record<string, string[]> = {
@@ -146,6 +148,60 @@ function MiniHeartIcon() {
   );
 }
 
+function deliverySummary(preferences: Preferences): string {
+  const { delivery } = preferences;
+
+  if (delivery.frequency === "weekly") {
+    const day =
+      weeklyDayOptions.find((option) => option.value === delivery.weeklyDay) ??
+      weeklyDayOptions[0];
+
+    return `Weekly on ${day.long}`;
+  }
+
+  if (delivery.frequency === "monthly") {
+    const timing =
+      monthlyTimingOptions.find(
+        (option) => option.value === delivery.monthlyTiming,
+      ) ?? monthlyTimingOptions[0];
+
+    return timing.summary;
+  }
+
+  return "Daily";
+}
+
+function FavouriteSection({
+  label,
+  values,
+}: {
+  label: string;
+  values: string[];
+}) {
+  if (!values.length) {
+    return null;
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {values.map((value) => (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-md border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700"
+            key={value}
+          >
+            <MiniHeartIcon />
+            {value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PreferenceSection({
   label,
   values,
@@ -189,7 +245,7 @@ function PreferenceSection({
                 <span className="inline-flex items-center gap-1.5">
                   {value} {counts[value] ?? 0}
                   {favourited ? (
-                    <span className="text-blue-700" title="Favourite">
+                    <span className="text-red-600" title="Favourite">
                       <MiniHeartIcon />
                     </span>
                   ) : null}
@@ -203,7 +259,7 @@ function PreferenceSection({
                 <span className="inline-flex items-center gap-1.5">
                   {value}
                   {favourited ? (
-                    <span className="text-blue-700" title="Favourite">
+                    <span className="text-red-600" title="Favourite">
                       <MiniHeartIcon />
                     </span>
                   ) : null}
@@ -539,7 +595,7 @@ export function FeedClient({
                   activeFocus={activeFocus?.label ?? null}
                   counts={focusCounts}
                   favouriteValues={favourites.models}
-                  label="Models"
+                  label="Model Platforms"
                   onToggleFocus={toggleFocus}
                   values={preferences.models}
                 />
@@ -572,9 +628,21 @@ export function FeedClient({
                   label="Delivery"
                   onToggleFocus={() => undefined}
                   values={[
-                    preferences.frequency,
+                    deliverySummary(preferences),
                     `${preferences.storiesPerUpdate} stories`,
                   ]}
+                />
+                <FavouriteSection
+                  label="Favourite Brands"
+                  values={favourites.brands}
+                />
+                <FavouriteSection
+                  label="Favourite Platforms"
+                  values={favourites.models}
+                />
+                <FavouriteSection
+                  label="Favourite Creators"
+                  values={favourites.creators}
                 />
               </div>
             </section>
