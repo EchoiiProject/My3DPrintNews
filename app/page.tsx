@@ -155,7 +155,7 @@ export default function Home() {
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
-                className="inline-flex min-h-14 items-center justify-center rounded-md bg-blue-600 px-7 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                className="inline-flex min-h-16 items-center justify-center rounded-md bg-blue-600 px-9 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/30 active:translate-y-px active:bg-blue-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                 onClick={buildFeed}
                 type="button"
               >

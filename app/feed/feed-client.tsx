@@ -216,26 +216,6 @@ export function FeedClient({
     }
   }, []);
 
-  const feedSummary = useMemo(() => {
-    const parts = [
-      preferences.brands.length
-        ? `${preferences.brands.join(", ")} brand coverage`
-        : "",
-      preferences.models.length
-        ? `${preferences.models.join(", ")} model monitoring`
-        : "",
-      preferences.creators.length
-        ? `${preferences.creators.join(", ")} creator videos`
-        : "",
-      preferences.topics.length ? `${preferences.topics.join(", ")} topics` : "",
-      preferences.technology.length
-        ? `${preferences.technology.join(", ")} technology`
-        : "",
-    ].filter(Boolean);
-
-    return parts.length ? parts.join(" with ") : "the latest general stories";
-  }, [preferences]);
-
   const scoredArticles = useMemo(() => {
     const scored = articles.map((article) => scoreArticle(article, preferences));
     const matched = scored.filter((article) => article.score > 0);
@@ -298,8 +278,8 @@ export function FeedClient({
             Your Personalised Feed
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            Stories are organised around {feedSummary}. Every card keeps source
-            attribution visible and links back to the original publisher.
+            Based on your feed preferences, here are the latest stories, videos
+            and updates from the brands, creators and platforms you follow.
           </p>
           <div className="mt-5">
             <Link
@@ -501,6 +481,17 @@ export function FeedClient({
                 </div>
               </div>
             ))}
+            <div className="pt-2">
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 bg-white/90 px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
+                type="button"
+              >
+                Back to Top
+              </button>
+            </div>
           </section>
         </div>
       </section>

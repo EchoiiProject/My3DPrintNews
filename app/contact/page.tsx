@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const reasons = [
   "General",
@@ -13,6 +13,17 @@ const reasons = [
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [reason, setReason] = useState("General");
+
+  useEffect(() => {
+    const queryReason = new URLSearchParams(window.location.search).get(
+      "reason",
+    );
+
+    if (queryReason === "publisher") {
+      setReason("Publisher request");
+    }
+  }, []);
 
   function submitContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,6 +108,8 @@ export default function ContactPage() {
                   className="mt-2 min-h-12 w-full rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="reason"
                   name="reason"
+                  onChange={(event) => setReason(event.target.value)}
+                  value={reason}
                 >
                   {reasons.map((reason) => (
                     <option key={reason}>{reason}</option>

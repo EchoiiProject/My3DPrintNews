@@ -75,6 +75,25 @@ export default function PublishersPage() {
             </div>
           </section>
         </div>
+
+        <section className="mb-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur sm:p-6">
+          <p className="text-sm font-semibold text-blue-700">
+            Publisher Support
+          </p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-950">
+            We want publishers to have full visibility and control.
+          </h2>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
+            For corrections, attribution updates, feed changes, removal
+            requests, or partnership discussions, please contact us directly.
+          </p>
+          <Link
+            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+            href="/contact?reason=publisher"
+          >
+            Contact Publisher Support
+          </Link>
+        </section>
       </section>
     </main>
   );
