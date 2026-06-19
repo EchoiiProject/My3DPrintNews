@@ -25,6 +25,9 @@ export default function PublishersPage() {
             <Link className="hover:text-blue-700" href="/feed">
               Feed
             </Link>
+            <Link className="hover:text-blue-700" href="/contact">
+              Contact
+            </Link>
           </div>
         </nav>
 

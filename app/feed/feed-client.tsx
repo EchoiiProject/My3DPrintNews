@@ -22,6 +22,11 @@ const scoringKeywords: Record<string, string[]> = {
   Reviews: ["review", "reviews", "tested", "hands-on", "benchmark"],
   Firmware: ["firmware", "software update", "input shaping"],
   Models: ["model", "models", "design", "printables", "makerworld"],
+  Printables: ["printables"],
+  MakerWorld: ["makerworld", "maker world"],
+  Thingiverse: ["thingiverse"],
+  Thangs: ["thangs"],
+  Cults3D: ["cults3d", "cults"],
   Materials: ["material", "materials", "filament", "pla", "petg", "nylon"],
   Accessories: ["accessory", "accessories", "upgrade", "hotend", "build plate"],
   Deals: ["deal", "deals", "discount", "sale", "bundle", "coupon"],
@@ -39,6 +44,14 @@ const brandTags: Record<string, string> = {
   Elegoo: "Elegoo",
   Anycubic: "Anycubic",
   Flashforge: "Flashforge",
+};
+
+const modelTags: Record<string, string> = {
+  Printables: "Printables",
+  MakerWorld: "MakerWorld",
+  Thingiverse: "Thingiverse",
+  Thangs: "Thangs",
+  Cults3D: "Cults3D",
 };
 
 const topicTags: Record<string, string> = {
@@ -79,14 +92,20 @@ function PreferenceSection({
         {label}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
-        {values.map((value) => (
-          <span
-            className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800"
-            key={value}
-          >
-            {value}
+        {values.length ? (
+          values.map((value) => (
+            <span
+              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800"
+              key={value}
+            >
+              {value}
+            </span>
+          ))
+        ) : (
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-500">
+            No selection
           </span>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -124,6 +143,9 @@ function selectedPreferenceTags(preferences: Preferences): string[] {
     ...preferences.brands
       .map((brand) => brandTags[brand])
       .filter((brand): brand is string => Boolean(brand)),
+    ...preferences.models
+      .map((model) => modelTags[model])
+      .filter((model): model is string => Boolean(model)),
     ...preferences.topics
       .map((topic) => topicTags[topic])
       .filter((topic): topic is string => Boolean(topic)),
@@ -177,11 +199,20 @@ export function FeedClient({
   }, []);
 
   const feedSummary = useMemo(() => {
-    return [
-      `${preferences.brands.join(", ") || "all brands"} brand coverage`,
-      `${preferences.models.join(", ") || "all model libraries"} model monitoring`,
-      `${preferences.topics.join(", ")} topics`,
-    ].join(" with ");
+    const parts = [
+      preferences.brands.length
+        ? `${preferences.brands.join(", ")} brand coverage`
+        : "",
+      preferences.models.length
+        ? `${preferences.models.join(", ")} model monitoring`
+        : "",
+      preferences.topics.length ? `${preferences.topics.join(", ")} topics` : "",
+      preferences.technology.length
+        ? `${preferences.technology.join(", ")} technology`
+        : "",
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(" with ") : "the latest general stories";
   }, [preferences]);
 
   const scoredArticles = useMemo(() => {
@@ -229,6 +260,9 @@ export function FeedClient({
             <Link className="hover:text-blue-700" href="/">
               Preferences
             </Link>
+            <Link className="hover:text-blue-700" href="/contact">
+              Contact
+            </Link>
             <Link className="hover:text-blue-700" href="/publishers">
               Publishers
             </Link>
@@ -246,6 +280,14 @@ export function FeedClient({
             Stories are organised around {feedSummary}. Every card keeps source
             attribution visible and links back to the original publisher.
           </p>
+          <div className="mt-7">
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+              href="/"
+            >
+              Edit my feed
+            </Link>
+          </div>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">

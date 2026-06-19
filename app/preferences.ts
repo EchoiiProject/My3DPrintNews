@@ -10,10 +10,10 @@ export type Preferences = {
 };
 
 export const defaultPreferences: Preferences = {
-  brands: ["Bambu Lab"],
-  models: ["Printables"],
-  topics: ["New Printers", "Reviews"],
-  technology: ["FDM / FFF"],
+  brands: [],
+  models: [],
+  topics: [],
+  technology: [],
   frequency: "Daily",
   storiesPerUpdate: "10",
 };
@@ -34,21 +34,37 @@ type SavedPreferences = Partial<Preferences> & {
   sources?: string[];
 };
 
+type ArrayPreferenceKey = "brands" | "models" | "topics" | "technology";
+
+function savedArray(
+  saved: SavedPreferences,
+  key: ArrayPreferenceKey,
+): string[] | undefined {
+  const value = saved[key];
+
+  return Object.prototype.hasOwnProperty.call(saved, key) &&
+    Array.isArray(value)
+    ? value
+    : undefined;
+}
+
 export function normalisePreferences(saved: SavedPreferences): Preferences {
   const legacyBrands =
     saved.printers?.map((printer) => printerBrands[printer] ?? printer) ?? [];
+  const savedBrands = savedArray(saved, "brands");
+  const savedModels = savedArray(saved, "models");
 
   return {
     ...defaultPreferences,
     ...saved,
-    brands: saved.brands?.length
-      ? saved.brands
+    brands: Array.isArray(savedBrands)
+      ? savedBrands
       : legacyBrands.length
         ? Array.from(new Set(legacyBrands))
         : defaultPreferences.brands,
-    models: saved.models?.length
-      ? saved.models
-      : saved.sources?.length
+    models: Array.isArray(savedModels)
+      ? savedModels
+      : saved.sources
         ? saved.sources
         : defaultPreferences.models,
   };

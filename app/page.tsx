@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import {
   defaultPreferences,
   frequencyOptions,
+  normalisePreferences,
   preferenceGroups,
   Preferences,
   STORAGE_KEY,
   storyCountOptions,
 } from "./preferences";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type MultiSelectKey = "brands" | "models" | "topics" | "technology";
 
@@ -27,6 +28,20 @@ export default function Home() {
   const [preferences, setPreferences] =
     useState<Preferences>(defaultPreferences);
 
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    if (!saved) {
+      return;
+    }
+
+    try {
+      setPreferences(normalisePreferences(JSON.parse(saved)));
+    } catch {
+      setPreferences(defaultPreferences);
+    }
+  }, []);
+
   function updateMultiSelect(key: MultiSelectKey, value: string) {
     setPreferences((current) => ({
       ...current,
@@ -35,7 +50,9 @@ export default function Home() {
   }
 
   function buildFeed() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    const latestPreferences = normalisePreferences(preferences);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(latestPreferences));
     router.push("/feed");
   }
 
@@ -77,11 +94,11 @@ export default function Home() {
                   <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     Frequency
                   </h2>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="mt-3 grid grid-cols-3 gap-1.5">
                     {frequencyOptions.map((option) => (
                       <button
                         className={[
-                          "min-h-11 rounded-md border px-3 text-center text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                          "min-h-10 rounded-md border px-2.5 text-center text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                           preferences.frequency === option
                             ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                             : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -105,11 +122,11 @@ export default function Home() {
                   <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     Stories
                   </h2>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="mt-3 grid grid-cols-3 gap-1.5">
                     {storyCountOptions.map((option) => (
                       <button
                         className={[
-                          "min-h-11 rounded-md border px-3 text-center text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                          "min-h-10 rounded-md border px-2.5 text-center text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                           preferences.storiesPerUpdate === option
                             ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                             : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -161,13 +178,13 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {preferenceGroups.map((group) => (
                 <div key={group.key}>
                   <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     {group.title}
                   </h3>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
                     {group.options.map((option) => {
                       const selected =
                         preferences[group.key as MultiSelectKey].includes(
@@ -177,7 +194,7 @@ export default function Home() {
                       return (
                         <button
                           className={[
-                            "min-h-12 rounded-md border px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            "min-h-10 rounded-md border px-3 py-2 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                             selected
                               ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
                               : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
@@ -201,6 +218,15 @@ export default function Home() {
             </div>
           </section>
         </div>
+
+        <footer className="flex flex-wrap items-center gap-4 border-t border-slate-200/80 py-5 text-sm font-medium text-slate-500">
+          <Link className="hover:text-blue-700" href="/contact">
+            Contact
+          </Link>
+          <Link className="hover:text-blue-700" href="/publishers">
+            Publishers
+          </Link>
+        </footer>
       </section>
     </main>
   );
