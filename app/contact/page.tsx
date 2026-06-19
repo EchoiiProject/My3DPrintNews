@@ -59,8 +59,10 @@ export default function ContactPage() {
       setStatus({
         tone: response.ok && result.ok ? "success" : "error",
         message:
-          result.message ??
-          "Something went wrong while preparing your message.",
+          response.ok && result.ok
+            ? "Thank you for contacting My3DPrintNews. Your message has been received."
+            : result.message ??
+              "Something went wrong while preparing your message.",
       });
     } catch {
       setStatus({
