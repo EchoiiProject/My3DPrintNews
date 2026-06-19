@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FooterLinks } from "./footer-links";
 import {
   defaultPreferences,
   frequencyOptions,
@@ -224,14 +225,7 @@ export default function Home() {
           </section>
         </div>
 
-        <footer className="flex flex-wrap items-center gap-4 border-t border-slate-200/80 py-5 text-sm font-medium text-slate-500">
-          <Link className="hover:text-blue-700" href="/contact">
-            Contact
-          </Link>
-          <Link className="hover:text-blue-700" href="/publishers">
-            Publishers
-          </Link>
-        </footer>
+        <FooterLinks />
       </section>
     </main>
   );

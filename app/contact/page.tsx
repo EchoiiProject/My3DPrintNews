@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { FooterLinks } from "../footer-links";
 
 const reasons = [
   "General",
@@ -12,7 +13,11 @@ const reasons = [
 ];
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState("General");
 
   useEffect(() => {
@@ -25,9 +30,46 @@ export default function ContactPage() {
     }
   }, []);
 
-  function submitContact(event: FormEvent<HTMLFormElement>) {
+  async function submitContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    setSubmitting(true);
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          reason: formData.get("reason"),
+          message: formData.get("message"),
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+      };
+
+      setStatus({
+        tone: response.ok && result.ok ? "success" : "error",
+        message:
+          result.message ??
+          "Something went wrong while preparing your message.",
+      });
+    } catch {
+      setStatus({
+        tone: "error",
+        message: "Something went wrong while preparing your message.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -78,6 +120,7 @@ export default function ContactPage() {
                   className="mt-2 min-h-12 w-full rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="name"
                   name="name"
+                  required
                   type="text"
                 />
               </div>
@@ -93,6 +136,7 @@ export default function ContactPage() {
                   className="mt-2 min-h-12 w-full rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="email"
                   name="email"
+                  required
                   type="email"
                 />
               </div>
@@ -128,25 +172,35 @@ export default function ContactPage() {
                   className="mt-2 min-h-36 w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="message"
                   name="message"
+                  required
                 />
               </div>
 
               <button
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                disabled={submitting}
                 type="submit"
               >
-                Submit
+                {submitting ? "Preparing..." : "Submit"}
               </button>
 
-              {submitted ? (
-                <p className="rounded-md bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-900">
-                  Thanks — your message has been prepared. Email sending will be
-                  connected in a later sprint.
+              {status ? (
+                <p
+                  className={[
+                    "rounded-md px-4 py-3 text-sm font-semibold leading-6",
+                    status.tone === "success"
+                      ? "bg-blue-50 text-blue-900"
+                      : "bg-red-50 text-red-800",
+                  ].join(" ")}
+                >
+                  {status.message}
                 </p>
               ) : null}
             </form>
           </section>
         </div>
+
+        <FooterLinks />
       </section>
     </main>
   );

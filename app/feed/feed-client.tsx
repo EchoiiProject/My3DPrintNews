@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Article } from "@/lib/rss";
+import { FooterLinks } from "../footer-links";
 import {
   defaultPreferences,
   frequencyOptions,
@@ -682,6 +683,8 @@ export function FeedClient({
             </div>
           </section>
         </div>
+
+        <FooterLinks />
       </section>
     </main>
   );

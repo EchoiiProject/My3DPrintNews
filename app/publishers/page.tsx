@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FooterLinks } from "../footer-links";
 
 const publisherPrinciples = [
   "We aggregate RSS feeds.",
@@ -94,6 +95,8 @@ export default function PublishersPage() {
             Contact Publisher Support
           </Link>
         </section>
+
+        <FooterLinks />
       </section>
     </main>
   );
