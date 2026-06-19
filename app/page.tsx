@@ -13,7 +13,12 @@ import {
 } from "./preferences";
 import { useEffect, useState } from "react";
 
-type MultiSelectKey = "brands" | "models" | "topics" | "technology";
+type MultiSelectKey =
+  | "brands"
+  | "models"
+  | "creators"
+  | "topics"
+  | "technology";
 
 function toggleSelection(current: string[], value: string): string[] {
   if (current.includes(value)) {

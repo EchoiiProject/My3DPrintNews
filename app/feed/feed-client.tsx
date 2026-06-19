@@ -18,6 +18,12 @@ const scoringKeywords: Record<string, string[]> = {
   Elegoo: ["elegoo"],
   Anycubic: ["anycubic"],
   Flashforge: ["flashforge"],
+  "Maker's Muse": ["maker's muse", "makers muse"],
+  "CNC Kitchen": ["cnc kitchen"],
+  "3D Printing Nerd": ["3d printing nerd"],
+  "Teaching Tech": ["teaching tech"],
+  "Thomas Sanladerer": ["thomas sanladerer", "toms3d"],
+  "Aurora Tech": ["aurora tech"],
   "New Printers": ["new printer", "launch", "announces", "released", "debut"],
   Reviews: ["review", "reviews", "tested", "hands-on", "benchmark"],
   Firmware: ["firmware", "software update", "input shaping"],
@@ -52,6 +58,15 @@ const modelTags: Record<string, string> = {
   Thingiverse: "Thingiverse",
   Thangs: "Thangs",
   Cults3D: "Cults3D",
+};
+
+const creatorTags: Record<string, string> = {
+  "Maker's Muse": "Maker's Muse",
+  "CNC Kitchen": "CNC Kitchen",
+  "3D Printing Nerd": "3D Printing Nerd",
+  "Teaching Tech": "Teaching Tech",
+  "Thomas Sanladerer": "Thomas Sanladerer",
+  "Aurora Tech": "Aurora Tech",
 };
 
 const topicTags: Record<string, string> = {
@@ -124,7 +139,7 @@ function unique(values: string[]): string[] {
 }
 
 function generateArticleTags(article: Article): string[] {
-  const text = [article.title, article.summary, ...article.tags]
+  const text = [article.title, article.summary, article.source, ...article.tags]
     .join(" ")
     .toLowerCase();
 
@@ -146,6 +161,9 @@ function selectedPreferenceTags(preferences: Preferences): string[] {
     ...preferences.models
       .map((model) => modelTags[model])
       .filter((model): model is string => Boolean(model)),
+    ...preferences.creators
+      .map((creator) => creatorTags[creator])
+      .filter((creator): creator is string => Boolean(creator)),
     ...preferences.topics
       .map((topic) => topicTags[topic])
       .filter((topic): topic is string => Boolean(topic)),
@@ -205,6 +223,9 @@ export function FeedClient({
         : "",
       preferences.models.length
         ? `${preferences.models.join(", ")} model monitoring`
+        : "",
+      preferences.creators.length
+        ? `${preferences.creators.join(", ")} creator videos`
         : "",
       preferences.topics.length ? `${preferences.topics.join(", ")} topics` : "",
       preferences.technology.length
@@ -311,6 +332,10 @@ export function FeedClient({
                   label="Models"
                   values={preferences.models}
                 />
+                <PreferenceSection
+                  label="Creators"
+                  values={preferences.creators}
+                />
                 <PreferenceSection label="Topics" values={preferences.topics} />
                 <PreferenceSection
                   label="Technology"
@@ -408,17 +433,26 @@ export function FeedClient({
                         </div>
                       ) : null}
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-                          {scoredArticle.article.source} /{" "}
-                          {formatDate(scoredArticle.article.publishedAt)}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {scoredArticle.article.type === "video" ? (
+                            <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                              Video
+                            </span>
+                          ) : null}
+                          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
+                            {scoredArticle.article.source} /{" "}
+                            {formatDate(scoredArticle.article.publishedAt)}
+                          </p>
+                        </div>
                         <a
                           className="text-sm font-bold text-blue-700 hover:text-blue-900"
                           href={scoredArticle.article.link}
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Read original article
+                          {scoredArticle.article.type === "video"
+                            ? "Watch on YouTube"
+                            : "Read original article"}
                         </a>
                       </div>
                       <h3 className="mt-3 text-2xl font-bold leading-8 text-slate-950">

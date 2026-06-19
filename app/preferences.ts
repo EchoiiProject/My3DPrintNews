@@ -3,6 +3,7 @@ export const STORAGE_KEY = "my3dprintnews-preferences";
 export type Preferences = {
   brands: string[];
   models: string[];
+  creators: string[];
   topics: string[];
   technology: string[];
   frequency: string;
@@ -12,6 +13,7 @@ export type Preferences = {
 export const defaultPreferences: Preferences = {
   brands: [],
   models: [],
+  creators: [],
   topics: [],
   technology: [],
   frequency: "Daily",
@@ -34,7 +36,12 @@ type SavedPreferences = Partial<Preferences> & {
   sources?: string[];
 };
 
-type ArrayPreferenceKey = "brands" | "models" | "topics" | "technology";
+type ArrayPreferenceKey =
+  | "brands"
+  | "models"
+  | "creators"
+  | "topics"
+  | "technology";
 
 function savedArray(
   saved: SavedPreferences,
@@ -53,6 +60,7 @@ export function normalisePreferences(saved: SavedPreferences): Preferences {
     saved.printers?.map((printer) => printerBrands[printer] ?? printer) ?? [];
   const savedBrands = savedArray(saved, "brands");
   const savedModels = savedArray(saved, "models");
+  const savedCreators = savedArray(saved, "creators");
 
   return {
     ...defaultPreferences,
@@ -67,6 +75,9 @@ export function normalisePreferences(saved: SavedPreferences): Preferences {
       : saved.sources
         ? saved.sources
         : defaultPreferences.models,
+    creators: Array.isArray(savedCreators)
+      ? savedCreators
+      : defaultPreferences.creators,
   };
 }
 
@@ -92,6 +103,18 @@ export const preferenceGroups = [
       "Thingiverse",
       "Thangs",
       "Cults3D",
+    ],
+  },
+  {
+    key: "creators",
+    title: "Creators",
+    options: [
+      "Maker's Muse",
+      "CNC Kitchen",
+      "3D Printing Nerd",
+      "Teaching Tech",
+      "Thomas Sanladerer",
+      "Aurora Tech",
     ],
   },
   {
