@@ -24,6 +24,7 @@ import {
   normaliseFavourites,
   Preferences,
   STORAGE_KEY,
+  toggleFavourite,
   weeklyDayOptions,
 } from "../preferences";
 
@@ -33,6 +34,23 @@ function MiniHeartIcon() {
       aria-hidden="true"
       className="h-3 w-3"
       fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6Z" />
+    </svg>
+  );
+}
+
+function SourceHeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
       viewBox="0 0 24 24"
     >
       <path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6Z" />
@@ -371,6 +389,15 @@ export function FeedClient({
     }
   }
 
+  function toggleSourceFavourite(source: string) {
+    setFavourites((current) => {
+      const updated = toggleFavourite(current, "sources", source);
+
+      localStorage.setItem(FAVOURITES_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto w-full max-w-7xl px-6 py-6 sm:px-8 lg:px-12">
@@ -438,7 +465,7 @@ export function FeedClient({
                 <PreferenceSection
                   activeFocus={activeFocus?.label ?? null}
                   counts={focusCounts}
-                  favouriteValues={favourites.models}
+                  favouriteValues={favourites.modelPlatforms}
                   label="Model Platforms"
                   onToggleFocus={toggleFocus}
                   values={preferences.models}
@@ -482,11 +509,15 @@ export function FeedClient({
                 />
                 <FavouriteSection
                   label="Favourite Platforms"
-                  values={favourites.models}
+                  values={favourites.modelPlatforms}
                 />
                 <FavouriteSection
                   label="Favourite Creators"
                   values={favourites.creators}
+                />
+                <FavouriteSection
+                  label="Favourite Sources"
+                  values={favourites.sources}
                 />
               </div>
             </section>
@@ -631,6 +662,36 @@ export function FeedClient({
                             {"\u2022"}{" "}
                             {formatDate(scoredArticle.article.publishedAt)}
                           </p>
+                          <button
+                            aria-label={
+                              favourites.sources.includes(
+                                scoredArticle.article.source,
+                              )
+                                ? `Remove ${scoredArticle.article.source} from favourite sources`
+                                : `Add ${scoredArticle.article.source} to favourite sources`
+                            }
+                            aria-pressed={favourites.sources.includes(
+                              scoredArticle.article.source,
+                            )}
+                            className={[
+                              "inline-flex h-7 w-7 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                              favourites.sources.includes(
+                                scoredArticle.article.source,
+                              )
+                                ? "text-red-600 hover:bg-red-50"
+                                : "text-slate-600 hover:bg-white hover:text-red-600",
+                            ].join(" ")}
+                            onClick={() =>
+                              toggleSourceFavourite(scoredArticle.article.source)
+                            }
+                            type="button"
+                          >
+                            <SourceHeartIcon
+                              filled={favourites.sources.includes(
+                                scoredArticle.article.source,
+                              )}
+                            />
+                          </button>
                         </div>
                         <a
                           className="text-sm font-bold text-blue-700 hover:text-blue-900"

@@ -10,7 +10,7 @@ import {
   FAVOURITES_KEY,
   Favourites,
   frequencyOptions,
-  isFavouriteKey,
+  favouriteKeyForPreferenceGroup,
   monthlyTimingOptions,
   normalisePreferences,
   normaliseFavourites,
@@ -207,11 +207,11 @@ export default function Home() {
                     ))}
                   </div>
                   {preferences.delivery.frequency === "weekly" ? (
-                    <div className="mt-3 grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {weeklyDayOptions.map((option) => (
                         <button
                           className={[
-                            "min-h-9 rounded-md border px-2 text-center text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            "min-h-9 min-w-12 rounded-md border px-2 text-center text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                             preferences.delivery.weeklyDay === option.value
                               ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                               : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -226,11 +226,11 @@ export default function Home() {
                     </div>
                   ) : null}
                   {preferences.delivery.frequency === "monthly" ? (
-                    <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {monthlyTimingOptions.map((option) => (
                         <button
                           className={[
-                            "min-h-9 rounded-md border px-2 text-center text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            "min-h-9 min-w-20 rounded-md border px-3 text-center text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                             preferences.delivery.monthlyTiming === option.value
                               ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200"
                               : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
@@ -314,9 +314,9 @@ export default function Home() {
                   </h3>
                   <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
                     {group.options.map((option) => {
-                      const favouriteKey = isFavouriteKey(group.key)
-                        ? group.key
-                        : null;
+                      const favouriteKey = favouriteKeyForPreferenceGroup(
+                        group.key,
+                      );
                       const selected =
                         preferences[group.key as MultiSelectKey].includes(
                           option,

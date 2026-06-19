@@ -17,6 +17,7 @@ export type {
 export {
   defaultFavourites,
   FAVOURITES_KEY,
+  favouriteKeyForPreferenceGroup,
   favouriteBoostValues,
   isFavouriteKey,
   normaliseFavourites,
