@@ -396,6 +396,17 @@ export function FeedClient({
                       className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40"
                       key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
                     >
+                      {scoredArticle.article.imageUrl ? (
+                        <div className="mb-5 overflow-hidden rounded-md border border-slate-100 bg-slate-50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            alt={scoredArticle.article.title}
+                            className="h-48 w-full object-cover"
+                            loading="lazy"
+                            src={scoredArticle.article.imageUrl}
+                          />
+                        </div>
+                      ) : null}
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
                           {scoredArticle.article.source} /{" "}
