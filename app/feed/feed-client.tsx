@@ -94,12 +94,25 @@ type ScoredArticle = {
   score: number;
 };
 
+type FocusFilter = {
+  label: string;
+  tag: string;
+};
+
 function PreferenceSection({
   label,
   values,
+  activeFocus,
+  counts,
+  focusable = true,
+  onToggleFocus,
 }: {
   label: string;
   values: string[];
+  activeFocus: string | null;
+  counts: Record<string, number>;
+  focusable?: boolean;
+  onToggleFocus: (filter: FocusFilter) => void;
 }) {
   return (
     <div>
@@ -108,14 +121,34 @@ function PreferenceSection({
       </p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {values.length ? (
-          values.map((value) => (
-            <span
-              className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800"
-              key={value}
-            >
-              {value}
-            </span>
-          ))
+          values.map((value) => {
+            const active = activeFocus === value;
+
+            return focusable ? (
+              <button
+                className={[
+                  "rounded-md border px-2.5 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                  active
+                    ? "border-blue-500 bg-blue-600 text-white"
+                    : "border-blue-100 bg-blue-50 text-blue-800 hover:border-blue-200 hover:bg-white",
+                ].join(" ")}
+                key={value}
+                onClick={() =>
+                  onToggleFocus({ label: value, tag: value })
+                }
+                type="button"
+              >
+                {value} {counts[value] ?? 0}
+              </button>
+            ) : (
+              <span
+                className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800"
+                key={value}
+              >
+                {value}
+              </span>
+            );
+          })
         ) : (
           <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
             No selection
@@ -173,6 +206,31 @@ function selectedPreferenceTags(preferences: Preferences): string[] {
   ]);
 }
 
+function preferenceFocusFilters(preferences: Preferences): FocusFilter[] {
+  return [
+    ...preferences.brands.map((brand) => ({
+      label: brand,
+      tag: brandTags[brand] ?? brand,
+    })),
+    ...preferences.models.map((model) => ({
+      label: model,
+      tag: modelTags[model] ?? model,
+    })),
+    ...preferences.creators.map((creator) => ({
+      label: creator,
+      tag: creatorTags[creator] ?? creator,
+    })),
+    ...preferences.topics.map((topic) => ({
+      label: topic,
+      tag: topicTags[topic] ?? topic,
+    })),
+    ...preferences.technology.map((technology) => ({
+      label: technology,
+      tag: technologyTags[technology] ?? technology,
+    })),
+  ];
+}
+
 function scoreArticle(
   article: Article,
   preferences: Preferences,
@@ -201,6 +259,7 @@ export function FeedClient({
   const [preferences, setPreferences] =
     useState<Preferences>(defaultPreferences);
   const [emailFrequency, setEmailFrequency] = useState("Weekly");
+  const [activeFocus, setActiveFocus] = useState<FocusFilter | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -233,8 +292,30 @@ export function FeedClient({
     return sorted.slice(0, Number(preferences.storiesPerUpdate));
   }, [articles, preferences]);
 
+  const focusCounts = useMemo(() => {
+    const filters = preferenceFocusFilters(preferences);
+
+    return filters.reduce<Record<string, number>>((counts, filter) => {
+      counts[filter.label] = scoredArticles.filter((scoredArticle) =>
+        scoredArticle.generatedTags.includes(filter.tag),
+      ).length;
+
+      return counts;
+    }, {});
+  }, [preferences, scoredArticles]);
+
+  const focusedArticles = useMemo(() => {
+    if (!activeFocus) {
+      return scoredArticles;
+    }
+
+    return scoredArticles.filter((scoredArticle) =>
+      scoredArticle.generatedTags.includes(activeFocus.tag),
+    );
+  }, [activeFocus, scoredArticles]);
+
   const groupedArticles = useMemo(() => {
-    return scoredArticles.reduce<Record<string, ScoredArticle[]>>(
+    return focusedArticles.reduce<Record<string, ScoredArticle[]>>(
       (groups, scoredArticle) => {
         const groupName = scoredArticle.score > 0
           ? "Matched to your preferences"
@@ -245,7 +326,13 @@ export function FeedClient({
       },
       {},
     );
-  }, [scoredArticles]);
+  }, [focusedArticles]);
+
+  function toggleFocus(filter: FocusFilter) {
+    setActiveFocus((current) =>
+      current?.label === filter.label ? null : filter,
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
@@ -305,24 +392,46 @@ export function FeedClient({
 
               <div className="space-y-3">
                 <PreferenceSection
+                  activeFocus={activeFocus?.label ?? null}
+                  counts={focusCounts}
                   label="Brands"
+                  onToggleFocus={toggleFocus}
                   values={preferences.brands}
                 />
                 <PreferenceSection
+                  activeFocus={activeFocus?.label ?? null}
+                  counts={focusCounts}
                   label="Models"
+                  onToggleFocus={toggleFocus}
                   values={preferences.models}
                 />
                 <PreferenceSection
+                  activeFocus={activeFocus?.label ?? null}
+                  counts={focusCounts}
                   label="Creators"
+                  onToggleFocus={toggleFocus}
                   values={preferences.creators}
                 />
-                <PreferenceSection label="Topics" values={preferences.topics} />
                 <PreferenceSection
+                  activeFocus={activeFocus?.label ?? null}
+                  counts={focusCounts}
+                  label="Topics"
+                  onToggleFocus={toggleFocus}
+                  values={preferences.topics}
+                />
+                <PreferenceSection
+                  activeFocus={activeFocus?.label ?? null}
+                  counts={focusCounts}
                   label="Technology"
+                  onToggleFocus={toggleFocus}
                   values={preferences.technology}
                 />
                 <PreferenceSection
+                  activeFocus={null}
+                  counts={{}}
+                  focusable={false}
                   label="Delivery"
+                  onToggleFocus={() => undefined}
                   values={[
                     preferences.frequency,
                     `${preferences.storiesPerUpdate} stories`,
@@ -384,6 +493,20 @@ export function FeedClient({
           </aside>
 
           <section className="space-y-5" aria-label="Personalised stories">
+            {activeFocus ? (
+              <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-bold text-blue-950">
+                  Focused on {activeFocus.label}
+                </h2>
+                <button
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-800 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                  onClick={() => setActiveFocus(null)}
+                  type="button"
+                >
+                  Clear Focus
+                </button>
+              </div>
+            ) : null}
             {Object.entries(groupedArticles).map(([category, stories]) => (
               <div key={category}>
                 <div className="mb-3 flex items-center justify-between">
