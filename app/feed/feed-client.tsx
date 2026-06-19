@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Article } from "@/lib/rss";
 import { FooterLinks } from "../footer-links";
 import {
@@ -426,18 +426,33 @@ function sortByPublishedDateDesc(a: ScoredArticle, b: ScoredArticle): number {
 export function FeedClient({
   articles,
   usingFallback,
+  initialPreferences = defaultPreferences,
+  initialFavourites = defaultFavourites,
+  readLocalStorage = true,
 }: {
   articles: Article[];
   usingFallback: boolean;
+  initialPreferences?: Preferences;
+  initialFavourites?: Favourites;
+  readLocalStorage?: boolean;
 }) {
   const [preferences, setPreferences] =
-    useState<Preferences>(defaultPreferences);
+    useState<Preferences>(initialPreferences);
   const [favourites, setFavourites] =
-    useState<Favourites>(defaultFavourites);
+    useState<Favourites>(initialFavourites);
   const [emailFrequency, setEmailFrequency] = useState("Weekly");
+  const [newsletterStatus, setNewsletterStatus] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
   const [activeFocus, setActiveFocus] = useState<FocusFilter | null>(null);
 
   useEffect(() => {
+    if (!readLocalStorage) {
+      return;
+    }
+
     const saved = localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
@@ -471,7 +486,7 @@ export function FeedClient({
     } catch {
       setFavourites(defaultFavourites);
     }
-  }, []);
+  }, [readLocalStorage]);
 
   const scoredArticles = useMemo(() => {
     const scored = articles.map((article, index) =>
@@ -524,6 +539,49 @@ export function FeedClient({
     setActiveFocus((current) =>
       current?.label === filter.label ? null : filter,
     );
+  }
+
+  async function submitNewsletter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("newsletter-email");
+
+    setNewsletterStatus(null);
+    setNewsletterSubmitting(true);
+
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          preferences,
+          favourites,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        savedFeedPath?: string;
+      };
+
+      setNewsletterStatus({
+        tone: response.ok && result.ok ? "success" : "error",
+        message:
+          result.message ??
+          "Newsletter signup could not be saved right now.",
+      });
+    } catch {
+      setNewsletterStatus({
+        tone: "error",
+        message: "Newsletter signup could not be saved right now.",
+      });
+    } finally {
+      setNewsletterSubmitting(false);
+    }
   }
 
   return (
@@ -672,7 +730,7 @@ export function FeedClient({
                 ))}
               </div>
 
-              <form className="mt-4 space-y-2.5">
+              <form className="mt-4 space-y-2.5" onSubmit={submitNewsletter}>
                 <label
                   className="block text-sm font-bold text-slate-700"
                   htmlFor="newsletter-email"
@@ -682,19 +740,32 @@ export function FeedClient({
                 <input
                   className="min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="newsletter-email"
+                  name="newsletter-email"
                   placeholder="you@example.com"
+                  required
                   type="email"
                 />
                 <button
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-                  type="button"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                  disabled={newsletterSubmitting}
+                  type="submit"
                 >
-                  Sign up for {emailFrequency.toLowerCase()} updates
+                  {newsletterSubmitting
+                    ? "Saving..."
+                    : `Sign up for ${emailFrequency.toLowerCase()} updates`}
                 </button>
-                <p className="text-xs leading-5 text-slate-500">
-                  UI only for now. Backend delivery and subscription management
-                  will be wired in a later sprint.
-                </p>
+                {newsletterStatus ? (
+                  <p
+                    className={[
+                      "rounded-md px-3 py-2 text-xs font-semibold leading-5",
+                      newsletterStatus.tone === "success"
+                        ? "bg-blue-50 text-blue-900"
+                        : "bg-red-50 text-red-800",
+                    ].join(" ")}
+                  >
+                    {newsletterStatus.message}
+                  </p>
+                ) : null}
               </form>
             </section>
           </aside>
