@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { appConfig } from "../app.config";
 import { FooterLinks } from "./footer-links";
 import {
   defaultFavourites,
@@ -158,20 +159,20 @@ export default function Home() {
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            {appConfig.name}
           </Link>
         </nav>
 
         <div className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-12">
           <div className="max-w-3xl lg:sticky lg:top-6">
             <p className="mb-5 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-              Personalised additive manufacturing intelligence
+              {appConfig.onboardingBadge}
             </p>
             <h1 className="text-5xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl lg:text-7xl">
-              My3DPrintNews
+              {appConfig.name}
             </h1>
             <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-700 sm:text-2xl">
-              Your Personalised 3D Printing News
+              {appConfig.tagline}
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Choose the brands, model platforms, technologies, and story types

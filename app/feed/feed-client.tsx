@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { appConfig } from "../../app.config";
 import type { Article } from "@/lib/rss";
+import {
+  matchesFocus,
+  preferenceFocusFilters,
+  scoreArticle,
+  selectedPreferenceTags,
+  type FocusFilter,
+  type ScoredArticle,
+} from "@/lib/matching";
 import { FooterLinks } from "../footer-links";
 import {
   defaultFavourites,
@@ -17,123 +26,6 @@ import {
   STORAGE_KEY,
   weeklyDayOptions,
 } from "../preferences";
-
-const scoringKeywords: Record<string, string[]> = {
-  Bambu: ["bambu", "x1 carbon", "p1s", "a1 mini", "bambu a1"],
-  Prusa: ["prusa", "mk4s", "prusa xl"],
-  Creality: ["creality", "k1", "k2 plus"],
-  Elegoo: ["elegoo"],
-  Anycubic: ["anycubic"],
-  Flashforge: ["flashforge"],
-  "Maker's Muse": ["maker's muse", "makers muse"],
-  "CNC Kitchen": ["cnc kitchen"],
-  "3D Printing Nerd": ["3d printing nerd"],
-  "Teaching Tech": ["teaching tech"],
-  "Thomas Sanladerer": ["thomas sanladerer", "toms3d"],
-  "Aurora Tech": ["aurora tech"],
-  "New Printers": ["new printer", "launch", "announces", "released", "debut"],
-  Reviews: ["review", "reviews", "tested", "hands-on", "benchmark"],
-  Firmware: ["firmware", "software update", "input shaping"],
-  Models: ["model", "models", "design", "printables", "makerworld"],
-  Printables: ["printables"],
-  MakerWorld: ["makerworld", "maker world"],
-  Thingiverse: ["thingiverse"],
-  Thangs: ["thangs"],
-  Cults3D: ["cults3d", "cults"],
-  Materials: ["material", "materials", "filament", "pla", "petg", "nylon"],
-  Accessories: ["accessory", "accessories", "upgrade", "hotend", "build plate"],
-  Deals: ["deal", "deals", "discount", "sale", "bundle", "coupon"],
-  Tutorials: ["tutorial", "tutorials", "guide", "how to", "calibration"],
-  FDM: ["fdm", "fff", "filament"],
-  Resin: ["resin", "sla", "msla", "dlp"],
-  SLS: ["sls", "mjf", "powder bed"],
-  Industrial: ["industrial", "professional", "production", "service bureau"],
-};
-
-const brandTags: Record<string, string> = {
-  "Bambu Lab": "Bambu",
-  "Prusa Research": "Prusa",
-  Creality: "Creality",
-  Elegoo: "Elegoo",
-  Anycubic: "Anycubic",
-  Flashforge: "Flashforge",
-};
-
-const modelTags: Record<string, string> = {
-  Printables: "Printables",
-  MakerWorld: "MakerWorld",
-  Thingiverse: "Thingiverse",
-  Thangs: "Thangs",
-  Cults3D: "Cults3D",
-};
-
-const creatorTags: Record<string, string> = {
-  "Maker's Muse": "Maker's Muse",
-  "CNC Kitchen": "CNC Kitchen",
-  "3D Printing Nerd": "3D Printing Nerd",
-  "Teaching Tech": "Teaching Tech",
-  "Thomas Sanladerer": "Thomas Sanladerer",
-  "Aurora Tech": "Aurora Tech",
-};
-
-const topicTags: Record<string, string> = {
-  "New Printers": "New Printers",
-  Reviews: "Reviews",
-  "Firmware Updates": "Firmware",
-  "3D Models / Designs": "Models",
-  "Filament & Materials": "Materials",
-  Accessories: "Accessories",
-  "Deals & Discounts": "Deals",
-  "Tutorials & Guides": "Tutorials",
-};
-
-const technologyTags: Record<string, string> = {
-  "FDM / FFF": "FDM",
-  Resin: "Resin",
-  "SLS / MJF": "SLS",
-  "Industrial / Professional": "Industrial",
-};
-
-const focusTagAliases: Record<string, string> = {
-  "3d models designs": "models",
-  "3d models": "models",
-  designs: "models",
-  design: "models",
-  model: "models",
-  firmwareupdates: "firmware",
-  "firmware updates": "firmware",
-  "filament materials": "materials",
-  filament: "materials",
-  material: "materials",
-  "deals discounts": "deals",
-  discounts: "deals",
-  "tutorials guides": "tutorials",
-  guides: "tutorials",
-  "fdm fff": "fdm",
-  fff: "fdm",
-  "sls mjf": "sls",
-  mjf: "sls",
-  "industrial professional": "industrial",
-  professional: "industrial",
-  "bambu lab": "bambu",
-  "prusa research": "prusa",
-  "maker world": "makerworld",
-  cults: "cults3d",
-  "makers muse": "maker's muse",
-};
-
-type ScoredArticle = {
-  article: Article;
-  generatedTags: string[];
-  matchedBecause: string[];
-  originalIndex: number;
-  score: number;
-};
-
-type FocusFilter = {
-  label: string;
-  tag: string;
-};
 
 function MiniHeartIcon() {
   return (
@@ -297,111 +189,6 @@ function formatDate(value: string): string {
   })
     .format(new Date(timestamp))
     .toUpperCase();
-}
-
-function unique(values: string[]): string[] {
-  return Array.from(new Set(values));
-}
-
-function normaliseTag(value: string): string {
-  const normalized = value
-    .toLowerCase()
-    .replace(/&/g, " ")
-    .replace(/\//g, " ")
-    .replace(/[^a-z0-9']+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-
-  return focusTagAliases[normalized] ?? normalized;
-}
-
-function generateArticleTags(article: Article): string[] {
-  const text = [article.title, article.summary, article.source, ...article.tags]
-    .join(" ")
-    .toLowerCase();
-
-  return unique([
-    ...article.tags,
-    ...Object.entries(scoringKeywords)
-      .filter(([, keywords]) =>
-        keywords.some((keyword) => text.includes(keyword)),
-      )
-      .map(([tag]) => tag),
-  ]);
-}
-
-function selectedPreferenceTags(preferences: Preferences): string[] {
-  return unique([
-    ...preferences.brands
-      .map((brand) => brandTags[brand])
-      .filter((brand): brand is string => Boolean(brand)),
-    ...preferences.models
-      .map((model) => modelTags[model])
-      .filter((model): model is string => Boolean(model)),
-    ...preferences.creators
-      .map((creator) => creatorTags[creator])
-      .filter((creator): creator is string => Boolean(creator)),
-    ...preferences.topics
-      .map((topic) => topicTags[topic])
-      .filter((topic): topic is string => Boolean(topic)),
-    ...preferences.technology
-      .map((technology) => technologyTags[technology])
-      .filter((technology): technology is string => Boolean(technology)),
-  ]);
-}
-
-function preferenceFocusFilters(preferences: Preferences): FocusFilter[] {
-  return [
-    ...preferences.brands.map((brand) => ({
-      label: brand,
-      tag: brandTags[brand] ?? brand,
-    })),
-    ...preferences.models.map((model) => ({
-      label: model,
-      tag: modelTags[model] ?? model,
-    })),
-    ...preferences.creators.map((creator) => ({
-      label: creator,
-      tag: creatorTags[creator] ?? creator,
-    })),
-    ...preferences.topics.map((topic) => ({
-      label: topic,
-      tag: topicTags[topic] ?? topic,
-    })),
-    ...preferences.technology.map((technology) => ({
-      label: technology,
-      tag: technologyTags[technology] ?? technology,
-    })),
-  ];
-}
-
-function matchesFocus(scoredArticle: ScoredArticle, filter: FocusFilter) {
-  const filterTag = normaliseTag(filter.tag);
-
-  return scoredArticle.generatedTags.some(
-    (tag) => normaliseTag(tag) === filterTag,
-  );
-}
-
-function scoreArticle(
-  article: Article,
-  preferences: Preferences,
-  originalIndex: number,
-): ScoredArticle {
-  const generatedTags = generateArticleTags(article);
-  const selectedTags = selectedPreferenceTags(preferences);
-  const normalizedGeneratedTags = generatedTags.map((tag) => normaliseTag(tag));
-  const matchedBecause = selectedTags.filter((tag) =>
-    normalizedGeneratedTags.includes(normaliseTag(tag)),
-  );
-
-  return {
-    article,
-    generatedTags,
-    matchedBecause,
-    originalIndex,
-    score: matchedBecause.length,
-  };
 }
 
 function sortByPublishedDateDesc(a: ScoredArticle, b: ScoredArticle): number {
@@ -592,7 +379,7 @@ export function FeedClient({
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            {appConfig.name}
           </Link>
           <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
             <Link className="hover:text-blue-700" href="/">
@@ -615,8 +402,7 @@ export function FeedClient({
             Your Personalised Feed
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            Based on your feed preferences, here are the latest stories, videos
-            and updates from the brands, creators and platforms you follow.
+            {appConfig.feedIntro}
           </p>
           <div className="mt-5">
             <Link

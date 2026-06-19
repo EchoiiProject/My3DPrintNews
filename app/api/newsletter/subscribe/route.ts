@@ -1,6 +1,6 @@
-import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import { isValidEmail, subscriberToken } from "@/lib/newsletter";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -15,14 +15,6 @@ type NewsletterPayload = {
   preferences?: Partial<Preferences>;
   favourites?: Partial<Favourites>;
 };
-
-function isValidEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function subscriberToken(): string {
-  return randomBytes(32).toString("hex");
-}
 
 export async function POST(request: Request) {
   let body: NewsletterPayload;
