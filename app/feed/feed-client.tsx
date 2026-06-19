@@ -657,41 +657,47 @@ export function FeedClient({
                               Video
                             </span>
                           ) : null}
-                          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-                            {scoredArticle.article.source.toUpperCase()}{" "}
-                            {"\u2022"}{" "}
-                            {formatDate(scoredArticle.article.publishedAt)}
-                          </p>
-                          <button
-                            aria-label={
-                              favourites.sources.includes(
-                                scoredArticle.article.source,
-                              )
-                                ? `Remove ${scoredArticle.article.source} from favourite sources`
-                                : `Add ${scoredArticle.article.source} to favourite sources`
-                            }
-                            aria-pressed={favourites.sources.includes(
-                              scoredArticle.article.source,
-                            )}
-                            className={[
-                              "inline-flex h-7 w-7 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                              favourites.sources.includes(
-                                scoredArticle.article.source,
-                              )
-                                ? "text-red-600 hover:bg-red-50"
-                                : "text-slate-600 hover:bg-white hover:text-red-600",
-                            ].join(" ")}
-                            onClick={() =>
-                              toggleSourceFavourite(scoredArticle.article.source)
-                            }
-                            type="button"
-                          >
-                            <SourceHeartIcon
-                              filled={favourites.sources.includes(
+                          <div className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
+                            <span>
+                              {scoredArticle.article.source.toUpperCase()}
+                            </span>
+                            <button
+                              aria-label={
+                                favourites.sources.includes(
+                                  scoredArticle.article.source,
+                                )
+                                  ? `Remove ${scoredArticle.article.source} from favourite sources`
+                                  : `Add ${scoredArticle.article.source} to favourite sources`
+                              }
+                              aria-pressed={favourites.sources.includes(
                                 scoredArticle.article.source,
                               )}
-                            />
-                          </button>
+                              className={[
+                                "inline-flex h-6 w-6 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                                favourites.sources.includes(
+                                  scoredArticle.article.source,
+                                )
+                                  ? "text-red-600 hover:bg-red-50"
+                                  : "text-slate-600 hover:bg-white hover:text-red-600",
+                              ].join(" ")}
+                              onClick={() =>
+                                toggleSourceFavourite(
+                                  scoredArticle.article.source,
+                                )
+                              }
+                              type="button"
+                            >
+                              <SourceHeartIcon
+                                filled={favourites.sources.includes(
+                                  scoredArticle.article.source,
+                                )}
+                              />
+                            </button>
+                            <span>{"\u2022"}</span>
+                            <span>
+                              {formatDate(scoredArticle.article.publishedAt)}
+                            </span>
+                          </div>
                         </div>
                         <a
                           className="text-sm font-bold text-blue-700 hover:text-blue-900"
