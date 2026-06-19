@@ -120,6 +120,7 @@ type ScoredArticle = {
   article: Article;
   generatedTags: string[];
   matchedBecause: string[];
+  originalIndex: number;
   score: number;
 };
 
@@ -186,12 +187,26 @@ function PreferenceSection({
   );
 }
 
+function getPublishedTimestamp(value: string): number | null {
+  const timestamp = new Date(value).getTime();
+
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
 function formatDate(value: string): string {
+  const timestamp = getPublishedTimestamp(value);
+
+  if (timestamp === null) {
+    return "DATE TBC";
+  }
+
   return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
+    day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(value));
+  })
+    .format(new Date(timestamp))
+    .toUpperCase();
 }
 
 function unique(values: string[]): string[] {
@@ -281,6 +296,7 @@ function matchesFocus(scoredArticle: ScoredArticle, filter: FocusFilter) {
 function scoreArticle(
   article: Article,
   preferences: Preferences,
+  originalIndex: number,
 ): ScoredArticle {
   const generatedTags = generateArticleTags(article);
   const selectedTags = selectedPreferenceTags(preferences);
@@ -293,8 +309,28 @@ function scoreArticle(
     article,
     generatedTags,
     matchedBecause,
+    originalIndex,
     score: matchedBecause.length,
   };
+}
+
+function sortByPublishedDateDesc(a: ScoredArticle, b: ScoredArticle): number {
+  const aTimestamp = getPublishedTimestamp(a.article.publishedAt);
+  const bTimestamp = getPublishedTimestamp(b.article.publishedAt);
+
+  if (aTimestamp !== null && bTimestamp !== null) {
+    return bTimestamp - aTimestamp;
+  }
+
+  if (aTimestamp !== null) {
+    return -1;
+  }
+
+  if (bTimestamp !== null) {
+    return 1;
+  }
+
+  return a.originalIndex - b.originalIndex;
 }
 
 export function FeedClient({
@@ -324,18 +360,13 @@ export function FeedClient({
   }, []);
 
   const scoredArticles = useMemo(() => {
-    const scored = articles.map((article) => scoreArticle(article, preferences));
-    const matched = scored.filter((article) => article.score > 0);
-    const sorted = (matched.length ? matched : scored).sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
+    const scored = articles.map((article, index) =>
+      scoreArticle(article, preferences, index),
+    );
 
-      return (
-        new Date(b.article.publishedAt).getTime() -
-        new Date(a.article.publishedAt).getTime()
-      );
-    });
+    // Future ranking logic can add favourite/source boosts here, after
+    // date ordering remains the default news-feed baseline.
+    const sorted = scored.sort(sortByPublishedDateDesc);
 
     return sorted.slice(0, Number(preferences.storiesPerUpdate));
   }, [articles, preferences]);
@@ -361,20 +392,6 @@ export function FeedClient({
       matchesFocus(scoredArticle, activeFocus),
     );
   }, [activeFocus, scoredArticles]);
-
-  const groupedArticles = useMemo(() => {
-    return focusedArticles.reduce<Record<string, ScoredArticle[]>>(
-      (groups, scoredArticle) => {
-        const groupName = scoredArticle.score > 0
-          ? "Matched to your preferences"
-          : "Latest general stories";
-
-        groups[groupName] = [...(groups[groupName] ?? []), scoredArticle];
-        return groups;
-      },
-      {},
-    );
-  }, [focusedArticles]);
 
   function toggleFocus(filter: FocusFilter) {
     setActiveFocus((current) =>
@@ -573,19 +590,18 @@ export function FeedClient({
                 </button>
               </div>
             ) : null}
-            {Object.entries(groupedArticles).map(([category, stories]) => (
-              <div key={category}>
+            <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-950">
-                    {category}
+                    Latest timeline
                   </h2>
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {stories.length} stories
+                    {focusedArticles.length} stories
                   </span>
                 </div>
 
                 <div className="space-y-4">
-                  {stories.map((scoredArticle) => (
+                  {focusedArticles.map((scoredArticle) => (
                     <article
                       className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5"
                       key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
@@ -609,7 +625,8 @@ export function FeedClient({
                             </span>
                           ) : null}
                           <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-                            {scoredArticle.article.source} /{" "}
+                            {scoredArticle.article.source.toUpperCase()}{" "}
+                            {"\u2022"}{" "}
                             {formatDate(scoredArticle.article.publishedAt)}
                           </p>
                         </div>
@@ -668,8 +685,7 @@ export function FeedClient({
                     </article>
                   ))}
                 </div>
-              </div>
-            ))}
+            </div>
             <div className="pt-2">
               <button
                 className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 bg-white/90 px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
