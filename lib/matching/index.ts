@@ -44,6 +44,7 @@ export function generateArticleTags(article: Article): string[] {
     .toLowerCase();
 
   return unique([
+    article.source,
     ...article.tags,
     ...Object.entries(matchingConfig.scoringKeywords)
       .filter(([, keywords]) =>
@@ -64,6 +65,7 @@ export function selectedPreferenceTags(preferences: Preferences): string[] {
     ...preferences.creators
       .map((creator) => creatorTags[creator])
       .filter((creator): creator is string => Boolean(creator)),
+    ...preferences.sources,
     ...preferences.topics
       .map((topic) => topicTags[topic])
       .filter((topic): topic is string => Boolean(topic)),
@@ -86,6 +88,10 @@ export function preferenceFocusFilters(preferences: Preferences): FocusFilter[] 
     ...preferences.creators.map((creator) => ({
       label: creator,
       tag: creatorTags[creator] ?? creator,
+    })),
+    ...preferences.sources.map((source) => ({
+      label: source,
+      tag: source,
     })),
     ...preferences.topics.map((topic) => ({
       label: topic,

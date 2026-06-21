@@ -80,3 +80,7 @@ export const feedRegistry: FeedSource[] = [
     type: "video",
   },
 ];
+
+// TODO: Expand with additional verified RSS and YouTube sources as publisher
+// coverage grows; keep this as the single registry rendered by /sources.
+export const sourceExpansionBacklog: FeedSource[] = [];

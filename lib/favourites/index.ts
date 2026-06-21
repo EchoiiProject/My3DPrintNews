@@ -46,7 +46,7 @@ export function isFavouriteKey(value: string): value is FavouriteKey {
 export function favouriteKeyForPreferenceGroup(
   value: string,
 ): FavouriteKey | null {
-  if (value === "brands" || value === "creators") {
+  if (value === "brands" || value === "creators" || value === "sources") {
     return value;
   }
 

@@ -31,6 +31,7 @@ type MultiSelectKey =
   | "brands"
   | "models"
   | "creators"
+  | "sources"
   | "topics"
   | "technology";
 
@@ -61,6 +62,14 @@ function HeartIcon({ filled }: { filled: boolean }) {
       <path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6Z" />
     </svg>
   );
+}
+
+function selectedSummary(count: number, label: string): string | null {
+  if (count === 0) {
+    return null;
+  }
+
+  return `${count} ${label}${count === 1 ? "" : "s"} selected`;
 }
 
 export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
@@ -298,81 +307,108 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
             id="topics"
           >
             <div className="mb-5 border-b border-slate-100 pb-4">
-              <div>
-                <p className="text-sm font-semibold text-blue-700">
-                  Feed Builder
-                </p>
-                <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                  Customise Your Feed
-                </h2>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-blue-700">
+                    Feed Builder
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                    Customise Your Feed
+                  </h2>
+                  {preferences.sources.length ? (
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      {selectedSummary(preferences.sources.length, "source")}
+                    </p>
+                  ) : null}
+                </div>
+                <Link
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                  href="/sources"
+                >
+                  Select from all
+                </Link>
               </div>
             </div>
 
             <div className="space-y-4">
-              {preferenceGroups.map((group) => (
-                <div key={group.key}>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                    {group.title}
-                  </h3>
-                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
-                    {group.options.map((option) => {
-                      const favouriteKey = favouriteKeyForPreferenceGroup(
-                        group.key,
-                      );
-                      const selected =
-                        preferences[group.key as MultiSelectKey].includes(
-                          option,
-                        );
-                      const favourited = favouriteKey
-                        ? favourites[favouriteKey].includes(option)
-                        : false;
+              {preferenceGroups.map((group) => {
+                const summary = selectedSummary(
+                  preferences[group.key as MultiSelectKey].length,
+                  group.title.toLowerCase().replace(/s$/, ""),
+                );
 
-                      return (
-                        <div className="relative" key={option}>
-                          <button
-                            className={[
-                              "min-h-10 w-full rounded-md border px-3 py-2 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                              favouriteKey ? "pr-10" : "",
-                              selected
-                                ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
-                                : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
-                            ].join(" ")}
-                            onClick={() =>
-                              updateMultiSelect(
-                                group.key as MultiSelectKey,
-                                option,
-                              )
-                            }
-                            type="button"
-                          >
-                            {option}
-                          </button>
-                          {favouriteKey ? (
+                return (
+                  <div key={group.key}>
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                      {group.title}
+                    </h3>
+                    {summary ? (
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {summary}
+                      </p>
+                    ) : null}
+                    <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+                      {group.options.map((option) => {
+                        const favouriteKey = favouriteKeyForPreferenceGroup(
+                          group.key,
+                        );
+                        const selected =
+                          preferences[group.key as MultiSelectKey].includes(
+                            option,
+                          );
+                        const favourited = favouriteKey
+                          ? favourites[favouriteKey].includes(option)
+                          : false;
+
+                        return (
+                          <div className="relative" key={option}>
                             <button
-                              aria-label={
-                                favourited
-                                  ? `Remove ${option} from favourites`
-                                  : `Add ${option} to favourites`
-                              }
-                              aria-pressed={favourited}
                               className={[
-                                "absolute right-2 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                                favourited
-                                  ? "text-red-600 hover:bg-red-50"
-                                  : "text-slate-600 hover:bg-white hover:text-red-600",
+                                "min-h-10 w-full rounded-md border px-3 py-2 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                                favouriteKey ? "pr-10" : "",
+                                selected
+                                  ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm shadow-blue-100"
+                                  : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
                               ].join(" ")}
-                              onClick={() => updateFavourite(favouriteKey, option)}
+                              onClick={() =>
+                                updateMultiSelect(
+                                  group.key as MultiSelectKey,
+                                  option,
+                                )
+                              }
                               type="button"
                             >
-                              <HeartIcon filled={favourited} />
+                              {option}
                             </button>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                            {favouriteKey ? (
+                              <button
+                                aria-label={
+                                  favourited
+                                    ? `Remove ${option} from favourites`
+                                    : `Add ${option} to favourites`
+                                }
+                                aria-pressed={favourited}
+                                className={[
+                                  "absolute right-2 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                                  favourited
+                                    ? "text-red-600 hover:bg-red-50"
+                                    : "text-slate-600 hover:bg-white hover:text-red-600",
+                                ].join(" ")}
+                                onClick={() =>
+                                  updateFavourite(favouriteKey, option)
+                                }
+                                type="button"
+                              >
+                                <HeartIcon filled={favourited} />
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </div>

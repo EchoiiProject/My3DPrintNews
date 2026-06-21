@@ -112,6 +112,7 @@ function hasSignupSignal(
     preferences.brands,
     preferences.models,
     preferences.creators,
+    preferences.sources,
     preferences.topics,
     preferences.technology,
     favourites.brands,
@@ -539,6 +540,14 @@ export function FeedClient({
                 <PreferenceSection
                   activeFocus={activeFocus?.label ?? null}
                   counts={focusCounts}
+                  favouriteValues={favourites.sources}
+                  label="Sources"
+                  onToggleFocus={toggleFocus}
+                  values={preferences.sources}
+                />
+                <PreferenceSection
+                  activeFocus={activeFocus?.label ?? null}
+                  counts={focusCounts}
                   label="Topics"
                   onToggleFocus={toggleFocus}
                   values={preferences.topics}
@@ -685,6 +694,10 @@ export function FeedClient({
                       <SummaryList
                         label="Creators"
                         values={currentNewsletterPreferences.creators}
+                      />
+                      <SummaryList
+                        label="Sources"
+                        values={currentNewsletterPreferences.sources}
                       />
                       <SummaryList
                         label="Topics"

@@ -193,6 +193,7 @@ export default async function SavedFeedPage({
               values={preferences.models}
             />
             <ProfileSummary label="Creators" values={preferences.creators} />
+            <ProfileSummary label="Sources" values={preferences.sources} />
             <ProfileSummary label="Topics" values={preferences.topics} />
             <ProfileSummary label="Technology" values={preferences.technology} />
             <ProfileSummary
