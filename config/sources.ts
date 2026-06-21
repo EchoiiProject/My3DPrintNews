@@ -1,5 +1,5 @@
 import type { FeedSource } from "../lib/rss";
-import { allFeedSources, type RegistryItem } from "./registry";
+import { activeFeedSources, type RegistryItem } from "./registry";
 
 // Reusable personalised feed engine with My3DPrintNews as the first vertical.
 
@@ -16,7 +16,7 @@ function sourceUrl(source: RegistryItem): string {
 }
 
 export const feedRegistry: FeedSource[] = (
-  allFeedSources as readonly RegistryItem[]
+  activeFeedSources as readonly RegistryItem[]
 ).map((source) => ({
   id: source.id,
   name: source.label,
