@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { appConfig } from "../app.config";
+import { appConfig } from "../config/site";
 import { FooterLinks } from "./footer-links";
 import {
   defaultFavourites,

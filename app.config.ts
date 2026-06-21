@@ -1,7 +1,1 @@
-export const appConfig = {
-  name: "My3DPrintNews",
-  tagline: "Your Personalised 3D Printing News",
-  onboardingBadge: "Personalised additive manufacturing intelligence",
-  feedIntro:
-    "Based on your feed preferences, here are the latest stories, videos and updates from the brands, creators and platforms you follow.",
-};
+export { appConfig } from "./config/site";

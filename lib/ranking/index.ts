@@ -8,7 +8,7 @@ import {
 } from "@/lib/matching";
 import type { Preferences } from "@/lib/preferences";
 import type { Article } from "@/lib/rss";
-import { matchingConfig } from "../../preferences.config";
+import { matchingConfig } from "../../config/preferences";
 
 const favouriteCreatorBoost = 1_000_000;
 const favouriteSourceBoost = 100_000;

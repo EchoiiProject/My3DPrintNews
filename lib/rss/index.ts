@@ -1,6 +1,6 @@
 import Parser from "rss-parser";
-import { feedRegistry } from "../../sources.config";
-import { matchingConfig } from "../../preferences.config";
+import { matchingConfig } from "../../config/preferences";
+import { feedRegistry } from "../../config/sources";
 
 export type FeedSource = {
   id: string;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { appConfig } from "../../app.config";
+import { appConfig } from "../../config/site";
 import type { Article } from "@/lib/rss";
 import {
   matchesFocus,

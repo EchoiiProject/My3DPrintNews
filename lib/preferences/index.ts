@@ -5,7 +5,7 @@ import {
   preferenceGroups,
   storyCountOptions,
   weeklyDayOptions,
-} from "../../preferences.config";
+} from "../../config/preferences";
 
 export const STORAGE_KEY = "my3dprintnews-preferences";
 

@@ -1,6 +1,6 @@
 import type { Article } from "@/lib/rss";
 import type { Preferences } from "@/lib/preferences";
-import { matchingConfig } from "../../preferences.config";
+import { matchingConfig } from "../../config/preferences";
 
 const focusTagAliases: Record<string, string> = matchingConfig.focusTagAliases;
 const brandTags: Record<string, string> = matchingConfig.brandTags;

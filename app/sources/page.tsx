@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { feedRegistry } from "../../sources.config";
+import { feedRegistry } from "../../config/sources";
 import { FooterLinks } from "../footer-links";
 import {
   defaultFavourites,
