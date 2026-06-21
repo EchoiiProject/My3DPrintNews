@@ -1,0 +1,83 @@
+import Link from "next/link";
+import { FooterLinks } from "../footer-links";
+
+const updatePosts = [
+  {
+    title: "Building the first personalised 3D printing feed",
+    date: "21 June 2026",
+    content:
+      "We have launched the first working version of My3DPrintNews, including personalised feed selection, RSS-powered articles, creator video feeds, source attribution, favourites, focus mode and newsletter signup foundations.",
+  },
+  {
+    title: "Help shape what comes next",
+    date: "21 June 2026",
+    content:
+      "We are actively improving source coverage, feed matching, favourites, saved feeds and catch-up views. If you have suggestions for sources, creators, publishers or features, please contact us.",
+  },
+];
+
+export default function UpdatesPage() {
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
+      <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
+        <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
+          <Link
+            className="text-lg font-bold tracking-tight text-slate-950"
+            href="/"
+          >
+            My3DPrintNews
+          </Link>
+        </nav>
+
+        <div className="flex-1 py-10 sm:py-14">
+          <header>
+            <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
+              Product notes
+            </p>
+            <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
+              My3DPrintNews Updates
+            </h1>
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+              Follow the latest improvements to My3DPrintNews as we build a
+              personalised 3D printing news feed. We welcome feedback from
+              readers, makers, creators and publishers.
+            </p>
+          </header>
+
+          <div className="mt-8 grid gap-5 lg:grid-cols-2">
+            {updatePosts.map((post) => (
+              <article
+                className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur"
+                key={post.title}
+              >
+                <p className="text-sm font-bold uppercase tracking-wide text-blue-700">
+                  {post.date}
+                </p>
+                <h2 className="mt-3 text-2xl font-bold text-slate-950">
+                  {post.title}
+                </h2>
+                <p className="mt-3 text-base leading-7 text-slate-600">
+                  {post.content}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <section className="mt-8 rounded-lg border border-blue-100 bg-blue-50/80 p-5">
+            <h2 className="text-xl font-bold text-blue-950">
+              Have feedback or want to suggest a source?
+            </h2>
+            <Link
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+              href="/contact"
+            >
+              Contact us
+            </Link>
+          </section>
+        </div>
+
+        <FooterLinks />
+      </section>
+    </main>
+  );
+}

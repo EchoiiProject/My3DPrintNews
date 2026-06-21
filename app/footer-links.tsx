@@ -15,6 +15,9 @@ export function FooterLinks() {
       <Link className="hover:text-blue-700" href="/publisher-policy">
         Publisher Policy
       </Link>
+      <Link className="hover:text-blue-700" href="/updates">
+        Updates
+      </Link>
     </footer>
   );
 }
