@@ -1,20 +1,6 @@
 import Link from "next/link";
+import { updatePosts } from "../../config/my3dprintnews/updates";
 import { FooterLinks } from "../footer-links";
-
-const updatePosts = [
-  {
-    title: "Building the first personalised 3D printing feed",
-    date: "21 June 2026",
-    content:
-      "We have launched the first working version of My3DPrintNews, including personalised feed selection, RSS-powered articles, creator video feeds, source attribution, favourites, focus mode and newsletter signup foundations.",
-  },
-  {
-    title: "Help shape what comes next",
-    date: "21 June 2026",
-    content:
-      "We are actively improving source coverage, feed matching, favourites, saved feeds and catch-up views. If you have suggestions for sources, creators, publishers or features, please contact us.",
-  },
-];
 
 export default function UpdatesPage() {
   return (
@@ -67,6 +53,10 @@ export default function UpdatesPage() {
             <h2 className="text-xl font-bold text-blue-950">
               Have feedback or want to suggest a source?
             </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-900">
+              We welcome suggestions from readers, makers, creators and
+              publishers.
+            </p>
             <Link
               className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
               href="/contact"
