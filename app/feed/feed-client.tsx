@@ -7,11 +7,13 @@ import type { Article } from "@/lib/rss";
 import {
   matchesFocus,
   preferenceFocusFilters,
-  scoreArticle,
-  selectedPreferenceTags,
   type FocusFilter,
-  type ScoredArticle,
 } from "@/lib/matching";
+import {
+  getPublishedTimestamp,
+  hasPersonalisedSignal,
+  rankFeedArticles,
+} from "@/lib/ranking";
 import { FooterLinks } from "../footer-links";
 import {
   defaultFavourites,
@@ -238,12 +240,6 @@ function PreferenceSection({
   );
 }
 
-function getPublishedTimestamp(value: string): number | null {
-  const timestamp = new Date(value).getTime();
-
-  return Number.isNaN(timestamp) ? null : timestamp;
-}
-
 function formatDate(value: string): string {
   const timestamp = getPublishedTimestamp(value);
 
@@ -260,37 +256,28 @@ function formatDate(value: string): string {
     .toUpperCase();
 }
 
-function sortByPublishedDateDesc(a: ScoredArticle, b: ScoredArticle): number {
-  const aTimestamp = getPublishedTimestamp(a.article.publishedAt);
-  const bTimestamp = getPublishedTimestamp(b.article.publishedAt);
-
-  if (aTimestamp !== null && bTimestamp !== null) {
-    return bTimestamp - aTimestamp;
-  }
-
-  if (aTimestamp !== null) {
-    return -1;
-  }
-
-  if (bTimestamp !== null) {
-    return 1;
-  }
-
-  return a.originalIndex - b.originalIndex;
-}
-
 export function FeedClient({
   articles,
   usingFallback,
   initialPreferences = defaultPreferences,
   initialFavourites = defaultFavourites,
   readLocalStorage = true,
+  showNavigation = true,
+  showHeader = true,
+  showNewsletterPanel = true,
+  storySectionHeading,
+  periodDays,
 }: {
   articles: Article[];
   usingFallback: boolean;
   initialPreferences?: Preferences;
   initialFavourites?: Favourites;
   readLocalStorage?: boolean;
+  showNavigation?: boolean;
+  showHeader?: boolean;
+  showNewsletterPanel?: boolean;
+  storySectionHeading?: string;
+  periodDays?: number;
 }) {
   const [preferences, setPreferences] =
     useState<Preferences>(initialPreferences);
@@ -347,30 +334,16 @@ export function FeedClient({
     }
   }, [readLocalStorage]);
 
-  const scoredArticles = useMemo(() => {
-    const scored = articles.map((article, index) =>
-      scoreArticle(article, preferences, index),
-    );
-
-    // Future ranking logic can add favourite/source boosts here, after
-    // date ordering remains the default news-feed baseline.
-    return scored.sort(sortByPublishedDateDesc);
-  }, [articles, preferences]);
-
-  const selectedTags = useMemo(
-    () => selectedPreferenceTags(preferences),
-    [preferences],
-  );
-  const hasPreferenceTags = selectedTags.length > 0;
+  const hasPreferenceTags = hasPersonalisedSignal(preferences, favourites);
   const requestedStoryCount = Number(preferences.storiesPerUpdate);
-
-  const matchedStories = useMemo(() => {
-    const sourceStories = hasPreferenceTags
-      ? scoredArticles.filter((article) => article.score > 0)
-      : scoredArticles;
-
-    return sourceStories.slice(0, requestedStoryCount);
-  }, [hasPreferenceTags, requestedStoryCount, scoredArticles]);
+  const matchedStories = useMemo(
+    () =>
+      rankFeedArticles(articles, preferences, favourites, {
+        limit: requestedStoryCount,
+        periodDays,
+      }),
+    [articles, favourites, periodDays, preferences, requestedStoryCount],
+  );
 
   const focusCounts = useMemo(() => {
     const filters = preferenceFocusFilters(preferences);
@@ -481,49 +454,54 @@ export function FeedClient({
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto w-full max-w-7xl px-6 py-6 sm:px-8 lg:px-12">
-        <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-          <Link
-            className="text-lg font-bold tracking-tight text-slate-950"
-            href="/"
-          >
-            {appConfig.name}
-          </Link>
-          <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
-            <Link className="hover:text-blue-700" href="/">
-              Preferences
-            </Link>
-            <Link className="hover:text-blue-700" href="/contact">
-              Contact
-            </Link>
-            <Link className="hover:text-blue-700" href="/publishers">
-              Publishers
-            </Link>
-          </div>
-        </nav>
-
-        <header className="py-9 sm:py-12">
-          <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-            {usingFallback ? "Placeholder briefing" : "Live RSS briefing"}
-          </p>
-          <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-            Your Personalised Feed
-          </h1>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            {appConfig.feedIntro}
-          </p>
-          <div className="mt-5">
+        {showNavigation ? (
+          <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
             <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+              className="text-lg font-bold tracking-tight text-slate-950"
               href="/"
             >
-              Edit my feed
+              {appConfig.name}
             </Link>
-          </div>
-        </header>
+            <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
+              <Link className="hover:text-blue-700" href="/">
+                Preferences
+              </Link>
+              <Link className="hover:text-blue-700" href="/contact">
+                Contact
+              </Link>
+              <Link className="hover:text-blue-700" href="/publishers">
+                Publishers
+              </Link>
+            </div>
+          </nav>
+        ) : null}
+
+        {showHeader ? (
+          <header className="py-9 sm:py-12">
+            <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
+              {usingFallback ? "Placeholder briefing" : "Live RSS briefing"}
+            </p>
+            <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
+              Your Personalised Feed
+            </h1>
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+              {appConfig.feedIntro}
+            </p>
+            <div className="mt-5">
+              <Link
+                className="inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                href="/"
+              >
+                Edit my feed
+              </Link>
+            </div>
+          </header>
+        ) : null}
 
         <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr]">
           <aside className="space-y-4">
-            <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
+            {showNewsletterPanel ? (
+              <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
               <div className="mb-4 border-b border-slate-100 pb-3">
                 <p className="text-sm font-semibold text-blue-700">
                   Selected Preferences
@@ -600,7 +578,8 @@ export function FeedClient({
                   values={favourites.sources}
                 />
               </div>
-            </section>
+              </section>
+            ) : null}
 
             <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
               <p className="text-sm font-semibold text-blue-700">
@@ -817,9 +796,10 @@ export function FeedClient({
             <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-950">
-                    {hasPreferenceTags
-                      ? "Matched to your preferences"
-                      : "Latest general stories"}
+                    {storySectionHeading ??
+                      (hasPreferenceTags
+                        ? "Matched to your preferences"
+                        : "Latest general stories")}
                   </h2>
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     {focusedStories.length}{" "}
@@ -930,7 +910,7 @@ export function FeedClient({
                         <div className="mt-2 flex flex-wrap gap-2">
                           {(scoredArticle.matchedBecause.length
                             ? scoredArticle.matchedBecause
-                            : ["Latest general story"]
+                            : ["General match"]
                           ).map((reason) => (
                             <span
                               className="text-sm font-semibold text-blue-900"
