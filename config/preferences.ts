@@ -1,78 +1,67 @@
 import type { MonthlyTiming, WeeklyDay } from "../lib/preferences";
+import { registry, type RegistryItem } from "./registry";
 
 // Reusable personalised feed engine with My3DPrintNews as the first vertical.
 
-export const legacyPrinterBrands: Record<string, string> = {
-  "Bambu X1 Carbon": "Bambu Lab",
-  "Bambu P1S": "Bambu Lab",
-  "Bambu A1": "Bambu Lab",
-  "Bambu A1 Mini": "Bambu Lab",
-  "Prusa MK4S": "Prusa Research",
-  "Prusa XL": "Prusa Research",
-  "Creality K1": "Creality",
-  "Creality K2 Plus": "Creality",
-};
+function labels(items: readonly { label: string }[]): string[] {
+  return items.map((item) => item.label);
+}
+
+function tagMap(items: readonly { label: string; tag?: string }[]) {
+  return Object.fromEntries(
+    items.map((item) => [item.label, item.tag ?? item.label]),
+  );
+}
+
+function keywordMap(items: readonly { label: string; tag?: string; keywords?: readonly string[] }[]) {
+  return Object.fromEntries(
+    items
+      .filter((item) => item.keywords?.length)
+      .map((item) => [item.tag ?? item.label, [...(item.keywords ?? [])]]),
+  );
+}
+
+export const legacyPrinterBrands: Record<string, string> = Object.fromEntries(
+  (registry.brands as readonly RegistryItem[]).flatMap((brand) =>
+    (brand.aliases ?? []).map((alias) => [alias, brand.label]),
+  ),
+);
 
 export const preferenceGroups = [
   {
     key: "brands",
     title: "Brands",
-    options: [
-      "Bambu Lab",
-      "Prusa Research",
-      "Creality",
-      "Elegoo",
-      "Anycubic",
-      "Flashforge",
-    ],
+    options: labels(registry.brands),
   },
   {
     key: "models",
     title: "Model Platforms",
-    options: [
-      "Printables",
-      "MakerWorld",
-      "Thingiverse",
-      "Thangs",
-      "Cults3D",
-    ],
+    options: labels(registry.modelPlatforms),
   },
   {
     key: "creators",
     title: "Creators",
-    options: [
-      "Maker's Muse",
-      "CNC Kitchen",
-      "3D Printing Nerd",
-      "Teaching Tech",
-      "Thomas Sanladerer",
-      "Aurora Tech",
-    ],
+    options: labels(registry.creators),
   },
   {
     key: "topics",
     title: "Topics",
-    options: [
-      "New Printers",
-      "Reviews",
-      "Firmware Updates",
-      "3D Models / Designs",
-      "Filament & Materials",
-      "Accessories",
-      "Deals & Discounts",
-      "Tutorials & Guides",
-    ],
+    options: labels(registry.topics),
   },
   {
     key: "technology",
     title: "Technology",
-    options: ["FDM / FFF", "Resin", "SLS / MJF", "Industrial / Professional"],
+    options: labels(registry.technologies),
   },
 ] as const;
 
 export const frequencyOptions = ["Daily", "Weekly", "Monthly"];
 
-export const weeklyDayOptions: { value: WeeklyDay; label: string; long: string }[] = [
+export const weeklyDayOptions: {
+  value: WeeklyDay;
+  label: string;
+  long: string;
+}[] = [
   { value: "mon", label: "Mon", long: "Monday" },
   { value: "tue", label: "Tue", long: "Tuesday" },
   { value: "wed", label: "Wed", long: "Wednesday" },
@@ -100,75 +89,17 @@ export const storyCountOptions = ["5", "10", "20"];
 
 export const matchingConfig = {
   scoringKeywords: {
-    Bambu: ["bambu", "x1 carbon", "p1s", "a1 mini", "bambu a1"],
-    Prusa: ["prusa", "mk4s", "prusa xl"],
-    Creality: ["creality", "k1", "k2 plus"],
-    Elegoo: ["elegoo"],
-    Anycubic: ["anycubic"],
-    Flashforge: ["flashforge"],
-    "Maker's Muse": ["maker's muse", "makers muse"],
-    "CNC Kitchen": ["cnc kitchen"],
-    "3D Printing Nerd": ["3d printing nerd"],
-    "Teaching Tech": ["teaching tech"],
-    "Thomas Sanladerer": ["thomas sanladerer", "toms3d"],
-    "Aurora Tech": ["aurora tech"],
-    "New Printers": ["new printer", "launch", "announces", "released", "debut"],
-    Reviews: ["review", "reviews", "tested", "hands-on", "benchmark"],
-    Firmware: ["firmware", "software update", "input shaping"],
-    Models: ["model", "models", "design", "printables", "makerworld"],
-    Printables: ["printables"],
-    MakerWorld: ["makerworld", "maker world"],
-    Thingiverse: ["thingiverse"],
-    Thangs: ["thangs"],
-    Cults3D: ["cults3d", "cults"],
-    Materials: ["material", "materials", "filament", "pla", "petg", "nylon"],
-    Accessories: ["accessory", "accessories", "upgrade", "hotend", "build plate"],
-    Deals: ["deal", "deals", "discount", "sale", "bundle", "coupon"],
-    Tutorials: ["tutorial", "tutorials", "guide", "how to", "calibration"],
-    FDM: ["fdm", "fff", "filament"],
-    Resin: ["resin", "sla", "msla", "dlp"],
-    SLS: ["sls", "mjf", "powder bed"],
-    Industrial: ["industrial", "professional", "production", "service bureau"],
+    ...keywordMap(registry.brands),
+    ...keywordMap(registry.creators),
+    ...keywordMap(registry.topics),
+    ...keywordMap(registry.modelPlatforms),
+    ...keywordMap(registry.technologies),
   },
-  brandTags: {
-    "Bambu Lab": "Bambu",
-    "Prusa Research": "Prusa",
-    Creality: "Creality",
-    Elegoo: "Elegoo",
-    Anycubic: "Anycubic",
-    Flashforge: "Flashforge",
-  },
-  modelTags: {
-    Printables: "Printables",
-    MakerWorld: "MakerWorld",
-    Thingiverse: "Thingiverse",
-    Thangs: "Thangs",
-    Cults3D: "Cults3D",
-  },
-  creatorTags: {
-    "Maker's Muse": "Maker's Muse",
-    "CNC Kitchen": "CNC Kitchen",
-    "3D Printing Nerd": "3D Printing Nerd",
-    "Teaching Tech": "Teaching Tech",
-    "Thomas Sanladerer": "Thomas Sanladerer",
-    "Aurora Tech": "Aurora Tech",
-  },
-  topicTags: {
-    "New Printers": "New Printers",
-    Reviews: "Reviews",
-    "Firmware Updates": "Firmware",
-    "3D Models / Designs": "Models",
-    "Filament & Materials": "Materials",
-    Accessories: "Accessories",
-    "Deals & Discounts": "Deals",
-    "Tutorials & Guides": "Tutorials",
-  },
-  technologyTags: {
-    "FDM / FFF": "FDM",
-    Resin: "Resin",
-    "SLS / MJF": "SLS",
-    "Industrial / Professional": "Industrial",
-  },
+  brandTags: tagMap(registry.brands),
+  modelTags: tagMap(registry.modelPlatforms),
+  creatorTags: tagMap(registry.creators),
+  topicTags: tagMap(registry.topics),
+  technologyTags: tagMap(registry.technologies),
   focusTagAliases: {
     "3d models designs": "models",
     "3d models": "models",

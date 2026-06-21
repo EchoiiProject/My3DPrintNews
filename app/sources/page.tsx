@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { feedRegistry } from "../../config/sources";
+import { allFeedSources } from "../../config/registry";
 import { FooterLinks } from "../footer-links";
 import {
   defaultFavourites,
@@ -76,7 +76,7 @@ export default function SourcesPage() {
     const sourceSection = {
       key: "sources" as const,
       title: "Sources",
-      options: feedRegistry.map((source) => source.name),
+      options: allFeedSources.map((source) => source.label),
     };
 
     return [
