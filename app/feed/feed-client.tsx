@@ -17,6 +17,7 @@ import {
   defaultFavourites,
   defaultPreferences,
   FAVOURITES_KEY,
+  DeliveryFrequency,
   Favourites,
   frequencyOptions,
   monthlyTimingOptions,
@@ -79,6 +80,56 @@ function deliverySummary(preferences: Preferences): string {
   }
 
   return "Daily";
+}
+
+function frequencyValue(option: string): DeliveryFrequency {
+  return option.toLowerCase() as DeliveryFrequency;
+}
+
+function newsletterPreferences(
+  preferences: Preferences,
+  emailFrequency: string,
+): Preferences {
+  const frequency = frequencyValue(emailFrequency);
+
+  return {
+    ...preferences,
+    frequency: emailFrequency,
+    delivery: {
+      ...preferences.delivery,
+      frequency,
+    },
+  };
+}
+
+function hasSignupSignal(
+  preferences: Preferences,
+  favourites: Favourites,
+): boolean {
+  return [
+    preferences.brands,
+    preferences.models,
+    preferences.creators,
+    preferences.topics,
+    preferences.technology,
+    favourites.brands,
+    favourites.modelPlatforms,
+    favourites.creators,
+    favourites.sources,
+  ].some((values) => values.length > 0);
+}
+
+function SummaryList({ label, values }: { label: string; values: string[] }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold leading-6 text-slate-800">
+        {values.length ? values.join(", ") : "No selection"}
+      </p>
+    </div>
+  );
 }
 
 function FavouriteSection({
@@ -246,6 +297,9 @@ export function FeedClient({
   const [favourites, setFavourites] =
     useState<Favourites>(initialFavourites);
   const [emailFrequency, setEmailFrequency] = useState("Weekly");
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [showNewsletterReview, setShowNewsletterReview] = useState(false);
+  const [savedFeedPath, setSavedFeedPath] = useState<string | null>(null);
   const [newsletterStatus, setNewsletterStatus] = useState<{
     tone: "success" | "error";
     message: string;
@@ -346,14 +400,32 @@ export function FeedClient({
     );
   }
 
-  async function submitNewsletter(event: FormEvent<HTMLFormElement>) {
+  const currentNewsletterPreferences = useMemo(
+    () => newsletterPreferences(preferences, emailFrequency),
+    [emailFrequency, preferences],
+  );
+  const hasNewsletterSignal = hasSignupSignal(preferences, favourites);
+
+  function reviewNewsletter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("newsletter-email");
+    const form = event.currentTarget;
 
+    setSavedFeedPath(null);
     setNewsletterStatus(null);
+
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    setShowNewsletterReview(true);
+  }
+
+  async function confirmNewsletterSignup() {
     setNewsletterSubmitting(true);
+    setNewsletterStatus(null);
+    setSavedFeedPath(null);
 
     try {
       const response = await fetch("/api/newsletter/subscribe", {
@@ -362,22 +434,30 @@ export function FeedClient({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
-          preferences,
+          email: newsletterEmail,
+          preferences: currentNewsletterPreferences,
           favourites,
         }),
       });
       const result = (await response.json()) as {
         ok?: boolean;
         message?: string;
+        mode?: string;
         savedFeedPath?: string;
       };
+
+      if (response.ok && result.ok) {
+        setShowNewsletterReview(false);
+        setSavedFeedPath(result.savedFeedPath ?? null);
+      }
 
       setNewsletterStatus({
         tone: response.ok && result.ok ? "success" : "error",
         message:
-          result.message ??
-          "Newsletter signup could not be saved right now.",
+          response.ok && result.ok && result.mode !== "development"
+            ? "You're subscribed. Your personalised update settings have been saved."
+            : result.message ??
+              "Newsletter signup could not be saved right now.",
       });
     } catch {
       setNewsletterStatus({
@@ -539,7 +619,12 @@ export function FeedClient({
                         : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50",
                     ].join(" ")}
                     key={option}
-                    onClick={() => setEmailFrequency(option)}
+                    onClick={() => {
+                      setEmailFrequency(option);
+                      setShowNewsletterReview(false);
+                      setSavedFeedPath(null);
+                      setNewsletterStatus(null);
+                    }}
                     type="button"
                   >
                     {option}
@@ -547,7 +632,7 @@ export function FeedClient({
                 ))}
               </div>
 
-              <form className="mt-4 space-y-2.5" onSubmit={submitNewsletter}>
+              <form className="mt-4 space-y-2.5" onSubmit={reviewNewsletter}>
                 <label
                   className="block text-sm font-bold text-slate-700"
                   htmlFor="newsletter-email"
@@ -558,19 +643,120 @@ export function FeedClient({
                   className="min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   id="newsletter-email"
                   name="newsletter-email"
+                  onChange={(event) => {
+                    setNewsletterEmail(event.target.value);
+                    setShowNewsletterReview(false);
+                    setSavedFeedPath(null);
+                    setNewsletterStatus(null);
+                  }}
                   placeholder="you@example.com"
                   required
                   type="email"
+                  value={newsletterEmail}
                 />
                 <button
                   className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                   disabled={newsletterSubmitting}
                   type="submit"
                 >
-                  {newsletterSubmitting
-                    ? "Saving..."
-                    : `Sign up for ${emailFrequency.toLowerCase()} updates`}
+                  Review my update settings
                 </button>
+                {showNewsletterReview ? (
+                  <div className="space-y-4 rounded-lg border border-blue-100 bg-blue-50/80 p-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-950">
+                        Confirm your personalised update
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        We&apos;ll use these preferences to prepare your
+                        personalised My3DPrintNews updates.
+                      </p>
+                    </div>
+                    {!hasNewsletterSignal ? (
+                      <p className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-6 text-slate-600">
+                        No specific preferences selected yet. We&apos;ll send a
+                        general 3D printing update.
+                      </p>
+                    ) : null}
+                    <div className="space-y-3">
+                      <SummaryList
+                        label="Email address"
+                        values={[newsletterEmail]}
+                      />
+                      <SummaryList
+                        label="Frequency"
+                        values={[
+                          deliverySummary(currentNewsletterPreferences),
+                        ]}
+                      />
+                      <SummaryList
+                        label="Story count"
+                        values={[
+                          `${currentNewsletterPreferences.storiesPerUpdate} stories`,
+                        ]}
+                      />
+                      <SummaryList
+                        label="Brands"
+                        values={currentNewsletterPreferences.brands}
+                      />
+                      <SummaryList
+                        label="Model Platforms"
+                        values={currentNewsletterPreferences.models}
+                      />
+                      <SummaryList
+                        label="Creators"
+                        values={currentNewsletterPreferences.creators}
+                      />
+                      <SummaryList
+                        label="Topics"
+                        values={currentNewsletterPreferences.topics}
+                      />
+                      <SummaryList
+                        label="Technology"
+                        values={currentNewsletterPreferences.technology}
+                      />
+                      <SummaryList
+                        label="Favourite Brands"
+                        values={favourites.brands}
+                      />
+                      <SummaryList
+                        label="Favourite Platforms"
+                        values={favourites.modelPlatforms}
+                      />
+                      <SummaryList
+                        label="Favourite Creators"
+                        values={favourites.creators}
+                      />
+                      <SummaryList
+                        label="Favourite Sources"
+                        values={favourites.sources}
+                      />
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button
+                        className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                        disabled={newsletterSubmitting}
+                        onClick={confirmNewsletterSignup}
+                        type="button"
+                      >
+                        {newsletterSubmitting
+                          ? "Saving..."
+                          : "Confirm and subscribe"}
+                      </button>
+                      <button
+                        className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                        disabled={newsletterSubmitting}
+                        onClick={() => {
+                          setShowNewsletterReview(false);
+                          setNewsletterStatus(null);
+                        }}
+                        type="button"
+                      >
+                        Go back and edit
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {newsletterStatus ? (
                   <p
                     className={[
@@ -582,6 +768,14 @@ export function FeedClient({
                   >
                     {newsletterStatus.message}
                   </p>
+                ) : null}
+                {savedFeedPath ? (
+                  <Link
+                    className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                    href={savedFeedPath}
+                  >
+                    Open your saved feed
+                  </Link>
                 ) : null}
               </form>
             </section>
