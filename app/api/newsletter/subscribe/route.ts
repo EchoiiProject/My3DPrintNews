@@ -16,6 +16,16 @@ type NewsletterPayload = {
   favourites?: Partial<Favourites>;
 };
 
+type SupabaseLookupError = {
+  code?: string;
+  details?: string;
+  message?: string;
+};
+
+function isNoExistingSubscriberError(error: SupabaseLookupError): boolean {
+  return error.code === "PGRST116" || error.code === "PGRST125";
+}
+
 export async function POST(request: Request) {
   let body: NewsletterPayload;
 
@@ -62,8 +72,8 @@ export async function POST(request: Request) {
     .eq("email", email)
     .maybeSingle();
 
-  if (existing.error) {
-    console.error("Supabase subscriber lookup failed", existing.error);
+  if (existing.error && !isNoExistingSubscriberError(existing.error)) {
+    console.error("Supabase subscriber lookup error", existing.error);
 
     return NextResponse.json(
       {
@@ -73,6 +83,12 @@ export async function POST(request: Request) {
       },
       { status: 502 },
     );
+  }
+
+  if (existing.error) {
+    console.info("No existing subscriber found; creating subscriber.");
+  } else if (!existing.data) {
+    console.info("No existing subscriber returned; creating subscriber.");
   }
 
   const token = existing.data?.token ?? subscriberToken();
@@ -91,7 +107,7 @@ export async function POST(request: Request) {
   );
 
   if (upsert.error) {
-    console.error("Supabase subscriber upsert failed", upsert.error);
+    console.error("Supabase subscriber upsert error", upsert.error);
 
     return NextResponse.json(
       {
