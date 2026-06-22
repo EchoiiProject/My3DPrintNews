@@ -31,6 +31,7 @@ import {
   toggleFavourite,
   weeklyDayOptions,
 } from "../preferences";
+import { AdPlacement } from "../ad-placement";
 
 const appConfig = currentSite.metadata;
 
@@ -269,6 +270,7 @@ export function FeedClient({
   showNavigation = true,
   showHeader = true,
   showNewsletterPanel = true,
+  showFeedAds = true,
   storySectionHeading,
   periodDays,
 }: {
@@ -280,6 +282,7 @@ export function FeedClient({
   showNavigation?: boolean;
   showHeader?: boolean;
   showNewsletterPanel?: boolean;
+  showFeedAds?: boolean;
   storySectionHeading?: string;
   periodDays?: number;
 }) {
@@ -816,10 +819,13 @@ export function FeedClient({
                 </div>
 
                 <div className="space-y-4">
-                  {focusedStories.map((scoredArticle) => (
+                  {focusedStories.map((scoredArticle, index) => (
+                    <div
+                      className="space-y-4"
+                      key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
+                    >
                     <article
                       className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5"
-                      key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
                     >
                       {scoredArticle.article.imageUrl ? (
                         <div className="mb-4 aspect-video overflow-hidden rounded-md border border-slate-100 bg-slate-50">
@@ -934,6 +940,10 @@ export function FeedClient({
                         Summary and metadata are attributed to the source above.
                       </p>
                     </article>
+                    {showFeedAds && index === 2 ? (
+                      <AdPlacement placementId="feed-inline-1" />
+                    ) : null}
+                    </div>
                   ))}
                 </div>
             </div>

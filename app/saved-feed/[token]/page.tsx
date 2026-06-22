@@ -245,6 +245,7 @@ export default async function SavedFeedPage({
         initialFavourites={favourites}
         initialPreferences={preferences}
         readLocalStorage={false}
+        showFeedAds={false}
         showHeader={false}
         showNavigation={false}
         showNewsletterPanel={false}

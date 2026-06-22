@@ -60,6 +60,7 @@ export function CatchUpClient({
       <FeedClient
         articles={articles}
         periodDays={periodDays}
+        showFeedAds={false}
         showHeader={false}
         showNavigation={false}
         showNewsletterPanel={false}
