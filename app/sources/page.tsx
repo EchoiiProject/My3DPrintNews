@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { selectableSources } from "../../config/registry";
+import { RegistryItem, registry, selectableSources } from "../../config/registry";
 import { FooterLinks } from "../footer-links";
 import {
   defaultFavourites,
@@ -27,10 +27,15 @@ type SelectionKey =
   | "topics"
   | "technology";
 
+type SelectorOption = {
+  label: string;
+  status?: RegistryItem["status"];
+};
+
 type SelectorSection = {
   key: SelectionKey;
   title: string;
-  options: string[];
+  options: SelectorOption[];
 };
 
 function HeartIcon({ filled }: { filled: boolean }) {
@@ -60,6 +65,35 @@ function toggleSelection(current: string[], value: string): string[] {
     : [...current, value];
 }
 
+function optionLabels(options: SelectorOption[]): string[] {
+  return options.map((option) => option.label);
+}
+
+function statusIndicator(status?: RegistryItem["status"]) {
+  if (status === "active") {
+    return {
+      label: "Active Feed",
+      className: "border-emerald-100 bg-emerald-50 text-emerald-700",
+    };
+  }
+
+  if (status === "partial") {
+    return {
+      label: "Partial",
+      className: "border-amber-100 bg-amber-50 text-amber-700",
+    };
+  }
+
+  if (status === "placeholder") {
+    return {
+      label: "Planned",
+      className: "border-slate-200 bg-slate-50 text-slate-500",
+    };
+  }
+
+  return null;
+}
+
 export default function SourcesPage() {
   const router = useRouter();
   const [preferences, setPreferences] =
@@ -71,16 +105,28 @@ export default function SourcesPage() {
     const baseSections = preferenceGroups.map((group) => ({
       key: group.key as SelectionKey,
       title: group.title,
-      options: [...group.options],
+      options: group.options.map((option) => ({ label: option })),
     }));
+    const creatorSection = {
+      key: "creators" as const,
+      title: "Creators",
+      options: registry.creators.map((creator) => ({
+        label: creator.label,
+        status: creator.status,
+      })),
+    };
     const sourceSection = {
       key: "sources" as const,
       title: "Sources",
-      options: selectableSources.map((source) => source.label),
+      options: selectableSources.map((source) => ({
+        label: source.label,
+        status: source.status,
+      })),
     };
 
     return [
-      ...baseSections.slice(0, 3),
+      ...baseSections.slice(0, 2),
+      creatorSection,
       sourceSection,
       ...baseSections.slice(3),
     ];
@@ -215,7 +261,9 @@ export default function SourcesPage() {
                   <div className="flex flex-wrap gap-2">
                     <button
                       className="inline-flex min-h-9 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-xs font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
-                      onClick={() => selectAll(section.key, section.options)}
+                      onClick={() =>
+                        selectAll(section.key, optionLabels(section.options))
+                      }
                       type="button"
                     >
                       Select all
@@ -232,13 +280,16 @@ export default function SourcesPage() {
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {section.options.map((option) => {
-                    const selected = preferences[section.key].includes(option);
+                    const selected = preferences[section.key].includes(
+                      option.label,
+                    );
                     const favourited = favouriteKey
-                      ? favourites[favouriteKey].includes(option)
+                      ? favourites[favouriteKey].includes(option.label)
                       : false;
+                    const indicator = statusIndicator(option.status);
 
                     return (
-                      <div className="relative" key={option}>
+                      <div className="relative" key={option.label}>
                         <button
                           className={[
                             "min-h-11 w-full rounded-md border px-3 py-2 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
@@ -248,18 +299,28 @@ export default function SourcesPage() {
                               : "border-slate-200 bg-slate-50/80 text-slate-700 hover:border-slate-300 hover:bg-white",
                           ].join(" ")}
                           onClick={() =>
-                            updateSelection(section.key, option)
+                            updateSelection(section.key, option.label)
                           }
                           type="button"
                         >
-                          {option}
+                          <span className="block">{option.label}</span>
+                          {indicator ? (
+                            <span
+                              className={[
+                                "mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold",
+                                indicator.className,
+                              ].join(" ")}
+                            >
+                              {indicator.label}
+                            </span>
+                          ) : null}
                         </button>
                         {favouriteKey ? (
                           <button
                             aria-label={
                               favourited
-                                ? `Remove ${option} from favourites`
-                                : `Add ${option} to favourites`
+                                ? `Remove ${option.label} from favourites`
+                                : `Add ${option.label} to favourites`
                             }
                             aria-pressed={favourited}
                             className={[
@@ -268,7 +329,9 @@ export default function SourcesPage() {
                                 ? "text-red-600 hover:bg-red-50"
                                 : "text-slate-600 hover:bg-white hover:text-red-600",
                             ].join(" ")}
-                            onClick={() => updateFavourite(favouriteKey, option)}
+                            onClick={() =>
+                              updateFavourite(favouriteKey, option.label)
+                            }
                             type="button"
                           >
                             <HeartIcon filled={favourited} />

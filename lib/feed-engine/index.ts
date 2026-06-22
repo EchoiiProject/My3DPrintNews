@@ -7,3 +7,4 @@ export * from "@/lib/newsletter";
 export * from "@/lib/preferences";
 export * from "@/lib/ranking";
 export * from "@/lib/rss";
+export * from "./registry-health";

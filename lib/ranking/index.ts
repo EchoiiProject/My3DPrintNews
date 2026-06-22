@@ -15,7 +15,10 @@ const favouriteSourceBoost = 100_000;
 const favouriteBrandBoost = 10_000;
 const preferenceBoost = 100;
 const brandTags: Record<string, string> = matchingConfig.brandTags;
+const modelTags: Record<string, string> = matchingConfig.modelTags;
 const creatorTags: Record<string, string> = matchingConfig.creatorTags;
+const topicTags: Record<string, string> = matchingConfig.topicTags;
+const technologyTags: Record<string, string> = matchingConfig.technologyTags;
 
 export type RankedFeedOptions = {
   limit?: number;
@@ -89,6 +92,50 @@ function favouriteBrandMatches(
   });
 }
 
+function preferenceMatches(
+  generatedTags: string[],
+  preferences: Preferences,
+): string[] {
+  const preferenceGroups = [
+    {
+      label: "Brand",
+      values: preferences.brands,
+      tags: brandTags,
+    },
+    {
+      label: "Model Platform",
+      values: preferences.models,
+      tags: modelTags,
+    },
+    {
+      label: "Creator",
+      values: preferences.creators,
+      tags: creatorTags,
+    },
+    {
+      label: "Source",
+      values: preferences.sources,
+      tags: {} as Record<string, string>,
+    },
+    {
+      label: "Topic",
+      values: preferences.topics,
+      tags: topicTags,
+    },
+    {
+      label: "Technology",
+      values: preferences.technology,
+      tags: technologyTags,
+    },
+  ];
+
+  return preferenceGroups.flatMap((group) =>
+    group.values
+      .filter((value) => matchesTag(generatedTags, group.tags[value] ?? value))
+      .map((value) => `${group.label}: ${value}`),
+  );
+}
+
 function scoreArticleWithFavourites(
   article: Article,
   preferences: Preferences,
@@ -97,9 +144,7 @@ function scoreArticleWithFavourites(
 ): ScoredArticle {
   const generatedTags = generateArticleTags(article);
   const selectedTags = selectedPreferenceTags(preferences);
-  const preferenceMatches = selectedTags.filter((tag) =>
-    matchesTag(generatedTags, tag),
-  );
+  const matchedPreferences = preferenceMatches(generatedTags, preferences);
   const creatorMatches = favouriteCreatorMatches(
     article,
     generatedTags,
@@ -108,16 +153,17 @@ function scoreArticleWithFavourites(
   const sourceMatches = favouriteSourceMatches(article, favourites);
   const brandMatches = favouriteBrandMatches(generatedTags, favourites);
   const matchedBecause = unique([
-    ...creatorMatches.map((creator) => `Favourite creator: ${creator}`),
-    ...sourceMatches.map((source) => `Favourite source: ${source}`),
-    ...brandMatches.map((brand) => `Favourite brand: ${brand}`),
-    ...preferenceMatches,
+    ...creatorMatches.map((creator) => `Favourite Creator: ${creator}`),
+    ...sourceMatches.map((source) => `Favourite Source: ${source}`),
+    ...brandMatches.map((brand) => `Favourite Brand: ${brand}`),
+    ...matchedPreferences,
   ]);
   const score =
     creatorMatches.length * favouriteCreatorBoost +
     sourceMatches.length * favouriteSourceBoost +
     brandMatches.length * favouriteBrandBoost +
-    preferenceMatches.length * preferenceBoost;
+    selectedTags.filter((tag) => matchesTag(generatedTags, tag)).length *
+      preferenceBoost;
 
   return {
     article,
