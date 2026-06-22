@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { appConfig } from "../../config/site";
+import { currentSite } from "../../config/current-site";
 import type { Article } from "@/lib/rss";
 import {
   matchesFocus,
@@ -30,6 +30,8 @@ import {
   toggleFavourite,
   weeklyDayOptions,
 } from "../preferences";
+
+const appConfig = currentSite.metadata;
 
 function MiniHeartIcon() {
   return (

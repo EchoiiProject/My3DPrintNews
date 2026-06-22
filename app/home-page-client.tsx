@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { appConfig } from "../config/site";
+import { currentSite } from "../config/current-site";
 import { FooterLinks } from "./footer-links";
 import {
   defaultFavourites,
@@ -26,6 +26,8 @@ import {
   WeeklyDay,
 } from "./preferences";
 import { useEffect, useState } from "react";
+
+const appConfig = currentSite.metadata;
 
 type MultiSelectKey =
   | "brands"
