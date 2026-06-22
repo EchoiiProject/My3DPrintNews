@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { currentSite } from "../config/current-site";
+import { featuredProducts } from "../config/products";
 import { FooterLinks } from "./footer-links";
 import { GlobalNav } from "./global-nav";
+import { ProductCard } from "./product-card";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -408,6 +410,28 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
             </div>
           </section>
         </div>
+
+        <section className="border-t border-slate-200/80 py-8">
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-blue-700">
+                Featured Products
+              </p>
+              <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                Demo product promotions
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm leading-6 text-slate-500">
+              Sample promotional inventory for future product discovery. This is
+              not an ecommerce checkout.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
 
         <FooterLinks />
       </section>
