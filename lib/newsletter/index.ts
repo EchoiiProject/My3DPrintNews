@@ -7,3 +7,5 @@ export function isValidEmail(value: string): boolean {
 export function subscriberToken(): string {
   return randomBytes(32).toString("hex");
 }
+
+export * from "./template";
