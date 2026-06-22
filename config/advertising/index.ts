@@ -13,6 +13,8 @@ export type AdPlacement = {
   name: string;
   description: string;
   location: string;
+  supportedFormats: string[];
+  recommendedPrice: string;
   enabled: boolean;
 };
 
@@ -26,7 +28,14 @@ export type AdCreative = {
 
 export type AdCampaign = {
   id: string;
+  name: string;
+  vertical: string;
   advertiser: string;
+  status: "Draft" | "Active" | "Paused" | "Expired";
+  startDate: string;
+  endDate: string;
+  price: string;
+  ctaLabel: string;
   active: boolean;
   creative: AdCreative;
   placements: AdPlacementId[];
@@ -38,6 +47,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Homepage Hero",
     description: "Prominent sponsor slot near the homepage onboarding area.",
     location: "homepage",
+    supportedFormats: ["Sponsored card", "Image optional"],
+    recommendedPrice: "£950 / month",
     enabled: false,
   },
   {
@@ -45,6 +56,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Feed Inline 1",
     description: "Inline sponsor card after several feed stories.",
     location: "feed",
+    supportedFormats: ["Sponsored card", "Text + CTA", "Image optional"],
+    recommendedPrice: "£750 / month",
     enabled: true,
   },
   {
@@ -52,6 +65,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Feed Inline 2",
     description: "Secondary inline sponsor card deeper in the feed.",
     location: "feed",
+    supportedFormats: ["Sponsored card", "Text + CTA", "Image optional"],
+    recommendedPrice: "£550 / month",
     enabled: false,
   },
   {
@@ -59,6 +74,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Feed Sidebar",
     description: "Compact sponsor placement in the feed sidebar.",
     location: "feed",
+    supportedFormats: ["Compact card", "Text + CTA"],
+    recommendedPrice: "£450 / month",
     enabled: false,
   },
   {
@@ -66,6 +83,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Newsletter Header",
     description: "Sponsor placement prepared for the top of newsletters.",
     location: "newsletter",
+    supportedFormats: ["Email banner", "Text + CTA"],
+    recommendedPrice: "£850 / month",
     enabled: false,
   },
   {
@@ -73,6 +92,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Newsletter Inline",
     description: "Sponsor placement prepared between newsletter stories.",
     location: "newsletter",
+    supportedFormats: ["Email inline card", "Text + CTA"],
+    recommendedPrice: "£650 / month",
     enabled: false,
   },
   {
@@ -80,6 +101,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Sources Sidebar",
     description: "Sponsor placement for the expanded source selector.",
     location: "sources",
+    supportedFormats: ["Sidebar card", "Text + CTA"],
+    recommendedPrice: "£350 / month",
     enabled: false,
   },
   {
@@ -87,6 +110,8 @@ export const adPlacements: AdPlacement[] = [
     name: "Updates Sidebar",
     description: "Sponsor placement for platform updates pages.",
     location: "updates",
+    supportedFormats: ["Sidebar card", "Text + CTA"],
+    recommendedPrice: "£300 / month",
     enabled: false,
   },
 ];
@@ -94,7 +119,14 @@ export const adPlacements: AdPlacement[] = [
 export const adCampaigns: AdCampaign[] = [
   {
     id: "test-prusa-research",
+    name: "Prusa workflow campaign",
+    vertical: "my3dprintnews",
     advertiser: "Prusa Research",
+    status: "Active",
+    startDate: "2026-06-01",
+    endDate: "2026-06-30",
+    price: "£750 / month",
+    ctaLabel: "Learn more",
     active: true,
     creative: {
       id: "test-prusa-feed",
@@ -107,7 +139,14 @@ export const adCampaigns: AdCampaign[] = [
   },
   {
     id: "test-bambu-lab",
+    name: "Bambu launch spotlight",
+    vertical: "my3dprintnews",
     advertiser: "Bambu Lab",
+    status: "Paused",
+    startDate: "2026-07-01",
+    endDate: "2026-07-31",
+    price: "£550 / month",
+    ctaLabel: "Learn more",
     active: true,
     creative: {
       id: "test-bambu-feed",
@@ -120,7 +159,14 @@ export const adCampaigns: AdCampaign[] = [
   },
   {
     id: "test-matterhackers",
+    name: "MatterHackers supplier feature",
+    vertical: "my3dprintnews",
     advertiser: "MatterHackers",
+    status: "Draft",
+    startDate: "2026-08-01",
+    endDate: "2026-08-31",
+    price: "£450 / month",
+    ctaLabel: "Learn more",
     active: true,
     creative: {
       id: "test-matterhackers-sources",
@@ -130,6 +176,26 @@ export const adCampaigns: AdCampaign[] = [
       targetUrl: "https://www.matterhackers.com/",
     },
     placements: ["feed-sidebar", "sources-sidebar", "updates-sidebar"],
+  },
+  {
+    id: "test-bmx-supplier-launch",
+    name: "BMX supplier launch campaign",
+    vertical: "mybmxnews",
+    advertiser: "Prototype BMX Supplier",
+    status: "Expired",
+    startDate: "2026-05-01",
+    endDate: "2026-05-31",
+    price: "£500 / month",
+    ctaLabel: "View launch",
+    active: false,
+    creative: {
+      id: "test-bmx-supplier-feed",
+      headline: "New supplier launch for specialist vertical feeds",
+      description:
+        "White-label example campaign showing that advertising inventory is platform-level.",
+      targetUrl: "https://example.com/",
+    },
+    placements: ["homepage-hero", "feed-inline-1"],
   },
 ];
 
