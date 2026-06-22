@@ -7,6 +7,14 @@ import {
   adPlacements,
   AdCampaign,
 } from "../../../config/advertising";
+import {
+  EventSpotlightDemo,
+  FeaturedProductDemo,
+  HomepageHeroDemo,
+  NewsletterHeaderDemo,
+  SponsoredStoryDemo,
+  SupplierSpotlightDemo,
+} from "./showroom";
 
 function statusClass(status: AdCampaign["status"]): string {
   if (status === "Active") {
@@ -22,6 +30,14 @@ function statusClass(status: AdCampaign["status"]): string {
   }
 
   return "border-blue-100 bg-blue-50 text-blue-700";
+}
+
+function placementStatusClass(status: string): string {
+  if (status === "active") {
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-500";
 }
 
 export default function AdvertisingAdminPage() {
@@ -121,101 +137,200 @@ export default function AdvertisingAdminPage() {
             </div>
           </section>
 
+          <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700">
+                  Placement catalogue
+                </p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                  Available advertising placements
+                </h2>
+              </div>
+              <p className="text-sm font-semibold text-slate-500">
+                Platform-level inventory
+              </p>
+            </div>
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[1080px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    <th className="py-3 pr-4">Placement name</th>
+                    <th className="py-3 pr-4">Placement ID</th>
+                    <th className="py-3 pr-4">Location</th>
+                    <th className="py-3 pr-4">Format</th>
+                    <th className="py-3 pr-4">Audience</th>
+                    <th className="py-3 pr-4">Suggested monthly price</th>
+                    <th className="py-3 pr-4">Status</th>
+                    <th className="py-3">Notes / best use case</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adPlacements.map((placement) => (
+                    <tr
+                      className="border-b border-slate-100 last:border-b-0"
+                      key={placement.id}
+                    >
+                      <td className="py-4 pr-4 font-bold text-slate-950">
+                        {placement.name}
+                      </td>
+                      <td className="py-4 pr-4 font-semibold text-blue-700">
+                        {placement.id}
+                      </td>
+                      <td className="py-4 pr-4 font-semibold text-slate-600">
+                        {placement.location}
+                      </td>
+                      <td className="py-4 pr-4 font-semibold text-slate-600">
+                        {placement.format}
+                      </td>
+                      <td className="py-4 pr-4 font-semibold text-slate-600">
+                        {placement.audience}
+                      </td>
+                      <td className="py-4 pr-4 font-semibold text-slate-600">
+                        {placement.recommendedPrice}
+                      </td>
+                      <td className="py-4 pr-4">
+                        <span
+                          className={[
+                            "inline-flex rounded-full border px-2.5 py-1 text-xs font-bold capitalize",
+                            placementStatusClass(placement.status),
+                          ].join(" ")}
+                        >
+                          {placement.status}
+                        </span>
+                      </td>
+                      <td className="py-4 font-semibold leading-6 text-slate-600">
+                        {placement.notes}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <p className="text-sm font-semibold text-blue-700">
+              Advertising showroom
+            </p>
+            <h2 className="mt-1 text-2xl font-bold text-slate-950">
+              What placements look like
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Demo-only examples for future vertical owners. These previews do
+              not make planned placements live on the public site.
+            </p>
+            <div className="mt-5 space-y-5">
+              <HomepageHeroDemo
+                ad={{
+                  placementName: "Homepage Hero Sponsorship",
+                  advertiser: "Demo Advertiser",
+                  headline: "Own the first impression for a specialist audience",
+                  description:
+                    "A premium hero sponsorship for launches, seasonal campaigns, and broad brand awareness.",
+                  cta: "Explore sponsorship",
+                }}
+              />
+              <div className="grid gap-5 lg:grid-cols-2">
+                <section>
+                  <p className="mb-3 text-sm font-semibold text-blue-700">
+                    Feed Inline Sponsored Card
+                  </p>
+                  <AdPlacement placementId="feed-inline-1" />
+                </section>
+                <NewsletterHeaderDemo
+                  ad={{
+                    placementName: "Newsletter Header Sponsor",
+                    advertiser: "Demo Newsletter Partner",
+                    headline: "Reach subscribers at the top of their update",
+                    description:
+                      "A clear newsletter sponsorship block prepared for future scheduled emails.",
+                    cta: "View offer",
+                  }}
+                />
+                <FeaturedProductDemo
+                  ad={{
+                    placementName: "Featured Product Card",
+                    advertiser: "Demo Product Maker",
+                    headline: "Featured product for buyers and enthusiasts",
+                    description:
+                      "A product-style card for hardware, accessories, software, or services.",
+                    cta: "See product",
+                  }}
+                />
+                <SupplierSpotlightDemo
+                  ad={{
+                    placementName: "Supplier Spotlight",
+                    advertiser: "Demo Supplier",
+                    headline: "Supplier spotlight for specialist audiences",
+                    description:
+                      "A compact supplier card for discovery-focused placement areas.",
+                    cta: "Visit supplier",
+                  }}
+                />
+                <SponsoredStoryDemo
+                  ad={{
+                    placementName: "Sponsored Story",
+                    advertiser: "Demo Partner",
+                    headline: "Tell a clearly labelled partner story",
+                    description:
+                      "An article-style sponsored card for longer commercial messages that remain visibly marked.",
+                    cta: "Read story",
+                  }}
+                />
+                <EventSpotlightDemo
+                  ad={{
+                    placementName: "Event Spotlight",
+                    advertiser: "Demo Event Host",
+                    headline: "Promote launches, webinars, and industry events",
+                    description:
+                      "A time-sensitive event card for audiences following a specialist vertical.",
+                    cta: "View event",
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
               <p className="text-sm font-semibold text-blue-700">
-                Placements
+                Editor mock
               </p>
               <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                Placement inventory
+                Campaign editor
               </h2>
-              <div className="mt-5 grid gap-3">
-                {adPlacements.map((placement) => (
-                  <article
-                    className="rounded-md border border-slate-200 bg-slate-50/70 p-4"
-                    key={placement.id}
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-950">
-                          {placement.id}
-                        </h3>
-                        <p className="mt-1 text-sm font-semibold text-slate-600">
-                          {placement.name}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
-                          {placement.description}
-                        </p>
-                      </div>
-                      <span
-                        className={[
-                          "inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold",
-                          placement.enabled
-                            ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                            : "border-slate-200 bg-white text-slate-500",
-                        ].join(" ")}
-                      >
-                        {placement.enabled ? "Enabled" : "Disabled"}
-                      </span>
+              <div className="mt-5 space-y-3">
+                {[
+                  ["Advertiser", "Prusa Research"],
+                  ["Campaign headline", "Explore reliable desktop workflows"],
+                  ["Description", "Sponsored message for a vertical feed."],
+                  ["Button text", "Learn more"],
+                  ["Target URL", "https://www.prusa3d.com/"],
+                  ["Placement", "feed-inline-1"],
+                  ["Start date", "2026-06-01"],
+                  ["End date", "2026-06-30"],
+                  ["Monthly price", "£250"],
+                  ["Status", "Active"],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      {label}
+                    </label>
+                    <div className="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                      {value}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {placement.supportedFormats.map((format) => (
-                        <span
-                          className="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-slate-600"
-                          key={format}
-                        >
-                          {format}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="mt-3 text-sm font-bold text-blue-700">
-                      Recommended price: {placement.recommendedPrice}
-                    </p>
-                  </article>
+                  </div>
                 ))}
               </div>
             </section>
 
-            <aside className="space-y-6">
-              <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
-                <p className="text-sm font-semibold text-blue-700">
-                  Editor mock
-                </p>
-                <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                  Campaign editor
-                </h2>
-                <div className="mt-5 space-y-3">
-                  {[
-                    ["Advertiser", "Prusa Research"],
-                    ["Campaign headline", "Explore reliable desktop workflows"],
-                    ["Description", "Sponsored message for a vertical feed."],
-                    ["Button text", "Learn more"],
-                    ["Target URL", "https://www.prusa3d.com/"],
-                    ["Placement", "feed-inline-1"],
-                    ["Start date", "2026-06-01"],
-                    ["End date", "2026-06-30"],
-                    ["Monthly price", "£750"],
-                    ["Status", "Active"],
-                  ].map(([label, value]) => (
-                    <div key={label}>
-                      <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        {label}
-                      </label>
-                      <div className="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
-                        {value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <p className="mb-3 text-sm font-semibold text-blue-700">
-                  Ad preview
-                </p>
-                <AdPlacement placementId="feed-inline-1" />
-              </section>
-            </aside>
+            <section>
+              <p className="mb-3 text-sm font-semibold text-blue-700">
+                Live public placement
+              </p>
+              <AdPlacement placementId="feed-inline-1" />
+            </section>
           </div>
 
           <div className="mt-6">

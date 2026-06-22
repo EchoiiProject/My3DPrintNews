@@ -6,15 +6,24 @@ export type AdPlacementId =
   | "newsletter-header"
   | "newsletter-inline"
   | "sources-sidebar"
-  | "updates-sidebar";
+  | "updates-sidebar"
+  | "featured-product"
+  | "sponsored-story"
+  | "event-spotlight";
+
+export type AdPlacementStatus = "active" | "planned";
 
 export type AdPlacement = {
   id: AdPlacementId;
   name: string;
   description: string;
   location: string;
+  format: string;
+  audience: string;
+  notes: string;
   supportedFormats: string[];
   recommendedPrice: string;
+  status: AdPlacementStatus;
   enabled: boolean;
 };
 
@@ -47,26 +56,38 @@ export const adPlacements: AdPlacement[] = [
     name: "Homepage Hero",
     description: "Prominent sponsor slot near the homepage onboarding area.",
     location: "homepage",
-    supportedFormats: ["Sponsored card", "Image optional"],
-    recommendedPrice: "£950 / month",
+    format: "premium hero sponsorship",
+    audience: "all visitors",
+    notes: "Best for broad awareness and major launches.",
+    supportedFormats: ["Hero sponsorship", "Text + CTA", "Image optional"],
+    recommendedPrice: "£500/month",
+    status: "planned",
     enabled: false,
   },
   {
     id: "feed-inline-1",
-    name: "Feed Inline 1",
+    name: "Feed Inline #1",
     description: "Inline sponsor card after several feed stories.",
     location: "feed",
+    format: "native sponsored card",
+    audience: "feed readers",
+    notes: "Primary live inventory for lightweight sponsor validation.",
     supportedFormats: ["Sponsored card", "Text + CTA", "Image optional"],
-    recommendedPrice: "£750 / month",
+    recommendedPrice: "£250/month",
+    status: "active",
     enabled: true,
   },
   {
     id: "feed-inline-2",
-    name: "Feed Inline 2",
+    name: "Feed Inline #2",
     description: "Secondary inline sponsor card deeper in the feed.",
     location: "feed",
+    format: "native sponsored card",
+    audience: "high-engagement readers",
+    notes: "Useful once the feed has enough depth for a second inline slot.",
     supportedFormats: ["Sponsored card", "Text + CTA", "Image optional"],
-    recommendedPrice: "£550 / month",
+    recommendedPrice: "£175/month",
+    status: "planned",
     enabled: false,
   },
   {
@@ -74,8 +95,12 @@ export const adPlacements: AdPlacement[] = [
     name: "Feed Sidebar",
     description: "Compact sponsor placement in the feed sidebar.",
     location: "feed",
-    supportedFormats: ["Compact card", "Text + CTA"],
-    recommendedPrice: "£450 / month",
+    format: "supplier spotlight",
+    audience: "desktop feed readers",
+    notes: "Best for suppliers, marketplaces, services, and recurring offers.",
+    supportedFormats: ["Supplier spotlight", "Compact card", "Text + CTA"],
+    recommendedPrice: "£200/month",
+    status: "planned",
     enabled: false,
   },
   {
@@ -83,8 +108,12 @@ export const adPlacements: AdPlacement[] = [
     name: "Newsletter Header",
     description: "Sponsor placement prepared for the top of newsletters.",
     location: "newsletter",
+    format: "newsletter sponsor",
+    audience: "subscribers",
+    notes: "High-visibility email sponsor placement for future sending.",
     supportedFormats: ["Email banner", "Text + CTA"],
-    recommendedPrice: "£850 / month",
+    recommendedPrice: "£750/month",
+    status: "planned",
     enabled: false,
   },
   {
@@ -92,26 +121,77 @@ export const adPlacements: AdPlacement[] = [
     name: "Newsletter Inline",
     description: "Sponsor placement prepared between newsletter stories.",
     location: "newsletter",
+    format: "sponsored newsletter block",
+    audience: "subscribers",
+    notes: "Best for contextual offers within a personalised update.",
     supportedFormats: ["Email inline card", "Text + CTA"],
-    recommendedPrice: "£650 / month",
+    recommendedPrice: "£400/month",
+    status: "planned",
     enabled: false,
   },
   {
     id: "sources-sidebar",
-    name: "Sources Sidebar",
+    name: "Sources Page Sponsor",
     description: "Sponsor placement for the expanded source selector.",
     location: "sources",
-    supportedFormats: ["Sidebar card", "Text + CTA"],
-    recommendedPrice: "£350 / month",
+    format: "supplier / source discovery sponsor",
+    audience: "users configuring their feed",
+    notes: "Useful for discovery-stage buyers and active feed builders.",
+    supportedFormats: ["Discovery sponsor", "Sidebar card", "Text + CTA"],
+    recommendedPrice: "£150/month",
+    status: "planned",
     enabled: false,
   },
   {
     id: "updates-sidebar",
-    name: "Updates Sidebar",
+    name: "Updates Page Sponsor",
     description: "Sponsor placement for platform updates pages.",
     location: "updates",
-    supportedFormats: ["Sidebar card", "Text + CTA"],
-    recommendedPrice: "£300 / month",
+    format: "platform update sponsor",
+    audience: "product followers",
+    notes: "Good for partners who want visibility with engaged followers.",
+    supportedFormats: ["Update sponsor", "Sidebar card", "Text + CTA"],
+    recommendedPrice: "£125/month",
+    status: "planned",
+    enabled: false,
+  },
+  {
+    id: "featured-product",
+    name: "Featured Product",
+    description: "Product-style sponsor card for buyer-oriented placements.",
+    location: "cross-site",
+    format: "product card",
+    audience: "buyers / enthusiasts",
+    notes: "Best for hardware, materials, accessories, and services.",
+    supportedFormats: ["Product card", "Text + CTA", "Image optional"],
+    recommendedPrice: "£300/month",
+    status: "planned",
+    enabled: false,
+  },
+  {
+    id: "sponsored-story",
+    name: "Sponsored Story",
+    description: "Sponsored article-style card for editorial-adjacent content.",
+    location: "cross-site",
+    format: "sponsored article-style card",
+    audience: "readers",
+    notes: "Best for longer partner messages that must remain clearly labelled.",
+    supportedFormats: ["Sponsored story", "Text + CTA", "Image optional"],
+    recommendedPrice: "£500/month",
+    status: "planned",
+    enabled: false,
+  },
+  {
+    id: "event-spotlight",
+    name: "Event Spotlight",
+    description: "Event promotion placement for webinars, launches, and shows.",
+    location: "cross-site",
+    format: "event promotion card",
+    audience: "enthusiasts / industry visitors",
+    notes: "Best for time-bound events, launches, and industry programmes.",
+    supportedFormats: ["Event card", "Text + CTA", "Date optional"],
+    recommendedPrice: "£200/month",
+    status: "planned",
     enabled: false,
   },
 ];
@@ -125,7 +205,7 @@ export const adCampaigns: AdCampaign[] = [
     status: "Active",
     startDate: "2026-06-01",
     endDate: "2026-06-30",
-    price: "£750 / month",
+    price: "£250/month",
     ctaLabel: "Learn more",
     active: true,
     creative: {
@@ -145,7 +225,7 @@ export const adCampaigns: AdCampaign[] = [
     status: "Paused",
     startDate: "2026-07-01",
     endDate: "2026-07-31",
-    price: "£550 / month",
+    price: "£175/month",
     ctaLabel: "Learn more",
     active: true,
     creative: {
@@ -165,7 +245,7 @@ export const adCampaigns: AdCampaign[] = [
     status: "Draft",
     startDate: "2026-08-01",
     endDate: "2026-08-31",
-    price: "£450 / month",
+    price: "£200/month",
     ctaLabel: "Learn more",
     active: true,
     creative: {
@@ -185,7 +265,7 @@ export const adCampaigns: AdCampaign[] = [
     status: "Expired",
     startDate: "2026-05-01",
     endDate: "2026-05-31",
-    price: "£500 / month",
+    price: "£500/month",
     ctaLabel: "View launch",
     active: false,
     creative: {
