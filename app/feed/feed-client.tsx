@@ -15,6 +15,7 @@ import {
   rankFeedArticles,
 } from "@/lib/ranking";
 import { FooterLinks } from "../footer-links";
+import { ActionLinks, GlobalNav } from "../global-nav";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -458,25 +459,7 @@ export function FeedClient({
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto w-full max-w-7xl px-6 py-6 sm:px-8 lg:px-12">
         {showNavigation ? (
-          <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-            <Link
-              className="text-lg font-bold tracking-tight text-slate-950"
-              href="/"
-            >
-              {appConfig.name}
-            </Link>
-            <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
-              <Link className="hover:text-blue-700" href="/">
-                Preferences
-              </Link>
-              <Link className="hover:text-blue-700" href="/contact">
-                Contact
-              </Link>
-              <Link className="hover:text-blue-700" href="/publishers">
-                Publishers
-              </Link>
-            </div>
-          </nav>
+          <GlobalNav />
         ) : null}
 
         {showHeader ? (
@@ -490,13 +473,23 @@ export function FeedClient({
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
               {appConfig.feedIntro}
             </p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 className="inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                 href="/"
               >
                 Edit my feed
               </Link>
+              <ActionLinks
+                links={[
+                  {
+                    href: "/catch-up",
+                    label: "Catch up on missed stories",
+                  },
+                  { href: "/sources", label: "Browse all sources" },
+                  { href: "/updates", label: "Latest platform updates" },
+                ]}
+              />
             </div>
           </header>
         ) : null}

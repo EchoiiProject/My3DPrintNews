@@ -4,6 +4,7 @@ import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { FooterLinks } from "../../footer-links";
 import { FeedClient } from "../../feed/feed-client";
 import { placeholderStories } from "../../feed/placeholder-stories";
+import { ActionLinks, GlobalNav } from "../../global-nav";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -70,14 +71,7 @@ export default async function SavedFeedPage({
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
         <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
-          <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-            <Link
-              className="text-lg font-bold tracking-tight text-slate-950"
-              href="/"
-            >
-              My3DPrintNews
-            </Link>
-          </nav>
+          <GlobalNav />
           <div className="flex-1 py-12">
             <h1 className="text-4xl font-bold text-slate-950">
               Saved feed preview
@@ -99,6 +93,12 @@ export default async function SavedFeedPage({
               >
                 Edit preferences
               </Link>
+              <Link
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-blue-200 bg-white px-4 text-sm font-bold text-blue-700 hover:border-blue-300 hover:bg-blue-50"
+                href="/catch-up"
+              >
+                Catch Up
+              </Link>
             </div>
           </div>
           <FooterLinks />
@@ -117,14 +117,7 @@ export default async function SavedFeedPage({
     return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
         <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
-          <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-            <Link
-              className="text-lg font-bold tracking-tight text-slate-950"
-              href="/"
-            >
-              My3DPrintNews
-            </Link>
-          </nav>
+          <GlobalNav />
           <div className="flex-1 py-12">
             <h1 className="text-4xl font-bold text-slate-950">
               Saved feed not found
@@ -146,6 +139,12 @@ export default async function SavedFeedPage({
               >
                 Edit preferences
               </Link>
+              <Link
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-blue-200 bg-white px-4 text-sm font-bold text-blue-700 hover:border-blue-300 hover:bg-blue-50"
+                href="/catch-up"
+              >
+                Catch Up
+              </Link>
             </div>
           </div>
           <FooterLinks />
@@ -165,7 +164,10 @@ export default async function SavedFeedPage({
   return (
     <div>
       <section className="bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] px-6 pt-8 text-slate-950 sm:px-8 lg:px-12">
-        <div className="mx-auto max-w-7xl rounded-lg border border-blue-100 bg-white/80 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+        <div className="mx-auto max-w-7xl">
+          <GlobalNav />
+        </div>
+        <div className="mx-auto mt-5 max-w-7xl rounded-lg border border-blue-100 bg-white/80 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
           <p className="text-sm font-semibold text-blue-700">Saved feed</p>
           <h1 className="mt-1 text-3xl font-bold text-slate-950">
             Your saved My3DPrintNews feed
@@ -226,6 +228,15 @@ export default async function SavedFeedPage({
             >
               Edit preferences
             </Link>
+            <ActionLinks
+              links={[
+                { href: "/catch-up", label: "Catch Up" },
+                {
+                  href: `/newsletter-preview/${token}`,
+                  label: "Preview next update",
+                },
+              ]}
+            />
           </div>
         </div>
       </section>

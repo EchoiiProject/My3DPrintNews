@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { currentSite } from "../config/current-site";
 import { FooterLinks } from "./footer-links";
+import { GlobalNav } from "./global-nav";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -166,14 +167,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
   return (
     <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
-        <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-          <Link
-            className="text-lg font-bold tracking-tight text-slate-950"
-            href="/"
-          >
-            {appConfig.name}
-          </Link>
-        </nav>
+        <GlobalNav />
 
         <div className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-12">
           <div className="max-w-3xl lg:sticky lg:top-6">

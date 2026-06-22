@@ -10,7 +10,6 @@ export default function UpdatesPage() {
       feedbackCta={metadata.updates.feedbackCta}
       intro={metadata.updates.intro}
       posts={updates.posts}
-      siteName={metadata.name}
       title={metadata.updates.title}
     />
   );
