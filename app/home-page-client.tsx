@@ -8,6 +8,7 @@ import { featuredProducts } from "../config/products";
 import { FooterLinks } from "./footer-links";
 import { GlobalNav } from "./global-nav";
 import { ProductCard } from "./product-card";
+import { SponsorBanner } from "./sponsor-banner";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -170,6 +171,9 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
     <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
         <GlobalNav />
+        <div className="mt-5">
+          <SponsorBanner sponsor={currentSite.currentSponsor} />
+        </div>
 
         <div className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-12">
           <div className="max-w-3xl lg:sticky lg:top-6">
