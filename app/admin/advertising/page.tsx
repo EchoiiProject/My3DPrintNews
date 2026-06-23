@@ -78,25 +78,17 @@ function AdminPageShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AdminSetupMessage() {
+function ReviewModeBanner() {
   return (
-    <AdminPageShell>
-      <div className="flex flex-1 items-center py-12">
-        <section className="max-w-2xl rounded-lg border border-amber-100 bg-white/88 p-6 shadow-xl shadow-blue-950/8 backdrop-blur">
-          <p className="text-sm font-semibold text-amber-700">Admin setup</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            Advertising Admin Access
-          </h1>
-          <p className="mt-3 text-base leading-7 text-slate-600">
-            Admin access is not configured yet. Add the required environment
-            variable before using this management panel.
-          </p>
-          <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">
-            Required environment variable: ADMIN_ACCESS_PASSWORD
-          </p>
-        </section>
-      </div>
-    </AdminPageShell>
+    <section className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+      <p className="text-sm font-bold text-amber-900">
+        Review Mode - Admin security not configured
+      </p>
+      <p className="mt-1 text-sm leading-6 text-amber-800">
+        Set ADMIN_ACCESS_PASSWORD to require password access for this admin
+        area.
+      </p>
+    </section>
   );
 }
 
@@ -152,11 +144,8 @@ export default async function AdvertisingAdminPage({
 }: {
   searchParams?: Promise<{ error?: string }>;
 }) {
-  if (!isAdminAccessConfigured()) {
-    return <AdminSetupMessage />;
-  }
-
-  const canAccess = await hasAdminAccess();
+  const reviewMode = !isAdminAccessConfigured();
+  const canAccess = reviewMode ? true : await hasAdminAccess();
 
   if (!canAccess) {
     const params = await searchParams;
@@ -168,6 +157,7 @@ export default async function AdvertisingAdminPage({
     <AdminPageShell>
 
         <div className="flex-1 py-10">
+          {reviewMode ? <ReviewModeBanner /> : null}
           <header>
             <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
               Platform prototype
@@ -180,6 +170,7 @@ export default async function AdvertisingAdminPage({
               coverage, indicative pricing, and sample sponsored creative before
               database-backed management is added.
             </p>
+            {!reviewMode ? (
             <form action={logoutAdmin} className="mt-5">
               <button
                 className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
@@ -188,6 +179,7 @@ export default async function AdvertisingAdminPage({
                 Logout
               </button>
             </form>
+            ) : null}
           </header>
 
           <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
