@@ -240,6 +240,24 @@ export default async function VerticalAdminPage({
   const isSuperAdmin = currentUser.role === "platform_owner";
   const verticalFeedback = await getFeedbackByVertical(vertical.slug);
   const verticalManagementCentres = managementCentres.map((centre) => {
+    if (centre.title === "Platform" && isSuperAdmin) {
+      return {
+        ...centre,
+        actions: [
+          ...centre.actions,
+          { label: "Organisations", href: "/admin/organisations" },
+        ],
+        items: [
+          ...centre.items,
+          {
+            label: "Organisations",
+            href: "/admin/organisations",
+            status: "Ready" as const,
+          },
+        ],
+      };
+    }
+
     if (centre.title !== "Audience") {
       return centre;
     }
@@ -282,7 +300,10 @@ export default async function VerticalAdminPage({
   });
 
   return (
-    <AdminShell title={`${vertical.name} Management Centre`}>
+    <AdminShell
+      showOrganisations={isSuperAdmin}
+      title={`${vertical.name} Management Centre`}
+    >
       <AdminAccessGate
         error={query?.error}
         loginTitle={`${vertical.name} Admin Access`}

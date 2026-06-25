@@ -29,6 +29,12 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "Organisation Management",
+    description: "Organisations, ownership, and vertical onboarding.",
+    href: "/admin/organisations",
+    roles: ["platform_owner"],
+  },
+  {
     title: "Feedback Management",
     description: "Private reader feedback, source suggestions, and issue reports.",
     href: "/admin/feedback",
@@ -67,7 +73,10 @@ export default async function AdminHubPage({
   );
 
   return (
-    <AdminShell title="Admin Hub">
+    <AdminShell
+      showOrganisations={currentUser.role === "platform_owner"}
+      title="Admin Hub"
+    >
       <AdminAccessGate
         error={params?.error}
         loginTitle="Platform Admin Access"

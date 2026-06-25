@@ -8,10 +8,26 @@ import { verticalBySlug as configVerticalBySlug, verticals } from "@/config/vert
 import type { Vertical } from "@/config/verticals";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
+export type Organisation = {
+  id: string;
+  name: string;
+  websiteUrl: string | null;
+  logoUrl: string | null;
+  contactEmail: string | null;
+  status: "active" | "prospect";
+  verticals: Vertical[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 type OrganisationRecord = {
+  id?: string;
   name: string | null;
   website_url: string | null;
+  logo_url?: string | null;
   contact_email: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type VerticalRecord = {
@@ -135,6 +151,28 @@ function fallbackVerticals(): Vertical[] {
   return verticals.filter((vertical) => vertical.status === "active");
 }
 
+function fallbackOrganisations(): Organisation[] {
+  const activeVerticals = fallbackVerticals();
+  const grouped = new Map<string, Vertical[]>();
+
+  activeVerticals.forEach((vertical) => {
+    const key = vertical.ownerName || "Demo Organisation";
+    grouped.set(key, [...(grouped.get(key) ?? []), vertical]);
+  });
+
+  return Array.from(grouped.entries()).map(([name, ownedVerticals], index) => ({
+    id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `demo-${index}`,
+    name,
+    websiteUrl: ownedVerticals[0]?.domain ? `https://${ownedVerticals[0].domain}` : null,
+    logoUrl: null,
+    contactEmail: ownedVerticals[0]?.ownerEmail ?? null,
+    status: "active",
+    verticals: ownedVerticals,
+    createdAt: ownedVerticals[0]?.createdAt ?? new Date().toISOString(),
+    updatedAt: ownedVerticals[0]?.updatedAt ?? new Date().toISOString(),
+  }));
+}
+
 function logFallback(context: string, error: unknown) {
   console.warn(`[verticals] ${context}; using config fallback.`, error);
 }
@@ -159,6 +197,54 @@ export async function getVerticals(): Promise<Vertical[]> {
   }
 
   return (data as VerticalRecord[]).map(toAppVertical);
+}
+
+export async function getOrganisations(): Promise<Organisation[]> {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) {
+    return fallbackOrganisations();
+  }
+
+  const { data, error } = await supabase
+    .from("organisations")
+    .select("id,name,website_url,logo_url,contact_email,created_at,updated_at")
+    .order("created_at", { ascending: true });
+
+  if (error || !data) {
+    logFallback("Supabase organisation lookup failed", error);
+    return fallbackOrganisations();
+  }
+
+  const allVerticals = await getVerticals();
+
+  return (data as OrganisationRecord[]).map((organisation) => {
+    const orgVerticals = allVerticals.filter(
+      (vertical) => vertical.ownerName === organisation.name,
+    );
+
+    return {
+      id: organisation.id ?? organisation.name ?? "organisation",
+      name: organisation.name ?? "Unnamed organisation",
+      websiteUrl: organisation.website_url ?? null,
+      logoUrl: organisation.logo_url ?? null,
+      contactEmail: organisation.contact_email ?? null,
+      status: orgVerticals.some((vertical) => vertical.active)
+        ? "active"
+        : "prospect",
+      verticals: orgVerticals,
+      createdAt: organisation.created_at ?? new Date().toISOString(),
+      updatedAt: organisation.updated_at ?? new Date().toISOString(),
+    };
+  });
+}
+
+export async function getOrganisationById(
+  id: string,
+): Promise<Organisation | null> {
+  const organisations = await getOrganisations();
+
+  return organisations.find((organisation) => organisation.id === id) ?? null;
 }
 
 export async function getVerticalBySlug(slug: string): Promise<Vertical | null> {

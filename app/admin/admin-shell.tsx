@@ -15,11 +15,17 @@ const adminLinks = [
 
 export function AdminShell({
   children,
+  showOrganisations = false,
   title = "Platform Admin",
 }: {
   children: ReactNode;
+  showOrganisations?: boolean;
   title?: string;
 }) {
+  const visibleAdminLinks = showOrganisations
+    ? [...adminLinks, { href: "/admin/organisations", label: "Organisations" }]
+    : adminLinks;
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
@@ -30,7 +36,7 @@ export function AdminShell({
               {title}
             </p>
             <nav className="flex flex-wrap gap-2" aria-label="Admin navigation">
-              {adminLinks.map((link) => (
+              {visibleAdminLinks.map((link) => (
                 <Link
                   className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
                   href={link.href}
