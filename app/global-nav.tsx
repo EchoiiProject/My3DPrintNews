@@ -6,6 +6,7 @@ const primaryLinks = [
   { href: "/catch-up", label: "Catch Up" },
   { href: "/sources", label: "Sources" },
   { href: "/updates", label: "Updates" },
+  { href: "/network", label: "Network" },
 ];
 
 export function GlobalNav() {

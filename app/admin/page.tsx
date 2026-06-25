@@ -29,6 +29,12 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "MyNews Network",
+    description: "Adjacent vertical discovery and wider network promotion.",
+    href: "/network",
+    roles: ["platform_owner", "vertical_owner"],
+  },
+  {
     title: "Campaign Reporting",
     description: "Assigned campaign placement and reporting preview.",
     href: "/admin/advertising",
