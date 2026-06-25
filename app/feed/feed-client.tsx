@@ -16,6 +16,7 @@ import {
 } from "@/lib/ranking";
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
+import { DiscoverMorePanel } from "../discover-more-components";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -961,6 +962,7 @@ export function FeedClient({
           </section>
         </div>
 
+        <DiscoverMorePanel />
         <FooterLinks />
       </section>
     </main>

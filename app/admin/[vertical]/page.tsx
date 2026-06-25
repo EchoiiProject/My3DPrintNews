@@ -100,6 +100,7 @@ const managementCentres: ManagementCentre[] = [
     ],
     actions: [
       { label: "Admin Hub", href: "/admin" },
+      { label: "Preview Discover More", href: "/discover-more" },
       { label: "Manage Owners", href: "/admin" },
       { label: "Review Roles", href: "/admin" },
     ],

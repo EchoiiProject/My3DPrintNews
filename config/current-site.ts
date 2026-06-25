@@ -7,6 +7,7 @@ import { appConfig } from "./site";
 // changing page components.
 export const currentSite = {
   metadata: appConfig,
+  verticalSlug: "my3dprintnews",
   currentSponsor: null as Sponsor | null,
   updates: {
     posts: updatePosts,

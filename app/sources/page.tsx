@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { RegistryItem, registry, selectableSources } from "../../config/registry";
+import { DiscoverMorePanel } from "../discover-more-components";
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
 import {
@@ -345,6 +346,7 @@ export default function SourcesPage() {
           })}
         </div>
 
+        <DiscoverMorePanel />
         <FooterLinks />
       </section>
     </main>

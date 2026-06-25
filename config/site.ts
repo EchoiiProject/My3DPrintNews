@@ -23,5 +23,6 @@ export const appConfig = {
     { label: "Terms", href: "/terms" },
     { label: "Publisher Policy", href: "/publisher-policy" },
     { label: "Updates", href: "/updates" },
+    { label: "Discover More", href: "/discover-more" },
   ],
 };

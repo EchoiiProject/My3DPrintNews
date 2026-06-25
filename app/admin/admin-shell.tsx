@@ -10,7 +10,6 @@ const adminLinks = [
   { href: "/admin/advertising", label: "Advertising" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/sponsors", label: "Sponsors" },
-  { href: "/network", label: "Network" },
 ];
 
 export function AdminShell({
