@@ -29,6 +29,12 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "Feedback Management",
+    description: "Private reader feedback, source suggestions, and issue reports.",
+    href: "/admin/feedback",
+    roles: ["platform_owner", "vertical_owner"],
+  },
+  {
     title: "Discover More",
     description: "Reader-facing publication discovery across MyNews verticals.",
     href: "/discover-more",

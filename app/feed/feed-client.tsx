@@ -17,6 +17,7 @@ import {
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
 import { DiscoverMorePanel } from "../discover-more-components";
+import { FeedbackPanel } from "../feedback-panel";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -962,6 +963,7 @@ export function FeedClient({
           </section>
         </div>
 
+        <FeedbackPanel />
         <DiscoverMorePanel />
         <FooterLinks />
       </section>

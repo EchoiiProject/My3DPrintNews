@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DiscoverMorePanel } from "../discover-more-components";
+import { FeedbackPanel } from "../feedback-panel";
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
 
@@ -91,6 +92,7 @@ export function UpdatesPageTemplate({
           </section>
         </div>
 
+        <FeedbackPanel />
         <DiscoverMorePanel />
         <FooterLinks />
       </section>

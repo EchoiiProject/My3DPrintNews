@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { currentSite } from "../config/current-site";
 import { featuredProducts } from "../config/products";
 import { DiscoverMorePanel } from "./discover-more-components";
+import { FeedbackPanel } from "./feedback-panel";
 import { FooterLinks } from "./footer-links";
 import { GlobalNav } from "./global-nav";
 import { ProductCard } from "./product-card";
@@ -438,6 +439,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
           </div>
         </section>
 
+        <FeedbackPanel />
         <DiscoverMorePanel />
 
         <FooterLinks />

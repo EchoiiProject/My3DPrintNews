@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  averageFeedbackRating,
+  feedbackCountByCategory,
+  feedbackForVertical,
+} from "@/config/feedback";
 import { sponsorById } from "@/config/sponsors";
 import { demoUserById, verticalBySlug } from "@/config/verticals";
 import { AdminAccessGate } from "../admin-access";
@@ -79,12 +84,14 @@ const managementCentres: ManagementCentre[] = [
     actions: [
       { label: "Preview Newsletter", href: "/newsletter-preview/demo" },
       { label: "View Catch Up", href: "/catch-up" },
+      { label: "Review Feedback", href: null },
       { label: "View Analytics", href: null },
     ],
     items: [
       { label: "Subscribers", href: null, status: "Planned" },
       { label: "Newsletter", href: null, status: "Planned" },
       { label: "Saved Feeds", href: null, status: "Planned" },
+      { label: "Feedback", href: null, status: "Ready" },
       { label: "Analytics", href: null, status: "Planned" },
       { label: "Growth", href: null, status: "Planned" },
     ],
@@ -231,6 +238,48 @@ export default async function VerticalAdminPage({
   const currentUser = demoUserById(query?.view);
   const sponsor = vertical.sponsorId ? sponsorById[vertical.sponsorId] : null;
   const isSuperAdmin = currentUser.role === "platform_owner";
+  const verticalFeedback = feedbackForVertical(vertical.id);
+  const verticalManagementCentres = managementCentres.map((centre) => {
+    if (centre.title !== "Audience") {
+      return centre;
+    }
+
+    return {
+      ...centre,
+      stats: [
+        {
+          label: "New suggestions",
+          value: String(
+            verticalFeedback.filter((item) => item.status === "new").length,
+          ),
+        },
+        {
+          label: "Source requests",
+          value: String(
+            feedbackCountByCategory(verticalFeedback, "source_request"),
+          ),
+        },
+        {
+          label: "Bug reports",
+          value: String(feedbackCountByCategory(verticalFeedback, "bug_report")),
+        },
+        {
+          label: "Feedback score",
+          value: averageFeedbackRating(verticalFeedback),
+        },
+      ],
+      actions: centre.actions.map((action) =>
+        action.label === "Review Feedback"
+          ? { ...action, href: `/admin/${vertical.slug}/feedback` }
+          : action,
+      ),
+      items: centre.items.map((item) =>
+        item.label === "Feedback"
+          ? { ...item, href: `/admin/${vertical.slug}/feedback` }
+          : item,
+      ),
+    };
+  });
 
   return (
     <AdminShell title={`${vertical.name} Management Centre`}>
@@ -358,7 +407,7 @@ export default async function VerticalAdminPage({
           </section>
 
           <section className="mt-8 grid gap-5 lg:grid-cols-2">
-            {managementCentres.map((centre) => (
+            {verticalManagementCentres.map((centre) => (
               <ManagementCentreCard centre={centre} key={centre.title} />
             ))}
           </section>
