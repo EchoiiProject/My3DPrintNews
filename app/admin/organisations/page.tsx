@@ -3,6 +3,7 @@ import { demoUserById } from "@/config/verticals";
 import { getOrganisations } from "@/lib/verticals";
 import { AdminAccessGate } from "../admin-access";
 import { AdminShell } from "../admin-shell";
+import { NewOrganisationForm } from "./new-organisation-form";
 
 export default async function OrganisationsAdminPage({
   searchParams,
@@ -54,46 +55,7 @@ export default async function OrganisationsAdminPage({
             </section>
           ) : (
             <>
-              <section className="mt-8 rounded-lg border border-blue-100 bg-blue-50/80 p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-blue-950">
-                      New Organisation
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-blue-900">
-                      Mock creation form for onboarding a future vertical owner.
-                      Saving will be connected after real auth and write
-                      permissions are in place.
-                    </p>
-                  </div>
-                  <button
-                    className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-                    type="button"
-                  >
-                    New Organisation
-                  </button>
-                </div>
-                <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  {[
-                    "Organisation name",
-                    "Website URL",
-                    "Logo URL",
-                    "Contact email",
-                    "Notes",
-                  ].map((field) => (
-                    <label className="block" key={field}>
-                      <span className="text-sm font-bold text-blue-950">
-                        {field}
-                      </span>
-                      <input
-                        className="mt-1 min-h-11 w-full rounded-md border border-blue-100 bg-white/90 px-3 text-sm text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
-                        placeholder="Prototype only"
-                        readOnly
-                      />
-                    </label>
-                  ))}
-                </div>
-              </section>
+              <NewOrganisationForm />
 
               <section className="mt-8 grid gap-4">
                 {organisations.map((organisation) => (
