@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { sponsorById } from "@/config/sponsors";
-import { ownershipRoles, verticals } from "@/config/verticals";
+import {
+  demoAdminUsers,
+  demoUserById,
+  ownershipRoles,
+  visibleVerticalsForUser,
+} from "@/config/verticals";
 import { AdminAccessGate } from "./admin-access";
 import { AdminShell } from "./admin-shell";
 
@@ -9,25 +14,39 @@ const adminTools = [
     title: "Advertising Management",
     description: "Campaigns, placements, showroom, and sponsor inventory.",
     href: "/admin/advertising",
+    roles: ["platform_owner", "vertical_owner"],
   },
   {
     title: "Product Management",
     description: "Promotional products and product placement inventory.",
     href: "/admin/products",
+    roles: ["platform_owner", "vertical_owner"],
   },
   {
     title: "Sponsor Management",
     description: "Platform-level presenting and supporting sponsor records.",
     href: "/admin/sponsors",
+    roles: ["platform_owner", "vertical_owner"],
+  },
+  {
+    title: "Campaign Reporting",
+    description: "Assigned campaign placement and reporting preview.",
+    href: "/admin/advertising",
+    roles: ["advertiser"],
   },
 ];
 
 export default async function AdminHubPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; view?: string }>;
 }) {
   const params = await searchParams;
+  const currentUser = demoUserById(params?.view);
+  const visibleVerticals = visibleVerticalsForUser(currentUser);
+  const visibleTools = adminTools.filter((tool) =>
+    tool.roles.includes(currentUser.role),
+  );
 
   return (
     <AdminShell title="Admin Hub">
@@ -49,14 +68,51 @@ export default async function AdminHubPage({
               sponsors, products, campaigns, subscribers, sources, updates, and
               analytics.
             </p>
+            <p className="mt-4 max-w-3xl rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-950">
+              Future authentication will restrict each user to their assigned
+              role and vertical.
+            </p>
           </header>
+
+          <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700">
+                  Access simulation
+                </p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                  Viewing as: {currentUser.label}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Prototype-only selector. This is not real security.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {demoAdminUsers.map((user) => (
+                  <Link
+                    className={[
+                      "inline-flex min-h-10 items-center justify-center rounded-md border px-3 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                      currentUser.id === user.id
+                        ? "border-blue-500 bg-blue-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
+                    ].join(" ")}
+                    href={`/admin?view=${user.id}`}
+                    key={user.id}
+                  >
+                    {user.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
 
           <section className="mt-8">
             <h2 className="text-2xl font-bold text-slate-950">
               Vertical admin
             </h2>
             <div className="mt-4 grid gap-5 lg:grid-cols-2">
-            {verticals.map((vertical) => {
+            {visibleVerticals.length ? (
+              visibleVerticals.map((vertical) => {
               const sponsor = vertical.sponsorId
                 ? sponsorById[vertical.sponsorId]
                 : null;
@@ -115,7 +171,18 @@ export default async function AdminHubPage({
                   </Link>
                 </article>
               );
-            })}
+              })
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+                <h3 className="text-xl font-bold text-slate-950">
+                  No vertical access
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Advertisers will only see assigned campaigns and campaign
+                  reporting in a future authenticated experience.
+                </p>
+              </div>
+            )}
             </div>
           </section>
 
@@ -124,7 +191,7 @@ export default async function AdminHubPage({
               Platform tools
             </h2>
             <div className="mt-4 grid gap-4 lg:grid-cols-3">
-              {adminTools.map((tool) => (
+              {visibleTools.map((tool) => (
                 <Link
                   className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/50"
                   href={tool.href}
