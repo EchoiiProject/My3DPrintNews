@@ -85,7 +85,7 @@ function initials(name: string): string {
 function toAppVertical(record: VerticalRecord): Vertical {
   const configured = configVerticalBySlug(record.slug);
   const organisation = firstRelation(record.organisations);
-  const isActive = record.status === "active";
+  const isActive = record.status === "active" || record.status === "live";
 
   return {
     id: configured?.id ?? record.slug,
