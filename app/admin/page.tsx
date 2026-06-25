@@ -4,6 +4,24 @@ import { ownershipRoles, verticals } from "@/config/verticals";
 import { AdminAccessGate } from "./admin-access";
 import { AdminShell } from "./admin-shell";
 
+const adminTools = [
+  {
+    title: "Advertising Management",
+    description: "Campaigns, placements, showroom, and sponsor inventory.",
+    href: "/admin/advertising",
+  },
+  {
+    title: "Product Management",
+    description: "Promotional products and product placement inventory.",
+    href: "/admin/products",
+  },
+  {
+    title: "Sponsor Management",
+    description: "Platform-level presenting and supporting sponsor records.",
+    href: "/admin/sponsors",
+  },
+];
+
 export default async function AdminHubPage({
   searchParams,
 }: {
@@ -12,7 +30,7 @@ export default async function AdminHubPage({
   const params = await searchParams;
 
   return (
-    <AdminShell>
+    <AdminShell title="Admin Hub">
       <AdminAccessGate
         error={params?.error}
         loginTitle="Platform Admin Access"
@@ -33,7 +51,11 @@ export default async function AdminHubPage({
             </p>
           </header>
 
-          <section className="mt-8 grid gap-5 lg:grid-cols-2">
+          <section className="mt-8">
+            <h2 className="text-2xl font-bold text-slate-950">
+              Vertical admin
+            </h2>
+            <div className="mt-4 grid gap-5 lg:grid-cols-2">
             {verticals.map((vertical) => {
               const sponsor = vertical.sponsorId
                 ? sponsorById[vertical.sponsorId]
@@ -94,6 +116,29 @@ export default async function AdminHubPage({
                 </article>
               );
             })}
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-2xl font-bold text-slate-950">
+              Platform tools
+            </h2>
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              {adminTools.map((tool) => (
+                <Link
+                  className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/50"
+                  href={tool.href}
+                  key={tool.href}
+                >
+                  <h3 className="text-xl font-bold text-slate-950">
+                    {tool.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {tool.description}
+                  </p>
+                </Link>
+              ))}
+            </div>
           </section>
 
           <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">

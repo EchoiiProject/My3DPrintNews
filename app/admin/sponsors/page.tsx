@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   adminPasswordMatches,
   clearAdminAccessSession,
@@ -121,6 +122,13 @@ export default async function SponsorAdminPage({
       <div className="flex-1 py-10">
         {reviewMode ? <ReviewModeBanner /> : null}
         <header>
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
+            <Link className="text-blue-700 hover:text-blue-900" href="/admin">
+              Admin
+            </Link>
+            <span>/</span>
+            <span>Sponsors</span>
+          </div>
           <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
             Sponsor layer prototype
           </p>
@@ -149,6 +157,12 @@ export default async function SponsorAdminPage({
                 </button>
               </form>
             ) : null}
+            <Link
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+              href="/admin"
+            >
+              Back to Admin Hub
+            </Link>
           </div>
         </header>
 

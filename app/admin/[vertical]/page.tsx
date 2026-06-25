@@ -10,36 +10,43 @@ const managementAreas = [
     title: "Advertising",
     description: "Campaigns, placements, creatives, and sponsorship inventory.",
     href: "/admin/advertising",
+    status: "Open",
   },
   {
     title: "Products",
     description: "Promotional products and product placement inventory.",
     href: "/admin/products",
+    status: "Open",
   },
   {
     title: "Sponsors",
     description: "Presenting and supporting sponsor relationships.",
     href: "/admin/sponsors",
+    status: "Open",
   },
   {
     title: "Subscribers",
     description: "Saved feeds and newsletter subscriber profiles.",
-    href: "/admin",
+    href: null,
+    status: "Coming soon",
   },
   {
     title: "Sources",
     description: "RSS feeds, creators, and source registry coverage.",
     href: "/sources",
+    status: "Open",
   },
   {
     title: "Updates",
     description: "Vertical-specific platform updates and changelog posts.",
     href: "/updates",
+    status: "Open",
   },
   {
     title: "Analytics",
     description: "Coming soon: vertical traffic, engagement, and conversion data.",
-    href: "/admin",
+    href: null,
+    status: "Coming soon",
   },
 ];
 
@@ -70,7 +77,7 @@ export default async function VerticalAdminPage({
   const sponsor = vertical.sponsorId ? sponsorById[vertical.sponsorId] : null;
 
   return (
-    <AdminShell>
+    <AdminShell title={`${vertical.name} Admin`}>
       <AdminAccessGate
         error={query?.error}
         loginTitle={`${vertical.name} Admin Access`}
@@ -78,12 +85,13 @@ export default async function VerticalAdminPage({
       >
         <div className="flex-1 py-10">
           <header>
-            <Link
-              className="mb-4 inline-flex text-sm font-bold text-blue-700 hover:text-blue-900"
-              href="/admin"
-            >
-              Back to admin hub
-            </Link>
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
+              <Link className="text-blue-700 hover:text-blue-900" href="/admin">
+                Admin
+              </Link>
+              <span>/</span>
+              <span>{vertical.name}</span>
+            </div>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
               {vertical.name}
             </h1>
@@ -133,18 +141,41 @@ export default async function VerticalAdminPage({
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {managementAreas.map((area) => (
-                <Link
-                  className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/50"
-                  href={area.href}
+                <article
+                  className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur"
                   key={area.title}
                 >
+                  <div className="flex items-start justify-between gap-3">
                   <h3 className="text-xl font-bold text-slate-950">
                     {area.title}
                   </h3>
+                    <span
+                      className={[
+                        "inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold",
+                        area.status === "Open"
+                          ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-slate-50 text-slate-500",
+                      ].join(" ")}
+                    >
+                      {area.status}
+                    </span>
+                  </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     {area.description}
                   </p>
-                </Link>
+                  {area.href ? (
+                    <Link
+                      className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                      href={area.href}
+                    >
+                      Open {area.title}
+                    </Link>
+                  ) : (
+                    <p className="mt-4 text-sm font-bold text-slate-500">
+                      Coming soon
+                    </p>
+                  )}
+                </article>
               ))}
             </div>
           </section>
