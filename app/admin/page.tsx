@@ -29,6 +29,12 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "Source Management",
+    description: "RSS source health, diagnostics, and feed coverage operations.",
+    href: "/admin/sources",
+    roles: ["platform_owner", "vertical_owner"],
+  },
+  {
     title: "Organisation Management",
     description: "Organisations, ownership, and vertical onboarding.",
     href: "/admin/organisations",

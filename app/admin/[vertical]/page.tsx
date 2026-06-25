@@ -35,12 +35,12 @@ const managementCentres: ManagementCentre[] = [
       { label: "Feed health", value: "94%" },
     ],
     actions: [
-      { label: "Review Sources", href: "/sources" },
+      { label: "Review Sources", href: null },
       { label: "View Updates", href: "/updates" },
       { label: "Open Feed", href: "/feed" },
     ],
     items: [
-      { label: "Sources", href: "/sources", status: "Live" },
+      { label: "Sources", href: null, status: "Live" },
       { label: "Brands", href: null, status: "Planned" },
       { label: "Creators", href: null, status: "Planned" },
       { label: "Events", href: null, status: "Planned" },
@@ -259,6 +259,22 @@ export default async function VerticalAdminPage({
     }
 
     if (centre.title !== "Audience") {
+      if (centre.title === "Content") {
+        return {
+          ...centre,
+          actions: centre.actions.map((action) =>
+            action.label === "Review Sources"
+              ? { ...action, href: `/admin/${vertical.slug}/sources` }
+              : action,
+          ),
+          items: centre.items.map((item) =>
+            item.label === "Sources"
+              ? { ...item, href: `/admin/${vertical.slug}/sources` }
+              : item,
+          ),
+        };
+      }
+
       return centre;
     }
 

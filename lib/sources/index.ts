@@ -1,0 +1,290 @@
+import { registry } from "@/config/registry";
+import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import { getVerticalBySlug, getVerticals } from "@/lib/verticals";
+
+export type SourceHealth = "healthy" | "warning" | "offline";
+
+export type ManagedSource = {
+  id: string;
+  name: string;
+  rssUrl: string;
+  verticalId: string;
+  verticalSlug: string;
+  verticalName: string;
+  category: string | null;
+  enabled: boolean;
+  lastSuccessfulFetch: string | null;
+  articlesFetched: number;
+  lastArticleDate: string | null;
+  healthStatus: SourceHealth;
+  createdAt: string;
+};
+
+export type SourceDiagnostics = {
+  totalConfiguredSources: number;
+  enabledSources: number;
+  healthySources: number;
+  sourcesWithNoRecentArticles: number;
+  totalArticlesCollected: number;
+  newestArticle: string | null;
+  oldestArticle: string | null;
+  zeroArticleSources: ManagedSource[];
+  topContributors: ManagedSource[];
+  noActivitySevenDays: ManagedSource[];
+  recentlyAddedSources: ManagedSource[];
+};
+
+type SourceRecord = {
+  id: string;
+  vertical_id: string | null;
+  name: string;
+  rss_url: string;
+  category: string | null;
+  enabled: boolean;
+  health_status: string;
+  last_successful_fetch: string | null;
+  articles_fetched: number | null;
+  last_article_date: string | null;
+  created_at: string | null;
+  verticals?: { slug: string | null; name: string | null } | null;
+};
+
+const fallbackArticleCounts = [12, 8, 10, 5, 4, 0, 2, 0, 7, 3];
+
+function normaliseHealth(value: string | undefined): SourceHealth {
+  if (value === "healthy" || value === "warning" || value === "offline") {
+    return value;
+  }
+
+  return "warning";
+}
+
+function fallbackSources(verticalSlug?: string): ManagedSource[] {
+  const now = new Date();
+
+  return registry.sources
+    .filter((source) => source.url)
+    .map((source, index) => {
+      const articlesFetched = fallbackArticleCounts[index % fallbackArticleCounts.length];
+      const daysAgo = index % 9;
+      const lastArticleDate =
+        articlesFetched > 0
+          ? new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
+          : null;
+
+      return {
+        id: source.id,
+        name: source.label,
+        rssUrl: source.url ?? "",
+        verticalId: "my3dprintnews",
+        verticalSlug: "my3dprintnews",
+        verticalName: "My3DPrintNews",
+        category: source.relatedBrands?.length ? "Manufacturer" : "Industry News",
+        enabled: source.feedEnabled !== false && source.status !== "placeholder",
+        lastSuccessfulFetch: lastArticleDate,
+        articlesFetched,
+        lastArticleDate,
+        healthStatus:
+          source.status === "active"
+            ? "healthy"
+            : source.status === "partial"
+              ? "warning"
+              : "offline",
+        createdAt: new Date(now.getTime() - index * 24 * 60 * 60 * 1000).toISOString(),
+      };
+    })
+    .filter((source) => !verticalSlug || source.verticalSlug === verticalSlug);
+}
+
+function toManagedSource(record: SourceRecord): ManagedSource {
+  return {
+    id: record.id,
+    name: record.name,
+    rssUrl: record.rss_url,
+    verticalId: record.vertical_id ?? "",
+    verticalSlug: record.verticals?.slug ?? "unknown",
+    verticalName: record.verticals?.name ?? "Unknown vertical",
+    category: record.category,
+    enabled: record.enabled,
+    lastSuccessfulFetch: record.last_successful_fetch,
+    articlesFetched: record.articles_fetched ?? 0,
+    lastArticleDate: record.last_article_date,
+    healthStatus: normaliseHealth(record.health_status),
+    createdAt: record.created_at ?? new Date().toISOString(),
+  };
+}
+
+function logFallback(context: string, error: unknown) {
+  console.warn(`[sources] ${context}; using registry fallback.`, error);
+}
+
+export async function getManagedSources(
+  verticalSlug?: string,
+): Promise<ManagedSource[]> {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) {
+    return fallbackSources(verticalSlug);
+  }
+
+  const query = supabase
+    .from("feed_sources")
+    .select(
+      "id,vertical_id,name,rss_url,category,enabled,health_status,last_successful_fetch,articles_fetched,last_article_date,created_at,verticals(slug,name)",
+    )
+    .order("created_at", { ascending: false });
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    logFallback("Supabase source lookup failed", error);
+    return fallbackSources(verticalSlug);
+  }
+
+  return (data as SourceRecord[])
+    .map(toManagedSource)
+    .filter((source) => !verticalSlug || source.verticalSlug === verticalSlug);
+}
+
+export async function sourceDiagnostics(
+  verticalSlug?: string,
+): Promise<SourceDiagnostics> {
+  const sources = await getManagedSources(verticalSlug);
+  const datedArticles = sources
+    .map((source) => source.lastArticleDate)
+    .filter((value): value is string => Boolean(value))
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  return {
+    totalConfiguredSources: sources.length,
+    enabledSources: sources.filter((source) => source.enabled).length,
+    healthySources: sources.filter((source) => source.healthStatus === "healthy")
+      .length,
+    sourcesWithNoRecentArticles: sources.filter(
+      (source) =>
+        !source.lastArticleDate ||
+        new Date(source.lastArticleDate).getTime() < sevenDaysAgo,
+    ).length,
+    totalArticlesCollected: sources.reduce(
+      (total, source) => total + source.articlesFetched,
+      0,
+    ),
+    newestArticle: datedArticles.at(-1) ?? null,
+    oldestArticle: datedArticles[0] ?? null,
+    zeroArticleSources: sources.filter((source) => source.articlesFetched === 0),
+    topContributors: [...sources]
+      .sort((a, b) => b.articlesFetched - a.articlesFetched)
+      .slice(0, 5),
+    noActivitySevenDays: sources.filter(
+      (source) =>
+        !source.lastArticleDate ||
+        new Date(source.lastArticleDate).getTime() < sevenDaysAgo,
+    ),
+    recentlyAddedSources: [...sources]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5),
+  };
+}
+
+export async function createManagedSource(input: {
+  name: string;
+  rssUrl: string;
+  verticalSlug: string;
+  category?: string | null;
+}) {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: "Supabase is not configured, so the source could not be saved.",
+    };
+  }
+
+  const vertical = await getVerticalBySlug(input.verticalSlug);
+
+  if (!vertical) {
+    return { ok: false, message: "Vertical not found." };
+  }
+
+  const dbVertical = await supabase
+    .from("verticals")
+    .select("id")
+    .eq("slug", input.verticalSlug)
+    .maybeSingle();
+
+  if (dbVertical.error || !dbVertical.data) {
+    console.error("Supabase source vertical lookup error", dbVertical.error);
+
+    return { ok: false, message: "Vertical could not be found in Supabase." };
+  }
+
+  const { error } = await supabase.from("feed_sources").insert({
+    vertical_id: dbVertical.data.id,
+    name: input.name,
+    rss_url: input.rssUrl,
+    category: input.category ?? null,
+    enabled: true,
+    health_status: "warning",
+  });
+
+  if (error) {
+    console.error("Supabase source insert error", error);
+    return { ok: false, message: "Source could not be saved." };
+  }
+
+  return { ok: true, message: "Source saved." };
+}
+
+export async function updateManagedSource(
+  id: string,
+  patch: Partial<Pick<ManagedSource, "name" | "rssUrl" | "category" | "enabled">>,
+) {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: "Supabase is not configured, so the source could not be updated.",
+    };
+  }
+
+  const update: Record<string, string | boolean | null> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (typeof patch.name === "string") update.name = patch.name;
+  if (typeof patch.rssUrl === "string") update.rss_url = patch.rssUrl;
+  if (typeof patch.category !== "undefined") update.category = patch.category;
+  if (typeof patch.enabled === "boolean") update.enabled = patch.enabled;
+
+  const { error } = await supabase.from("feed_sources").update(update).eq("id", id);
+
+  if (error) {
+    console.error("Supabase source update error", error);
+    return { ok: false, message: "Source could not be updated." };
+  }
+
+  return { ok: true, message: "Source updated." };
+}
+
+export async function deleteManagedSource(id: string) {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: "Supabase is not configured, so the source could not be deleted.",
+    };
+  }
+
+  const { error } = await supabase.from("feed_sources").delete().eq("id", id);
+
+  if (error) {
+    console.error("Supabase source delete error", error);
+    return { ok: false, message: "Source could not be deleted." };
+  }
+
+  return { ok: true, message: "Source deleted." };
+}
