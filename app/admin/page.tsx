@@ -133,6 +133,31 @@ export default async function AdminHubPage({
             </div>
           </section>
 
+          {currentUser.role === "platform_owner" ? (
+            <section className="mt-8 rounded-lg border border-blue-100 bg-blue-50/80 p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-blue-700">
+                    Sales preparation
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold text-blue-950">
+                    Prepare a private demo vertical
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-blue-900">
+                    Set up organisation, vertical, sources, previews, and
+                    Super Admin-only sales notes before a prospect meeting.
+                  </p>
+                </div>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                  href="/admin/demo-preparation"
+                >
+                  Prepare New Demo
+                </Link>
+              </div>
+            </section>
+          ) : null}
+
           <section className="mt-8">
             <h2 className="text-2xl font-bold text-slate-950">
               Vertical admin
