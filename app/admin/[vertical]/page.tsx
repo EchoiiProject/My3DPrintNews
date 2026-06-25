@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import {
   averageFeedbackRating,
   feedbackCountByCategory,
-  feedbackForVertical,
 } from "@/config/feedback";
 import { sponsorById } from "@/config/sponsors";
-import { demoUserById, verticalBySlug } from "@/config/verticals";
+import { demoUserById } from "@/config/verticals";
+import { getFeedbackByVertical, getVerticalBySlug } from "@/lib/verticals";
 import { AdminAccessGate } from "../admin-access";
 import { AdminShell } from "../admin-shell";
 
@@ -228,7 +228,7 @@ export default async function VerticalAdminPage({
   searchParams?: Promise<{ error?: string; view?: string }>;
 }) {
   const { vertical: verticalSlug } = await params;
-  const vertical = verticalBySlug(verticalSlug);
+  const vertical = await getVerticalBySlug(verticalSlug);
 
   if (!vertical) {
     notFound();
@@ -238,7 +238,7 @@ export default async function VerticalAdminPage({
   const currentUser = demoUserById(query?.view);
   const sponsor = vertical.sponsorId ? sponsorById[vertical.sponsorId] : null;
   const isSuperAdmin = currentUser.role === "platform_owner";
-  const verticalFeedback = feedbackForVertical(vertical.id);
+  const verticalFeedback = await getFeedbackByVertical(vertical.slug);
   const verticalManagementCentres = managementCentres.map((centre) => {
     if (centre.title !== "Audience") {
       return centre;

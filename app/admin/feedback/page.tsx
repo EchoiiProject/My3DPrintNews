@@ -1,14 +1,11 @@
 import Link from "next/link";
 import {
-  feedback,
   feedbackCountByCategory,
-  feedbackForVertical,
 } from "@/config/feedback";
 import {
   demoUserById,
-  verticals,
-  visibleVerticalsForUser,
 } from "@/config/verticals";
+import { getAllFeedback, getFeedbackByVertical, getVerticals } from "@/lib/verticals";
 import { AdminAccessGate } from "../admin-access";
 import { FeedbackTable } from "../feedback-table";
 import { AdminShell } from "../admin-shell";
@@ -20,16 +17,29 @@ export default async function AdminFeedbackPage({
 }) {
   const params = await searchParams;
   const currentUser = demoUserById(params?.view);
-  const visibleVerticals = visibleVerticalsForUser(currentUser);
+  const allVerticals = await getVerticals();
+  const visibleVerticals =
+    currentUser.role === "platform_owner"
+      ? allVerticals.filter((vertical) => vertical.status === "active")
+      : allVerticals.filter((vertical) =>
+          currentUser.assignedVerticalIds.includes(vertical.id),
+        );
   const visibleVerticalIds = new Set(
     visibleVerticals.map((vertical) => vertical.id),
   );
+  const allFeedback = await getAllFeedback();
   const visibleFeedback =
     currentUser.role === "platform_owner"
-      ? feedback
-      : feedback.filter((item) => visibleVerticalIds.has(item.verticalId));
+      ? allFeedback
+      : allFeedback.filter((item) => visibleVerticalIds.has(item.verticalId));
   const verticalsById = Object.fromEntries(
-    verticals.map((vertical) => [vertical.id, vertical]),
+    allVerticals.map((vertical) => [vertical.id, vertical]),
+  );
+  const feedbackCounts = await Promise.all(
+    visibleVerticals.map(async (vertical) => ({
+      vertical,
+      items: await getFeedbackByVertical(vertical.slug),
+    })),
   );
 
   return (
@@ -61,10 +71,7 @@ export default async function AdminFeedbackPage({
           </header>
 
           <section className="mt-8 grid gap-4 lg:grid-cols-3">
-            {visibleVerticals.map((vertical) => {
-              const items = feedbackForVertical(vertical.id);
-
-              return (
+            {feedbackCounts.map(({ vertical, items }) => (
                 <Link
                   className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/50"
                   href={`/admin/${vertical.slug}/feedback`}
@@ -81,8 +88,7 @@ export default async function AdminFeedbackPage({
                     requests
                   </p>
                 </Link>
-              );
-            })}
+              ))}
           </section>
 
           <section className="mt-8">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { feedbackForVertical } from "@/config/feedback";
-import { demoUserById, verticalBySlug, verticals } from "@/config/verticals";
+import { demoUserById } from "@/config/verticals";
+import { getFeedbackByVertical, getVerticalBySlug, getVerticals } from "@/lib/verticals";
 import { AdminAccessGate } from "../../admin-access";
 import { AdminShell } from "../../admin-shell";
 import { FeedbackTable } from "../../feedback-table";
@@ -14,7 +14,7 @@ export default async function VerticalFeedbackPage({
   searchParams?: Promise<{ error?: string; view?: string }>;
 }) {
   const { vertical: verticalSlug } = await params;
-  const vertical = verticalBySlug(verticalSlug);
+  const vertical = await getVerticalBySlug(verticalSlug);
 
   if (!vertical) {
     notFound();
@@ -30,9 +30,10 @@ export default async function VerticalFeedbackPage({
     notFound();
   }
 
-  const feedbackItems = feedbackForVertical(vertical.id);
+  const feedbackItems = await getFeedbackByVertical(vertical.slug);
+  const allVerticals = await getVerticals();
   const verticalsById = Object.fromEntries(
-    verticals.map((item) => [item.id, item]),
+    allVerticals.map((item) => [item.id, item]),
   );
 
   return (

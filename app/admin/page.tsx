@@ -4,8 +4,8 @@ import {
   demoAdminUsers,
   demoUserById,
   ownershipRoles,
-  visibleVerticalsForUser,
 } from "@/config/verticals";
+import { getVerticals } from "@/lib/verticals";
 import { AdminAccessGate } from "./admin-access";
 import { AdminShell } from "./admin-shell";
 
@@ -55,7 +55,13 @@ export default async function AdminHubPage({
 }) {
   const params = await searchParams;
   const currentUser = demoUserById(params?.view);
-  const visibleVerticals = visibleVerticalsForUser(currentUser);
+  const allVerticals = await getVerticals();
+  const visibleVerticals =
+    currentUser.role === "platform_owner"
+      ? allVerticals.filter((vertical) => vertical.status === "active")
+      : allVerticals.filter((vertical) =>
+          currentUser.assignedVerticalIds.includes(vertical.id),
+        );
   const visibleTools = adminTools.filter((tool) =>
     tool.roles.includes(currentUser.role),
   );
