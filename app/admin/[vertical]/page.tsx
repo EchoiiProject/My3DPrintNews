@@ -5,85 +5,211 @@ import { demoUserById, verticalBySlug } from "@/config/verticals";
 import { AdminAccessGate } from "../admin-access";
 import { AdminShell } from "../admin-shell";
 
-const kpis = [
-  { label: "Today's Stories", value: "12" },
-  { label: "Subscribers", value: "214" },
-  { label: "Newsletter Open Rate", value: "61%" },
-  { label: "Advertising Revenue", value: "£640/month" },
-  { label: "Active Campaigns", value: "4" },
-  { label: "Featured Products", value: "18" },
-];
+type CentreItem = {
+  label: string;
+  href: string | null;
+  status: "Live" | "Ready" | "Planned";
+};
 
-const managementGroups = [
+type ManagementCentre = {
+  title: string;
+  description: string;
+  stats: { label: string; value: string }[];
+  actions: { label: string; href: string | null }[];
+  items: CentreItem[];
+};
+
+const managementCentres: ManagementCentre[] = [
   {
     title: "Content",
+    description:
+      "Manage the content graph that powers the vertical publication.",
+    stats: [
+      { label: "Active sources", value: "17" },
+      { label: "Articles today", value: "12" },
+      { label: "Feed health", value: "94%" },
+    ],
+    actions: [
+      { label: "Review Sources", href: "/sources" },
+      { label: "View Updates", href: "/updates" },
+      { label: "Open Feed", href: "/feed" },
+    ],
     items: [
-      { title: "Sources", href: "/sources", status: "Open" },
-      { title: "Brands", href: null, status: "Coming Soon" },
-      { title: "Creators", href: null, status: "Coming Soon" },
-      { title: "Events", href: null, status: "Coming Soon" },
-      { title: "Updates", href: "/updates", status: "Open" },
+      { label: "Sources", href: "/sources", status: "Live" },
+      { label: "Brands", href: null, status: "Planned" },
+      { label: "Creators", href: null, status: "Planned" },
+      { label: "Events", href: null, status: "Planned" },
+      { label: "Topics", href: "/sources", status: "Ready" },
+      { label: "Articles", href: "/feed", status: "Live" },
+      { label: "Feed Health", href: null, status: "Planned" },
     ],
   },
   {
     title: "Commercial",
+    description:
+      "Manage sponsor, advertising, campaign, and product promotion activity.",
+    stats: [
+      { label: "Monthly revenue", value: "£640" },
+      { label: "Active campaigns", value: "4" },
+      { label: "Featured products", value: "18" },
+    ],
+    actions: [
+      { label: "Open Sponsors", href: "/admin/sponsors" },
+      { label: "Open Advertising", href: "/admin/advertising" },
+      { label: "Open Products", href: "/admin/products" },
+    ],
     items: [
-      { title: "Advertising", href: "/admin/advertising", status: "Open" },
-      { title: "Sponsors", href: "/admin/sponsors", status: "Open" },
-      { title: "Products", href: "/admin/products", status: "Open" },
-      { title: "Campaigns", href: "/admin/advertising", status: "Open" },
+      { label: "Sponsors", href: "/admin/sponsors", status: "Live" },
+      { label: "Advertising", href: "/admin/advertising", status: "Live" },
+      { label: "Campaigns", href: "/admin/advertising", status: "Ready" },
+      { label: "Products", href: "/admin/products", status: "Live" },
+      { label: "Placements", href: "/admin/advertising", status: "Ready" },
+      { label: "Revenue", href: null, status: "Planned" },
     ],
   },
   {
     title: "Audience",
+    description:
+      "Understand and grow the reader, subscriber, and saved-feed audience.",
+    stats: [
+      { label: "Subscribers", value: "214" },
+      { label: "Open rate", value: "61%" },
+      { label: "Saved feeds", value: "83" },
+    ],
+    actions: [
+      { label: "Preview Newsletter", href: "/newsletter-preview/demo" },
+      { label: "View Catch Up", href: "/catch-up" },
+      { label: "View Analytics", href: null },
+    ],
     items: [
-      { title: "Subscribers", href: null, status: "Coming Soon" },
-      { title: "Newsletter", href: null, status: "Coming Soon" },
-      { title: "Analytics", href: null, status: "Coming Soon" },
+      { label: "Subscribers", href: null, status: "Planned" },
+      { label: "Newsletter", href: null, status: "Planned" },
+      { label: "Saved Feeds", href: null, status: "Planned" },
+      { label: "Analytics", href: null, status: "Planned" },
+      { label: "Growth", href: null, status: "Planned" },
     ],
   },
   {
-    title: "Settings",
+    title: "Platform",
+    description:
+      "Configure ownership, navigation, access, domain, and integrations.",
+    stats: [
+      { label: "Users", value: "3" },
+      { label: "Roles", value: "3" },
+      { label: "Integrations", value: "2" },
+    ],
+    actions: [
+      { label: "Admin Hub", href: "/admin" },
+      { label: "Manage Owners", href: "/admin" },
+      { label: "Review Roles", href: "/admin" },
+    ],
     items: [
-      { title: "Branding", href: null, status: "Coming Soon" },
-      { title: "Owners", href: "/admin", status: "Open" },
-      { title: "Navigation", href: null, status: "Coming Soon" },
-      {
-        title: "Platform Settings",
-        href: "/admin",
-        status: "Super Admin only",
-      },
+      { label: "Branding", href: null, status: "Planned" },
+      { label: "Organisation", href: "/admin", status: "Ready" },
+      { label: "Navigation", href: null, status: "Planned" },
+      { label: "Owners", href: "/admin", status: "Ready" },
+      { label: "Users", href: null, status: "Planned" },
+      { label: "Roles", href: "/admin", status: "Ready" },
+      { label: "Domain", href: null, status: "Planned" },
+      { label: "Integrations", href: null, status: "Planned" },
     ],
   },
 ];
 
-const quickActions = [
-  { label: "Add Product", href: "/admin/products" },
-  { label: "Create Campaign", href: "/admin/advertising" },
-  { label: "Review Sources", href: "/sources" },
-  { label: "Preview Newsletter", href: "/newsletter-preview/demo" },
-  { label: "View Live Site", href: "/" },
-  { label: "View Catch Up", href: "/catch-up" },
-];
-
-const recentActivity = [
-  "Newsletter generated",
-  "Sponsor campaign approved",
-  "New source added",
-  "Products updated",
-  "Campaign expires in 3 days",
-];
-
-function statusClass(status: string) {
-  if (status === "Open") {
+function statusClass(status: CentreItem["status"]) {
+  if (status === "Live") {
     return "border-emerald-100 bg-emerald-50 text-emerald-700";
   }
 
-  if (status === "Super Admin only") {
+  if (status === "Ready") {
     return "border-blue-100 bg-blue-50 text-blue-700";
   }
 
   return "border-slate-200 bg-slate-50 text-slate-500";
+}
+
+function ManagementCentreCard({ centre }: { centre: ManagementCentre }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-950">
+            {centre.title}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {centre.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        {centre.stats.map((stat) => (
+          <div
+            className="rounded-md border border-slate-200 bg-slate-50/70 p-3"
+            key={stat.label}
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              {stat.label}
+            </p>
+            <p className="mt-1 text-2xl font-bold text-slate-950">
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {centre.actions.map((action) =>
+          action.href ? (
+            <Link
+              className="inline-flex min-h-9 items-center justify-center rounded-md bg-blue-600 px-3 text-xs font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+              href={action.href}
+              key={action.label}
+            >
+              {action.label}
+            </Link>
+          ) : (
+            <span
+              className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500"
+              key={action.label}
+            >
+              {action.label} - Coming Soon
+            </span>
+          ),
+        )}
+      </div>
+
+      <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        {centre.items.map((item) => (
+          <div
+            className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2"
+            key={item.label}
+          >
+            {item.href ? (
+              <Link
+                className="text-sm font-bold text-slate-800 hover:text-blue-700"
+                href={item.href}
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <span className="text-sm font-bold text-slate-700">
+                {item.label}
+              </span>
+            )}
+            <span
+              className={[
+                "inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-bold",
+                statusClass(item.status),
+              ].join(" ")}
+            >
+              {item.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export default async function VerticalAdminPage({
@@ -106,7 +232,7 @@ export default async function VerticalAdminPage({
   const isSuperAdmin = currentUser.role === "platform_owner";
 
   return (
-    <AdminShell title={`${vertical.name} Dashboard`}>
+    <AdminShell title={`${vertical.name} Management Centre`}>
       <AdminAccessGate
         error={query?.error}
         loginTitle={`${vertical.name} Admin Access`}
@@ -127,21 +253,10 @@ export default async function VerticalAdminPage({
             <h1 className="mt-2 max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
               {vertical.name}
             </h1>
-            <p className="mt-2 text-xl font-bold text-slate-700">
-              Owned by {vertical.ownerName}
-            </p>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
               {vertical.description}
             </p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Managing
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-800">
-                  {vertical.name}
-                </p>
-              </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                   Owner
@@ -174,109 +289,77 @@ export default async function VerticalAdminPage({
                   25 Jun 2026
                 </p>
               </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Managing
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {vertical.name}
+                </p>
+              </div>
             </div>
           </header>
 
-          <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {kpis.map((kpi) => (
-              <article
-                className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur"
-                key={kpi.label}
-              >
+          <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <h2 className="text-2xl font-bold text-slate-950">
+              Organisation
+            </h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  {kpi.label}
+                  Organisation name
                 </p>
-                <p className="mt-3 text-3xl font-bold text-slate-950">
-                  {kpi.value}
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {vertical.ownerName}
                 </p>
-              </article>
-            ))}
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Website
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {vertical.domain}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Primary Sponsor
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {sponsor?.name ?? "No sponsor"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Primary Contact
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {vertical.ownerEmail}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Platform
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  Personalised News Platform
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Owned Vertical
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {vertical.name}
+                </p>
+              </div>
+            </div>
           </section>
 
           <section className="mt-8 grid gap-5 lg:grid-cols-2">
-            {managementGroups.map((group) => (
-              <section
-                className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur"
-                key={group.title}
-              >
-                <h2 className="text-2xl font-bold text-slate-950">
-                  {group.title}
-                </h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {group.items.map((item) => (
-                    <article
-                      className="rounded-md border border-slate-200 bg-slate-50/70 p-4"
-                      key={item.title}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-bold text-slate-950">
-                          {item.title}
-                        </h3>
-                        <span
-                          className={[
-                            "inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold",
-                            statusClass(item.status),
-                          ].join(" ")}
-                        >
-                          {item.status}
-                        </span>
-                      </div>
-                      {item.href ? (
-                        <Link
-                          className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-blue-600 px-3 text-xs font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-                          href={item.href}
-                        >
-                          Open
-                        </Link>
-                      ) : (
-                        <p className="mt-4 text-sm font-bold text-slate-500">
-                          Coming Soon
-                        </p>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </section>
+            {managementCentres.map((centre) => (
+              <ManagementCentreCard centre={centre} key={centre.title} />
             ))}
-          </section>
-
-          <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
-            <h2 className="text-2xl font-bold text-slate-950">
-              Quick Actions
-            </h2>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {quickActions.map((action) => (
-                <Link
-                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
-                  href={action.href}
-                  key={action.label}
-                >
-                  {action.label}
-                </Link>
-              ))}
-              <Link
-                className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
-                href="/admin"
-              >
-                Back to Admin Hub
-              </Link>
-            </div>
-          </section>
-
-          <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
-            <h2 className="text-2xl font-bold text-slate-950">
-              Recent Activity
-            </h2>
-            <div className="mt-4 space-y-3">
-              {recentActivity.map((activity) => (
-                <div
-                  className="rounded-md border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-semibold text-slate-700"
-                  key={activity}
-                >
-                  {activity}
-                </div>
-              ))}
-            </div>
           </section>
         </div>
       </AdminAccessGate>
