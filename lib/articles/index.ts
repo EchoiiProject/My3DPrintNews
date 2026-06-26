@@ -348,23 +348,28 @@ export async function getArticleArchive(filters: {
 
   if (!supabase) return [];
 
+  const vertical = filters.verticalSlug
+    ? await getVerticalBySlug(filters.verticalSlug)
+    : null;
+
+  if (filters.verticalSlug && !vertical) {
+    return [];
+  }
+
   let query = supabase
     .from("articles")
     .select(
       "id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,verticals(name,slug)",
     )
-    .order("published_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(100);
+
+  if (vertical) {
+    query = query.eq("vertical_id", vertical.databaseId ?? vertical.id);
+  }
 
   if (filters.sourceId) {
     query = query.eq("source_id", filters.sourceId);
-  }
-
-  if (filters.recentDays) {
-    query = query.gte(
-      "published_at",
-      new Date(Date.now() - filters.recentDays * 24 * 60 * 60 * 1000).toISOString(),
-    );
   }
 
   const { data, error } = await query;
@@ -375,8 +380,31 @@ export async function getArticleArchive(filters: {
   }
 
   const articles = (data as ArticleRecord[]).map(toArchiveItem);
+  const periodStart = filters.recentDays
+    ? Date.now() - filters.recentDays * 24 * 60 * 60 * 1000
+    : null;
 
-  return filters.verticalSlug
-    ? articles.filter((article) => article.verticalSlug === filters.verticalSlug)
-    : articles;
+  return articles
+    .filter((article) => {
+      if (periodStart === null) {
+        return true;
+      }
+
+      const timestamp = new Date(
+        article.publishedAt ?? article.createdAt ?? "",
+      ).getTime();
+
+      return Number.isFinite(timestamp) && timestamp >= periodStart;
+    })
+    .sort((articleA, articleB) => {
+      const timestampA = new Date(
+        articleA.publishedAt ?? articleA.createdAt ?? "",
+      ).getTime();
+      const timestampB = new Date(
+        articleB.publishedAt ?? articleB.createdAt ?? "",
+      ).getTime();
+
+      return (Number.isFinite(timestampB) ? timestampB : 0) -
+        (Number.isFinite(timestampA) ? timestampA : 0);
+    });
 }
