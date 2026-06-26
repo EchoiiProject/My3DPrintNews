@@ -41,6 +41,8 @@ type ParsedItem = {
   pubDate?: string;
   contentSnippet?: string;
   content?: string;
+  contentEncoded?: string;
+  description?: string;
   creator?: string;
   author?: string;
   categories?: string[];
@@ -48,6 +50,9 @@ type ParsedItem = {
     url?: string;
     type?: string;
   };
+  mediaContent?: unknown;
+  mediaThumbnail?: unknown;
+  ogImage?: unknown;
 };
 
 type ArticleRecord = {
@@ -71,6 +76,15 @@ type ArticleRecord = {
 
 const parser = new Parser<unknown, ParsedItem>({
   timeout: 10000,
+  customFields: {
+    item: [
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
+      ["content:encoded", "contentEncoded"],
+      ["description", "description"],
+      ["og:image", "ogImage"],
+    ],
+  },
 });
 
 function itemDate(item: ParsedItem) {
@@ -82,18 +96,89 @@ function itemDate(item: ParsedItem) {
   return Number.isFinite(time) ? new Date(time).toISOString() : null;
 }
 
-function imageUrl(item: ParsedItem) {
-  const enclosureType = item.enclosure?.type?.toLowerCase() ?? "";
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 
-  if (enclosureType.startsWith("image/")) {
-    return item.enclosure?.url ?? null;
+function safeImageUrl(value: unknown): string | null {
+  const raw = stringValue(value);
+
+  if (!raw) return null;
+
+  if (raw.startsWith("//")) {
+    return `https:${raw}`;
+  }
+
+  try {
+    const url = new URL(raw);
+
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function fieldValue(value: unknown, key: string): unknown {
+  if (!value || typeof value !== "object") return null;
+
+  const record = value as Record<string, unknown>;
+  const attrs = record.$;
+
+  if (record[key]) return record[key];
+
+  if (attrs && typeof attrs === "object") {
+    return (attrs as Record<string, unknown>)[key];
   }
 
   return null;
 }
 
+function firstFieldImage(value: unknown): string | null {
+  const values = Array.isArray(value) ? value : [value];
+
+  for (const item of values) {
+    const url = safeImageUrl(fieldValue(item, "url"));
+
+    if (url) return url;
+  }
+
+  return null;
+}
+
+function firstHtmlImage(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const match = value.match(/<img[^>]+src=["']([^"']+)["']/i);
+
+  return safeImageUrl(match?.[1]);
+}
+
+function imageUrl(item: ParsedItem) {
+  const mediaContent = firstFieldImage(item.mediaContent);
+  if (mediaContent) return mediaContent;
+
+  const mediaThumbnail = firstFieldImage(item.mediaThumbnail);
+  if (mediaThumbnail) return mediaThumbnail;
+
+  const enclosureType = item.enclosure?.type?.toLowerCase() ?? "";
+
+  if (enclosureType.startsWith("image/")) {
+    const enclosureImage = safeImageUrl(item.enclosure?.url);
+    if (enclosureImage) return enclosureImage;
+  }
+
+  const ogImage = safeImageUrl(item.ogImage) ?? firstFieldImage(item.ogImage);
+  if (ogImage) return ogImage;
+
+  return (
+    firstHtmlImage(item.contentEncoded) ??
+    firstHtmlImage(item.content) ??
+    firstHtmlImage(item.description)
+  );
+}
+
 function cleanSummary(item: ParsedItem) {
-  const value = item.contentSnippet ?? item.content ?? "";
+  const value = item.contentSnippet ?? item.description ?? item.content ?? "";
 
   return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || null;
 }
@@ -146,6 +231,29 @@ async function updateSourceAfterFetch(
       updated_at: new Date().toISOString(),
     })
     .eq("id", sourceId);
+}
+
+async function updateExistingArticleImages(
+  articles: { image_url: string | null; url: string }[],
+) {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) return;
+
+  await Promise.all(
+    articles
+      .filter((article) => article.image_url)
+      .map((article) =>
+        supabase
+          .from("articles")
+          .update({
+            image_url: article.image_url,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("url", article.url)
+          .is("image_url", null),
+      ),
+  );
 }
 
 async function fetchSourceArticles(
@@ -235,6 +343,7 @@ async function fetchSourceArticles(
     }
 
     const inserted = data?.length ?? 0;
+    await updateExistingArticleImages(articles);
 
     await updateSourceAfterFetch(source.id, {
       healthStatus: articles.length ? "healthy" : "warning",
@@ -365,7 +474,10 @@ export async function getArticleArchive(filters: {
     .limit(100);
 
   if (vertical) {
-    query = query.eq("vertical_id", vertical.databaseId ?? vertical.id);
+    query = query.in(
+      "vertical_id",
+      Array.from(new Set([vertical.databaseId, vertical.id].filter(Boolean))),
+    );
   }
 
   if (filters.sourceId) {

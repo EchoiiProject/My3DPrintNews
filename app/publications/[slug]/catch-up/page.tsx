@@ -4,13 +4,14 @@ import { getArticleArchive } from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
   getPublicationProfiles,
-  publicationAliasMap,
 } from "@/lib/publications";
 import {
   PublicationLinks,
   PublicationShell,
 } from "../publication-components";
 import { ArchiveStoryCards } from "../archive-story-cards";
+
+export const dynamic = "force-dynamic";
 
 const allowedWindows = [7, 14, 30];
 
@@ -95,8 +96,4 @@ export default async function PublicationCatchUpPage({
       />
     </PublicationShell>
   );
-}
-
-export function generateStaticParams() {
-  return Object.keys(publicationAliasMap).map((slug) => ({ slug }));
 }

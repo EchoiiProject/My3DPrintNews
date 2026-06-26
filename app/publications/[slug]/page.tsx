@@ -3,7 +3,6 @@ import { getArticleArchive } from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
   getPublicationProfiles,
-  publicationAliasMap,
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
 import {
@@ -13,6 +12,8 @@ import {
   PublicationStats,
 } from "./publication-components";
 import { ArchiveStoryCards } from "./archive-story-cards";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -75,8 +76,4 @@ export default async function PublicationHomePage({
       <PublicationFeedback profile={profile} />
     </PublicationShell>
   );
-}
-
-export function generateStaticParams() {
-  return Object.keys(publicationAliasMap).map((slug) => ({ slug }));
 }
