@@ -265,16 +265,21 @@ function formatDate(value: string): string {
 }
 
 export function FeedStoryCards({
+  displayMode = "standard",
   favourites,
   onToggleSourceFavourite,
   showFeedAds = true,
   stories,
 }: {
+  displayMode?: "compact" | "standard" | "visual";
   favourites: Favourites;
   onToggleSourceFavourite: (source: string) => void;
   showFeedAds?: boolean;
   stories: ScoredArticle[];
 }) {
+  const isCompact = displayMode === "compact";
+  const isVisual = displayMode === "visual";
+
   return (
     <div className="space-y-4">
       {stories.map((scoredArticle, index) => (
@@ -283,18 +288,34 @@ export function FeedStoryCards({
           key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
         >
           <article className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5">
-            {scoredArticle.article.imageUrl ? (
-              <div className="mb-4 aspect-video overflow-hidden rounded-md border border-slate-100 bg-slate-50">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt={scoredArticle.article.title}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  src={scoredArticle.article.imageUrl}
-                />
-              </div>
-            ) : null}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className={
+                isCompact
+                  ? "grid gap-4 sm:grid-cols-[minmax(0,1fr)_8.5rem] sm:items-start"
+                  : ""
+              }
+            >
+              {scoredArticle.article.imageUrl ? (
+                <div
+                  className={[
+                    "overflow-hidden rounded-md border border-slate-100 bg-slate-50",
+                    isCompact
+                      ? "order-last aspect-square sm:order-last sm:mt-0"
+                      : "mb-4 aspect-video",
+                    isVisual ? "max-h-[28rem]" : "max-h-[20rem]",
+                  ].join(" ")}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    alt={scoredArticle.article.title}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    src={scoredArticle.article.imageUrl}
+                  />
+                </div>
+              ) : null}
+              <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
                 {scoredArticle.article.type === "video" ? (
                   <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
@@ -344,13 +365,23 @@ export function FeedStoryCards({
                   : "Read original article"}
               </a>
             </div>
-            <h3 className="mt-3 text-2xl font-bold leading-8 text-slate-950">
+            <h3
+              className={[
+                "mt-3 font-bold text-slate-950",
+                isCompact ? "text-xl leading-7" : "text-2xl leading-8",
+              ].join(" ")}
+            >
               {scoredArticle.article.title}
             </h3>
-            <p className="mt-3 text-base leading-7 text-slate-600">
+            <p
+              className={[
+                "mt-3 text-slate-600",
+                isCompact ? "text-sm leading-6" : "text-base leading-7",
+              ].join(" ")}
+            >
               {scoredArticle.article.summary}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className={isCompact ? "mt-3 flex flex-wrap gap-2" : "mt-4 flex flex-wrap gap-2"}>
               {(scoredArticle.generatedTags.length
                 ? scoredArticle.generatedTags
                 : ["General"]
@@ -363,7 +394,7 @@ export function FeedStoryCards({
                 </span>
               ))}
             </div>
-            <div className="mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-3">
+            <div className={isCompact ? "mt-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-3" : "mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-3"}>
               <p className="text-sm font-bold text-blue-950">
                 Matched because:
               </p>
@@ -381,10 +412,12 @@ export function FeedStoryCards({
                 ))}
               </div>
             </div>
-            <p className="mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
+            <p className={isCompact ? "mt-3 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900" : "mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900"}>
               Publisher attribution: {scoredArticle.article.source}. Summary
               and metadata are attributed to the source above.
             </p>
+              </div>
+            </div>
           </article>
           {showFeedAds && index === 2 ? (
             <AdPlacement placementId="feed-inline-1" />
