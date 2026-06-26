@@ -20,6 +20,28 @@ type SourceActionResponse = {
   failedSources?: number;
   errorsCount?: number;
   errorMessages?: string[];
+  bySourceType?: Record<
+    SourceType | "unknown",
+    {
+      sourcesChecked: number;
+      fetched: number;
+      inserted: number;
+      skipped: number;
+      failedSources: number;
+    }
+  >;
+  imageSummary?: {
+    imagesFound: number;
+    imagesInserted: number;
+    imagesBackfilled: number;
+    articlesStillMissingImages: number;
+  };
+  failedSourceDetails?: Array<{
+    sourceName: string;
+    sourceType: SourceType | "unknown";
+    errorMessage: string;
+    suggestedNextAction: string | null;
+  }>;
 };
 
 type FeedDiagnostic = SourceDiagnostics["feedDiagnostics"][number];
@@ -50,6 +72,10 @@ const sourceTypes: SourceType[] = [
   "blog",
   "brand",
   "creator",
+];
+const summarySourceTypes: Array<SourceType | "unknown"> = [
+  ...sourceTypes,
+  "unknown",
 ];
 
 function formatDate(value: string | null): string {
@@ -579,6 +605,110 @@ export function SourceManagementClient({
               </div>
             ))}
           </div>
+          {fetchSummary.bySourceType ? (
+            <div className="mt-4 overflow-hidden rounded-md border border-emerald-100 bg-white/80">
+              <table className="min-w-full divide-y divide-emerald-100 text-sm">
+                <thead className="bg-emerald-50 text-left text-xs font-bold uppercase tracking-wide text-emerald-700">
+                  <tr>
+                    <th className="px-3 py-2">Type</th>
+                    <th className="px-3 py-2">Sources</th>
+                    <th className="px-3 py-2">Found</th>
+                    <th className="px-3 py-2">Inserted</th>
+                    <th className="px-3 py-2">Skipped</th>
+                    <th className="px-3 py-2">Failed</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-emerald-50">
+                  {summarySourceTypes
+                    .filter(
+                      (type) =>
+                        (fetchSummary.bySourceType?.[type]?.sourcesChecked ??
+                          0) > 0,
+                    )
+                    .map((type) => {
+                      const stats = fetchSummary.bySourceType?.[type];
+                      const itemLabel = type === "youtube" ? "videos" : "items";
+
+                      return (
+                        <tr key={type}>
+                          <td className="px-3 py-2 font-bold capitalize text-emerald-950">
+                            {type}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-900">
+                            {stats?.sourcesChecked ?? 0}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-900">
+                            {stats?.fetched ?? 0} {itemLabel}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-900">
+                            {stats?.inserted ?? 0}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-900">
+                            {stats?.skipped ?? 0}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-900">
+                            {stats?.failedSources ?? 0}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {fetchSummary.imageSummary ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-4">
+              {[
+                ["Images found", fetchSummary.imageSummary.imagesFound],
+                ["Images on new articles", fetchSummary.imageSummary.imagesInserted],
+                ["Images backfilled", fetchSummary.imageSummary.imagesBackfilled],
+                [
+                  "Still missing images",
+                  fetchSummary.imageSummary.articlesStillMissingImages,
+                ],
+              ].map(([label, value]) => (
+                <div
+                  className="rounded-md border border-emerald-100 bg-white/80 p-3"
+                  key={label}
+                >
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                    {label}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-950">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {fetchSummary.failedSourceDetails?.length ? (
+            <div className="mt-4 rounded-md border border-red-100 bg-white/80 p-3">
+              <h3 className="text-sm font-bold text-red-800">
+                Failed sources
+              </h3>
+              <div className="mt-2 space-y-2">
+                {fetchSummary.failedSourceDetails.map((failure) => (
+                  <div
+                    className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800"
+                    key={`${failure.sourceName}-${failure.errorMessage}`}
+                  >
+                    <p className="font-bold">
+                      {failure.sourceName}{" "}
+                      <span className="font-semibold capitalize">
+                        ({failure.sourceType})
+                      </span>
+                    </p>
+                    <p className="mt-1 font-semibold">{failure.errorMessage}</p>
+                    {failure.suggestedNextAction ? (
+                      <p className="mt-1">
+                        Suggested next action: {failure.suggestedNextAction}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {fetchSummary.errorMessages?.length ? (
             <div className="mt-4 space-y-1 text-sm font-semibold text-red-700">
               {fetchSummary.errorMessages.map((error) => (

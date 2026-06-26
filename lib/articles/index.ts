@@ -1,7 +1,11 @@
 import Parser from "rss-parser";
 import { adminSlugForPublicationSlug } from "@/config/verticals";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
-import { getManagedSources, type ManagedSource, type SourceType } from "@/lib/sources";
+import {
+  getManagedSources,
+  type ManagedSource,
+  type SourceType,
+} from "@/lib/sources";
 import { getVerticalBySlug } from "@/lib/verticals";
 
 export type ArticleArchiveItem = {
@@ -32,6 +36,31 @@ export type ArticleFetchResult = {
   failedSources: number;
   errors: number;
   errorMessages: string[];
+  bySourceType: Record<SourceType | "unknown", SourceTypeFetchStats>;
+  imageSummary: ImageFetchSummary;
+  failedSourceDetails: FailedSourceDetail[];
+};
+
+export type SourceTypeFetchStats = {
+  sourcesChecked: number;
+  fetched: number;
+  inserted: number;
+  skipped: number;
+  failedSources: number;
+};
+
+export type ImageFetchSummary = {
+  imagesFound: number;
+  imagesInserted: number;
+  imagesBackfilled: number;
+  articlesStillMissingImages: number;
+};
+
+export type FailedSourceDetail = {
+  sourceName: string;
+  sourceType: SourceType | "unknown";
+  errorMessage: string;
+  suggestedNextAction: string | null;
 };
 
 type ParsedItem = {
@@ -88,6 +117,57 @@ const parser = new Parser<unknown, ParsedItem>({
     ],
   },
 });
+
+const sourceTypeKeys: Array<SourceType | "unknown"> = [
+  "rss",
+  "youtube",
+  "podcast",
+  "blog",
+  "brand",
+  "creator",
+  "unknown",
+];
+
+function emptyStats(): SourceTypeFetchStats {
+  return {
+    sourcesChecked: 0,
+    fetched: 0,
+    inserted: 0,
+    skipped: 0,
+    failedSources: 0,
+  };
+}
+
+function emptyBySourceType(): Record<SourceType | "unknown", SourceTypeFetchStats> {
+  return Object.fromEntries(
+    sourceTypeKeys.map((key) => [key, emptyStats()]),
+  ) as Record<SourceType | "unknown", SourceTypeFetchStats>;
+}
+
+function emptyImageSummary(): ImageFetchSummary {
+  return {
+    imagesFound: 0,
+    imagesInserted: 0,
+    imagesBackfilled: 0,
+    articlesStillMissingImages: 0,
+  };
+}
+
+function sourceTypeLabel(type: SourceType | "unknown") {
+  return type === "youtube" ? "YouTube" : type;
+}
+
+function suggestedNextAction(message: string): string | null {
+  const lower = message.toLowerCase();
+
+  if (lower.includes("404")) return "Check the feed URL or YouTube channel ID.";
+  if (lower.includes("403")) return "This source may block automated fetching.";
+  if (lower.includes("406")) return "This source may reject the current request headers.";
+  if (lower.includes("invalid") && lower.includes("url")) return "Check the source URL format.";
+  if (lower.includes("timed out") || lower.includes("timeout")) return "Try again later or confirm the feed is responding.";
+
+  return null;
+}
 
 function itemDate(item: ParsedItem) {
   const value = item.isoDate ?? item.pubDate;
@@ -280,12 +360,12 @@ async function updateSourceAfterFetch(
 
 async function updateExistingArticleImages(
   articles: { image_url: string | null; url: string }[],
-) {
+): Promise<number> {
   const supabase = createServiceSupabaseClient();
 
-  if (!supabase) return;
+  if (!supabase) return 0;
 
-  await Promise.all(
+  const updates = await Promise.all(
     articles
       .filter((article) => article.image_url)
       .map((article) =>
@@ -296,9 +376,12 @@ async function updateExistingArticleImages(
             updated_at: new Date().toISOString(),
           })
           .eq("url", article.url)
-          .is("image_url", null),
+          .is("image_url", null)
+          .select("id"),
       ),
   );
+
+  return updates.reduce((total, update) => total + (update.data?.length ?? 0), 0);
 }
 
 async function fetchSourceArticles(
@@ -306,6 +389,8 @@ async function fetchSourceArticles(
   verticalId: string,
 ): Promise<ArticleFetchResult> {
   const checkedAt = new Date().toISOString();
+  const bySourceType = emptyBySourceType();
+  bySourceType[source.sourceType].sourcesChecked = 1;
 
   try {
     const feed = await parser.parseURL(source.rssUrl);
@@ -330,10 +415,15 @@ async function fetchSourceArticles(
         ),
         updated_at: checkedAt,
       }));
+    const imagesFound = articles.filter((article) => article.image_url).length;
 
     const supabase = createServiceSupabaseClient();
 
     if (!supabase) {
+      bySourceType[source.sourceType].fetched = articles.length;
+      bySourceType[source.sourceType].skipped = articles.length;
+      bySourceType[source.sourceType].failedSources = 1;
+
       return {
         ok: false,
         message: "Supabase is not configured.",
@@ -344,6 +434,21 @@ async function fetchSourceArticles(
         failedSources: 1,
         errors: 1,
         errorMessages: ["Supabase is not configured."],
+        bySourceType,
+        imageSummary: {
+          imagesFound,
+          imagesInserted: 0,
+          imagesBackfilled: 0,
+          articlesStillMissingImages: articles.length - imagesFound,
+        },
+        failedSourceDetails: [
+          {
+            sourceName: source.name,
+            sourceType: source.sourceType,
+            errorMessage: "Supabase is not configured.",
+            suggestedNextAction: "Configure Supabase service credentials.",
+          },
+        ],
       };
     }
 
@@ -359,12 +464,15 @@ async function fetchSourceArticles(
         ok: true,
         message: `${source.name} returned no articles.`,
         sourcesChecked: 1,
-        fetched: 0,
-        inserted: 0,
-        skipped: 0,
-        failedSources: 0,
-        errors: 0,
-        errorMessages: [],
+          fetched: 0,
+          inserted: 0,
+          skipped: 0,
+          failedSources: 0,
+          errors: 0,
+          errorMessages: [],
+          bySourceType,
+          imageSummary: emptyImageSummary(),
+          failedSourceDetails: [],
       };
     }
 
@@ -374,6 +482,10 @@ async function fetchSourceArticles(
       .select("id");
 
     if (error) {
+      bySourceType[source.sourceType].fetched = articles.length;
+      bySourceType[source.sourceType].skipped = articles.length;
+      bySourceType[source.sourceType].failedSources = 1;
+
       await updateSourceAfterFetch(source.id, {
         healthStatus: "offline",
         lastCheckedAt: checkedAt,
@@ -390,11 +502,31 @@ async function fetchSourceArticles(
         failedSources: 1,
         errors: 1,
         errorMessages: [error.message],
+        bySourceType,
+        imageSummary: {
+          imagesFound,
+          imagesInserted: 0,
+          imagesBackfilled: 0,
+          articlesStillMissingImages: articles.length - imagesFound,
+        },
+        failedSourceDetails: [
+          {
+            sourceName: source.name,
+            sourceType: source.sourceType,
+            errorMessage: error.message,
+            suggestedNextAction: suggestedNextAction(error.message),
+          },
+        ],
       };
     }
 
     const inserted = data?.length ?? 0;
-    await updateExistingArticleImages(articles);
+    const imagesBackfilled = await updateExistingArticleImages(articles);
+    const skipped = Math.max(articles.length - inserted, 0);
+    const imagesInserted = Math.min(inserted, imagesFound);
+    bySourceType[source.sourceType].fetched = articles.length;
+    bySourceType[source.sourceType].inserted = inserted;
+    bySourceType[source.sourceType].skipped = skipped;
 
     await updateSourceAfterFetch(source.id, {
       healthStatus: articles.length ? "healthy" : "warning",
@@ -409,13 +541,22 @@ async function fetchSourceArticles(
       sourcesChecked: 1,
       fetched: articles.length,
       inserted,
-      skipped: Math.max(articles.length - inserted, 0),
+      skipped,
       failedSources: 0,
       errors: 0,
       errorMessages: [],
+      bySourceType,
+      imageSummary: {
+        imagesFound,
+        imagesInserted,
+        imagesBackfilled,
+        articlesStillMissingImages: articles.length - imagesFound,
+      },
+      failedSourceDetails: [],
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "RSS fetch failed";
+    bySourceType[source.sourceType].failedSources = 1;
 
     await updateSourceAfterFetch(source.id, {
       healthStatus: "offline",
@@ -433,6 +574,16 @@ async function fetchSourceArticles(
       failedSources: 1,
       errors: 1,
       errorMessages: [`${source.name}: ${message}`],
+      bySourceType,
+      imageSummary: emptyImageSummary(),
+      failedSourceDetails: [
+        {
+          sourceName: source.name,
+          sourceType: source.sourceType,
+          errorMessage: message,
+          suggestedNextAction: suggestedNextAction(message),
+        },
+      ],
     };
   }
 }
@@ -454,10 +605,47 @@ async function fetchArticlesForSources(
     0,
   );
   const errorMessages = results.flatMap((result) => result.errorMessages);
+  const bySourceType = emptyBySourceType();
+  const imageSummary = results.reduce(
+    (summary, result) => ({
+      imagesFound: summary.imagesFound + result.imageSummary.imagesFound,
+      imagesInserted:
+        summary.imagesInserted + result.imageSummary.imagesInserted,
+      imagesBackfilled:
+        summary.imagesBackfilled + result.imageSummary.imagesBackfilled,
+      articlesStillMissingImages:
+        summary.articlesStillMissingImages +
+        result.imageSummary.articlesStillMissingImages,
+    }),
+    emptyImageSummary(),
+  );
+  const failedSourceDetails = results.flatMap(
+    (result) => result.failedSourceDetails,
+  );
+
+  for (const result of results) {
+    for (const key of sourceTypeKeys) {
+      bySourceType[key].sourcesChecked +=
+        result.bySourceType[key].sourcesChecked;
+      bySourceType[key].fetched += result.bySourceType[key].fetched;
+      bySourceType[key].inserted += result.bySourceType[key].inserted;
+      bySourceType[key].skipped += result.bySourceType[key].skipped;
+      bySourceType[key].failedSources +=
+        result.bySourceType[key].failedSources;
+    }
+  }
+  const activeTypes = sourceTypeKeys
+    .filter((key) => bySourceType[key].sourcesChecked > 0)
+    .map((key) => {
+      const stats = bySourceType[key];
+      const itemLabel = key === "youtube" ? "videos" : "items";
+
+      return `${sourceTypeLabel(key)}: ${stats.sourcesChecked} sources checked, ${stats.fetched} ${itemLabel} found, ${stats.inserted} inserted, ${stats.skipped} skipped`;
+    });
 
   return {
     ok: errors === 0,
-    message: `${publicationName ? `${publicationName}: ` : ""}Checked ${enabledSources.length} sources; found ${fetched}; inserted ${inserted}; skipped ${skipped}; failed ${failedSources}.`,
+    message: `${publicationName ? `${publicationName}: ` : ""}Checked ${enabledSources.length} sources; found ${fetched}; inserted ${inserted}; skipped ${skipped}; failed ${failedSources}.${activeTypes.length ? ` ${activeTypes.join(" | ")}` : ""}`,
     publicationName,
     sourcesChecked: enabledSources.length,
     fetched,
@@ -466,6 +654,9 @@ async function fetchArticlesForSources(
     failedSources,
     errors,
     errorMessages,
+    bySourceType,
+    imageSummary,
+    failedSourceDetails,
   };
 }
 
@@ -486,6 +677,9 @@ export async function fetchArticlesForVertical(
       failedSources: 0,
       errors: 1,
       errorMessages: ["Publication not found."],
+      bySourceType: emptyBySourceType(),
+      imageSummary: emptyImageSummary(),
+      failedSourceDetails: [],
     };
   }
 

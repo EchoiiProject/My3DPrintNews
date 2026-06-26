@@ -26,6 +26,9 @@ export async function GET(request: Request) {
     articlesInserted: result.inserted,
     duplicatesSkipped: result.skipped,
     failedSources: result.failedSources,
+    bySourceType: result.bySourceType,
+    imageSummary: result.imageSummary,
+    failedSourceDetails: result.failedSourceDetails,
     errors: result.errorMessages,
   });
 }
