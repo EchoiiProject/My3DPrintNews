@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { ArticleArchiveItem } from "@/lib/articles";
 import type { ManagedSource } from "@/lib/sources";
-import type { Vertical } from "@/config/verticals";
-import { publicationSlugForVertical } from "@/config/verticals";
+import type { PublicationProfile } from "@/lib/publications";
 import { FeedbackPanel } from "@/app/feedback-panel";
 import { FooterLinks } from "@/app/footer-links";
 import { GlobalNav } from "@/app/global-nav";
@@ -20,24 +19,29 @@ export function formatArticleDate(value: string | null) {
 export function PublicationShell({
   children,
   description,
-  slug,
+  profile,
   title,
-  vertical,
 }: {
   children: React.ReactNode;
   description: string;
-  slug: string;
+  profile: PublicationProfile;
   title: string;
-  vertical: Vertical;
 }) {
   const publicationLinks = [
-    { href: `/publications/${slug}`, label: "Home" },
-    { href: `/publications/${slug}/feed`, label: "Feed" },
-    { href: `/publications/${slug}/catch-up`, label: "Catch Up" },
+    { href: `/publications/${profile.slug}`, label: "Home" },
+    { href: `/publications/${profile.slug}/feed`, label: "Feed" },
+    { href: `/publications/${profile.slug}/catch-up`, label: "Catch Up" },
     { href: "/discover-more", label: "Discover More" },
-    { href: `/publications/${slug}#feedback`, label: "Feedback" },
-    { href: `/admin/${vertical.slug}`, label: "Manage Publication" },
+    { href: `/publications/${profile.slug}#feedback`, label: "Feedback" },
+    { href: `/admin/${profile.adminSlug}`, label: "Manage Publication" },
   ];
+  const logoText = profile.publicationName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
@@ -45,9 +49,23 @@ export function PublicationShell({
         <GlobalNav brandName="MyNewsNetwork" links={publicationLinks} />
         <div className="flex-1 py-10">
           <header>
-            <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-              Publication
-            </p>
+            <div className="mb-4 flex items-center gap-3">
+              {profile.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt={`${profile.publicationName} logo`}
+                  className="h-12 w-12 rounded-lg border border-blue-100 bg-white object-contain p-1"
+                  src={profile.logoUrl}
+                />
+              ) : (
+                <span className="flex h-12 w-12 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-sm font-black text-blue-700">
+                  {logoText}
+                </span>
+              )}
+              <p className="inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
+                Publication
+              </p>
+            </div>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
               {title}
             </h1>
@@ -65,16 +83,14 @@ export function PublicationShell({
 
 export function PublicationLinks({
   publications = [],
-  slug,
-  vertical,
+  profile,
 }: {
-  publications?: Vertical[];
-  slug: string;
-  vertical: Vertical;
+  publications?: PublicationProfile[];
+  profile: PublicationProfile;
 }) {
-  const currentName = vertical.publicationName ?? vertical.name;
-  const visibility = vertical.visibility ?? "public";
-  const publicationStatus = vertical.publicationStatus ?? "live";
+  const currentName = profile.publicationName;
+  const visibility = profile.visibility;
+  const publicationStatus = profile.publicationStatus;
   const showReviewMode =
     visibility !== "public" || publicationStatus !== "live";
   const statusLabel = [
@@ -109,19 +125,19 @@ export function PublicationLinks({
               <div className="mt-2 flex flex-wrap gap-2 lg:justify-end">
                 <Link
                   className="inline-flex min-h-9 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-xs font-bold text-amber-800"
-                  href={`/admin/${vertical.slug}`}
+                  href={`/admin/${profile.adminSlug}`}
                 >
                   Manage Publication
                 </Link>
                 <Link
                   className="inline-flex min-h-9 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-xs font-bold text-amber-800"
-                  href={`/admin/${vertical.slug}/sources`}
+                  href={`/admin/${profile.adminSlug}/sources`}
                 >
                   Source Management
                 </Link>
                 <Link
                   className="inline-flex min-h-9 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-xs font-bold text-amber-800"
-                  href={`/admin/${vertical.slug}/articles`}
+                  href={`/admin/${profile.adminSlug}/articles`}
                 >
                   Article Archive
                 </Link>
@@ -142,8 +158,7 @@ export function PublicationLinks({
           </div>
           <div className="flex flex-wrap gap-2">
             {publications.map((publication) => {
-              const publicationSlug = publicationSlugForVertical(publication);
-              const isCurrent = publication.slug === vertical.slug;
+              const isCurrent = publication.adminSlug === profile.adminSlug;
 
               return (
                 <Link
@@ -153,10 +168,10 @@ export function PublicationLinks({
                       ? "border-blue-500 bg-blue-600 text-white"
                       : "border-blue-200 bg-white text-blue-700",
                   ].join(" ")}
-                  href={`/publications/${publicationSlug}`}
-                  key={publication.id}
+                  href={`/publications/${publication.slug}`}
+                  key={publication.adminSlug}
                 >
-                  {publication.publicationName ?? publication.name}
+                  {publication.publicationName}
                 </Link>
               );
             })}
@@ -166,19 +181,19 @@ export function PublicationLinks({
       <nav className="flex flex-wrap gap-2">
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white"
-          href={`/publications/${slug}`}
+          href={`/publications/${profile.slug}`}
         >
           Home
         </Link>
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href={`/publications/${slug}/feed`}
+          href={`/publications/${profile.slug}/feed`}
         >
           Feed
         </Link>
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href={`/publications/${slug}/catch-up`}
+          href={`/publications/${profile.slug}/catch-up`}
         >
           Catch Up
         </Link>
@@ -190,13 +205,13 @@ export function PublicationLinks({
         </Link>
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href={`/publications/${slug}#feedback`}
+          href={`/publications/${profile.slug}#feedback`}
         >
           Feedback
         </Link>
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-800"
-          href={`/admin/${vertical.slug}`}
+          href={`/admin/${profile.adminSlug}`}
         >
           Manage this publication
         </Link>
@@ -256,16 +271,16 @@ export function ArticleList({ articles }: { articles: ArticleArchiveItem[] }) {
 export function PublicationStats({
   articleCount,
   sourceCount,
-  vertical,
+  profile,
 }: {
   articleCount: number;
   sourceCount: number;
-  vertical: Vertical;
+  profile: PublicationProfile;
 }) {
   return (
     <section className="mt-8 grid gap-4 sm:grid-cols-3">
       {[
-        ["Publication", vertical.name],
+        ["Publication", profile.publicationName],
         ["Sources", sourceCount],
         ["Archived articles", articleCount],
       ].map(([label, value]) => (
@@ -326,12 +341,16 @@ export function FeedFilters({
   );
 }
 
-export function PublicationFeedback({ vertical }: { vertical: Vertical }) {
+export function PublicationFeedback({ profile }: { profile: PublicationProfile }) {
+  if (!profile.showFeedback) {
+    return null;
+  }
+
   return (
     <section id="feedback">
       <FeedbackPanel
-        publicationName={vertical.publicationName ?? vertical.name}
-        verticalSlug={vertical.slug}
+        publicationName={profile.publicationName}
+        verticalSlug={profile.adminSlug}
       />
     </section>
   );

@@ -425,6 +425,34 @@ export default async function VerticalAdminPage({
 
           <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
             <h2 className="text-2xl font-bold text-slate-950">
+              Publication identity
+            </h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                ["Publication name", vertical.publicationName ?? vertical.name],
+                ["Public slug", publicSlug],
+                ["Hostname", vertical.hostname ?? "Not set"],
+                ["Visibility", vertical.visibility ?? "public"],
+                ["Publication status", vertical.publicationStatus ?? "live"],
+                [
+                  "Auto fetch",
+                  vertical.autoFetchEnabled === false ? "Disabled" : "Enabled",
+                ],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    {label}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <h2 className="text-2xl font-bold text-slate-950">
               Organisation
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

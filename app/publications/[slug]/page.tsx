@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { getArticleArchive } from "@/lib/articles";
 import {
-  getPublicationByPublicSlug,
-  getPublications,
+  getPublicationProfileBySlug,
+  getPublicationProfiles,
   publicationAliasMap,
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
@@ -14,44 +14,65 @@ import {
 } from "./publication-components";
 import { ArchiveStoryCards } from "./archive-story-cards";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const profile = await getPublicationProfileBySlug(slug);
+
+  if (!profile) {
+    return {};
+  }
+
+  return {
+    title: `${profile.publicationName} | MyNewsNetwork`,
+    description: profile.description,
+    openGraph: {
+      title: profile.publicationName,
+      description: profile.description,
+    },
+  };
+}
+
 export default async function PublicationHomePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const vertical = await getPublicationByPublicSlug(slug);
+  const profile = await getPublicationProfileBySlug(slug);
 
-  if (!vertical) {
+  if (!profile) {
     notFound();
   }
 
-  const articles = await getArticleArchive({ verticalSlug: vertical.slug });
-  const sources = await getManagedSources(vertical.slug);
-  const publications = await getPublications();
+  const articles = await getArticleArchive({ verticalSlug: profile.adminSlug });
+  const sources = await getManagedSources(profile.adminSlug);
+  const publications = await getPublicationProfiles();
 
   return (
     <PublicationShell
-      description={vertical.description}
-      slug={slug}
-      title={vertical.name}
-      vertical={vertical}
+      description={profile.description}
+      profile={profile}
+      title={profile.publicationName}
     >
       <PublicationLinks
         publications={publications}
-        slug={slug}
-        vertical={vertical}
+        profile={profile}
       />
       <PublicationStats
         articleCount={articles.length}
         sourceCount={sources.length}
-        vertical={vertical}
+        profile={profile}
       />
       <ArchiveStoryCards
         articles={articles.slice(0, 10)}
         heading="Latest stories"
+        publicationName={profile.publicationName}
       />
-      <PublicationFeedback vertical={vertical} />
+      <PublicationFeedback profile={profile} />
     </PublicationShell>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { currentSite } from "@/config/current-site";
 import { verticalBySlug, verticals, type Vertical } from "@/config/verticals";
-import { publicationPath } from "@/lib/publications";
+import { publicationPath, publicationProfileFromVertical } from "@/lib/publications";
 
 const publicRecommendations = ["mybmxnews", "mydronenews", "mymakernews"];
 
@@ -30,8 +30,16 @@ export function VerticalPublicationCard({
   showSubscriberCount?: boolean;
   vertical: Vertical;
 }) {
+  const profile = publicationProfileFromVertical(vertical);
   const isComingSoon = vertical.comingSoon || vertical.status === "coming-soon";
   const href = isComingSoon ? vertical.publicUrl : publicationPath(vertical);
+  const logoText = profile.publicationName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
 
   return (
     <article
@@ -42,12 +50,21 @@ export function VerticalPublicationCard({
     >
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-sm font-black text-blue-700">
-          {vertical.logo}
+          {profile.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={`${profile.publicationName} logo`}
+              className="h-full w-full rounded-lg object-contain p-1"
+              src={profile.logoUrl}
+            />
+          ) : (
+            logoText || vertical.logo
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-bold text-slate-950">
-              {vertical.name}
+              {profile.publicationName}
             </h3>
             <span
               className={[
@@ -66,7 +83,7 @@ export function VerticalPublicationCard({
         </div>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-600">
-        {vertical.description}
+        {profile.description}
       </p>
       {showSubscriberCount && !isComingSoon ? (
         <p className="mt-3 text-sm font-bold text-slate-700">
@@ -93,6 +110,7 @@ export function VerticalPublicationCard({
 
 export function DiscoverMorePanel() {
   const currentVertical = getCurrentVertical();
+  const currentProfile = publicationProfileFromVertical(currentVertical);
   const recommendations = publicRecommendations
     .map((id) => verticals.find((vertical) => vertical.id === id))
     .filter((vertical): vertical is Vertical => Boolean(vertical));
@@ -103,7 +121,7 @@ export function DiscoverMorePanel() {
         <div>
           <p className="text-sm font-semibold text-blue-700">Discover More</p>
           <h2 className="mt-1 text-2xl font-bold text-slate-950">
-            Enjoying {currentVertical.name}?
+            Enjoying {currentProfile.publicationName}?
           </h2>
         </div>
         <Link

@@ -36,10 +36,12 @@ export function ArchiveStoryCards({
   articles,
   heading = "Latest stories",
   periodDays,
+  publicationName = "this publication",
 }: {
   articles: ArticleArchiveItem[];
   heading?: string;
   periodDays?: number;
+  publicationName?: string;
 }) {
   const [favourites, setFavourites] =
     useState<Favourites>(defaultFavourites);
@@ -104,7 +106,7 @@ export function ArchiveStoryCards({
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {articles.length
               ? "This publication has archived articles, but none match the selected date window."
-              : "Articles will appear after enabled sources are fetched."}
+              : `Articles will appear for ${publicationName} after enabled sources are fetched.`}
           </p>
         </section>
       )}

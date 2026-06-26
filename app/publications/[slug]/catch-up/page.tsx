@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArticleArchive } from "@/lib/articles";
 import {
-  getPublicationByPublicSlug,
-  getPublications,
+  getPublicationProfileBySlug,
+  getPublicationProfiles,
   publicationAliasMap,
 } from "@/lib/publications";
 import {
@@ -14,6 +14,30 @@ import { ArchiveStoryCards } from "../archive-story-cards";
 
 const allowedWindows = [7, 14, 30];
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const profile = await getPublicationProfileBySlug(slug);
+
+  if (!profile) {
+    return {};
+  }
+
+  const title = `${profile.publicationName} Catch Up`;
+
+  return {
+    title: `${title} | MyNewsNetwork`,
+    description: profile.description,
+    openGraph: {
+      title,
+      description: profile.description,
+    },
+  };
+}
+
 export default async function PublicationCatchUpPage({
   params,
   searchParams,
@@ -23,31 +47,29 @@ export default async function PublicationCatchUpPage({
 }) {
   const { slug } = await params;
   const query = await searchParams;
-  const vertical = await getPublicationByPublicSlug(slug);
+  const profile = await getPublicationProfileBySlug(slug);
 
-  if (!vertical) {
+  if (!profile) {
     notFound();
   }
 
   const requestedDays = query?.days ? Number(query.days) : 7;
   const days = allowedWindows.includes(requestedDays) ? requestedDays : 7;
-  const publications = await getPublications();
+  const publications = await getPublicationProfiles();
   const articles = await getArticleArchive({
-    verticalSlug: vertical.slug,
+    verticalSlug: profile.adminSlug,
     recentDays: days,
   });
 
   return (
     <PublicationShell
-      description={`Catch up on the last ${days} days from ${vertical.name}.`}
-      slug={slug}
-      title={`${vertical.name} Catch Up`}
-      vertical={vertical}
+      description={`Catch up on the last ${days} days from ${profile.publicationName}.`}
+      profile={profile}
+      title={`${profile.publicationName} Catch Up`}
     >
       <PublicationLinks
         publications={publications}
-        slug={slug}
-        vertical={vertical}
+        profile={profile}
       />
       <div className="mt-8 flex flex-wrap gap-2">
         {allowedWindows.map((windowDays) => (
@@ -58,7 +80,7 @@ export default async function PublicationCatchUpPage({
                 ? "border-blue-500 bg-blue-600 text-white"
                 : "border-blue-200 bg-white text-blue-700",
             ].join(" ")}
-            href={`/publications/${slug}/catch-up?days=${windowDays}`}
+            href={`/publications/${profile.slug}/catch-up?days=${windowDays}`}
             key={windowDays}
           >
             {windowDays} days
@@ -69,6 +91,7 @@ export default async function PublicationCatchUpPage({
         articles={articles}
         heading={`Stories from the last ${days} days`}
         periodDays={days}
+        publicationName={profile.publicationName}
       />
     </PublicationShell>
   );
