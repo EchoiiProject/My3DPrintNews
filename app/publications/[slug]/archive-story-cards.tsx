@@ -5,6 +5,11 @@ import type { ArticleArchiveItem } from "@/lib/articles";
 import type { Article } from "@/lib/rss";
 import type { ScoredArticle } from "@/lib/matching";
 import { generateArticleTags } from "@/lib/matching";
+import {
+  displayMediaType,
+  mediaFilterOptions,
+  type DisplayMediaType,
+} from "@/lib/media-types";
 import { getPublishedTimestamp } from "@/lib/ranking";
 import { FeedStoryCards } from "@/app/feed/feed-client";
 import {
@@ -16,14 +21,23 @@ import {
 } from "@/app/preferences";
 
 type DisplayMode = "compact" | "standard" | "visual";
+type MediaFilter = "all" | DisplayMediaType;
 
 const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
+const MEDIA_FILTER_KEY = "mynewsnetwork-publication-feed-media-filter";
 const displayModes: DisplayMode[] = ["compact", "standard", "visual"];
 
 function normaliseDisplayMode(value: string | null): DisplayMode {
   return displayModes.includes(value as DisplayMode)
     ? (value as DisplayMode)
     : "standard";
+}
+
+function normaliseMediaFilter(value: string | null): MediaFilter {
+  return value === "all" ||
+    mediaFilterOptions.some((option) => option.value === value)
+    ? (value as MediaFilter)
+    : "all";
 }
 
 function archiveArticleToFeedArticle(article: ArticleArchiveItem): Article {
@@ -89,11 +103,15 @@ export function ArchiveStoryCards({
   const [favourites, setFavourites] =
     useState<Favourites>(defaultFavourites);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
 
   useEffect(() => {
     const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
     setDisplayMode(
       normaliseDisplayMode(localStorage.getItem(DISPLAY_MODE_KEY)),
+    );
+    setMediaFilter(
+      normaliseMediaFilter(localStorage.getItem(MEDIA_FILTER_KEY)),
     );
 
     if (!savedFavourites) return;
@@ -106,12 +124,44 @@ export function ArchiveStoryCards({
   }, []);
 
   const stories = useMemo(() => {
-    return articles
+    const filteredArticles =
+      mediaFilter === "all"
+        ? articles
+        : articles.filter(
+            (article) =>
+              displayMediaType({
+                tags: article.tags,
+                source: article.sourceName,
+              }) === mediaFilter,
+          );
+
+    return filteredArticles
       .map((article, index) =>
         archiveArticleToScoredArticle(article, index, publicationName),
       )
       .sort(sortArchiveStories);
-  }, [articles, publicationName]);
+  }, [articles, mediaFilter, publicationName]);
+
+  const mediaCounts = useMemo(() => {
+    const counts: Record<MediaFilter, number> = {
+      all: articles.length,
+      news: 0,
+      video: 0,
+      podcast: 0,
+      review: 0,
+    };
+
+    articles.forEach((article) => {
+      const type = displayMediaType({
+        tags: article.tags,
+        source: article.sourceName,
+      });
+
+      counts[type] += 1;
+    });
+
+    return counts;
+  }, [articles]);
 
   function toggleSourceFavourite(source: string) {
     setFavourites((current) => {
@@ -127,11 +177,47 @@ export function ArchiveStoryCards({
     localStorage.setItem(DISPLAY_MODE_KEY, mode);
   }
 
+  function chooseMediaFilter(filter: MediaFilter) {
+    setMediaFilter(filter);
+    localStorage.setItem(MEDIA_FILTER_KEY, filter);
+  }
+
   return (
     <section className="mt-8">
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-slate-950">{heading}</h2>
         <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+            <button
+              className={[
+                "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                mediaFilter === "all"
+                  ? "bg-slate-950 text-white"
+                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+              ].join(" ")}
+              onClick={() => chooseMediaFilter("all")}
+              type="button"
+            >
+              All ({mediaCounts.all})
+            </button>
+            {mediaFilterOptions
+              .filter((option) => mediaCounts[option.value] > 0)
+              .map((option) => (
+                <button
+                  className={[
+                    "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                    mediaFilter === option.value
+                      ? "bg-slate-950 text-white"
+                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                  ].join(" ")}
+                  key={option.value}
+                  onClick={() => chooseMediaFilter(option.value)}
+                  type="button"
+                >
+                  {option.pluralLabel} ({mediaCounts[option.value]})
+                </button>
+              ))}
+          </div>
           <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
             <span className="px-2 text-xs font-bold uppercase tracking-wide text-slate-500">
               View

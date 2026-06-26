@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { currentSite } from "../../config/current-site";
 import type { Article } from "@/lib/rss";
+import { displayMediaLabel } from "@/lib/media-types";
 import {
   matchesFocus,
   preferenceFocusFilters,
@@ -265,13 +266,11 @@ function formatDate(value: string): string {
 }
 
 function storyBadge(article: Article): string {
-  if (article.type === "video") return "Video";
-
-  const badge = article.tags.find((tag) =>
-    ["Video", "Podcast", "News", "Brand", "Blog", "Creator"].includes(tag),
-  );
-
-  return badge ?? "News";
+  return displayMediaLabel({
+    sourceType: article.type === "video" ? "youtube" : undefined,
+    tags: article.tags,
+    source: article.source,
+  });
 }
 
 export function FeedStoryCards({
