@@ -8,15 +8,15 @@ export type UpdatePost = {
 // provide their own updates stream while reusing the /updates page structure.
 export const updatePosts: UpdatePost[] = [
   {
-    title: "Building the first personalised 3D printing feed",
+    title: "Building the MyNewsNetwork platform",
     date: "21 June 2026",
     content:
-      "We have launched the first working version of MyNewsNetwork, including personalised feed selection, RSS-powered articles, creator video feeds, source attribution, favourites, focus mode and newsletter signup foundations.",
+      "We have launched the first working version of MyNewsNetwork, including publication pages, RSS-powered article archives, source attribution, feedback capture, review-mode previews and admin foundations.",
   },
   {
     title: "Help shape what comes next",
     date: "21 June 2026",
     content:
-      "We are actively improving source coverage, feed matching, favourites, saved feeds and catch-up views. If you have suggestions for sources, creators, publishers or features, please contact us.",
+      "We are actively improving publication coverage, archive quality, referral reporting, newsletters and owner tools. If you have suggestions for sources, publishers, organisations or features, please contact us.",
   },
 ];

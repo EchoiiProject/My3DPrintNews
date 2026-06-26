@@ -9,10 +9,10 @@ export const appConfig = {
     badge: "Product notes",
     title: "MyNewsNetwork Updates",
     intro:
-      "Follow the latest improvements to MyNewsNetwork as we build personalised specialist publications. We welcome feedback from readers, creators, organisations and publishers.",
+      "Follow the latest improvements to MyNewsNetwork as we build personalised specialist publications, source libraries, article archives and owner tools.",
     feedbackCta: {
       heading: "Have feedback or want to suggest a source?",
-      text: "We welcome suggestions from readers, makers, creators and publishers.",
+      text: "We welcome suggestions from readers, publication owners, organisations and publishers.",
       buttonLabel: "Contact us",
       href: "/contact",
     },

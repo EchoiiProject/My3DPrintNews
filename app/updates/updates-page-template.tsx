@@ -49,9 +49,9 @@ export function UpdatesPageTemplate({
             <div className="mt-5">
               <ActionLinks
                 links={[
-                  { href: "/feed", label: "Feed" },
-                  { href: "/sources", label: "Sources" },
-                  { href: "/catch-up", label: "Catch Up" },
+                  { href: "/", label: "Network Home" },
+                  { href: "/discover-more", label: "Discover More" },
+                  { href: "/admin", label: "Platform Admin" },
                 ]}
               />
             </div>
