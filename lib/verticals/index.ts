@@ -89,6 +89,7 @@ function toAppVertical(record: VerticalRecord): Vertical {
 
   return {
     id: configured?.id ?? record.slug,
+    databaseId: record.id,
     name: record.name,
     slug: record.slug,
     domain: organisation?.website_url ?? configured?.domain ?? "",

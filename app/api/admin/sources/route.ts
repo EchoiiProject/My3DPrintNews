@@ -4,6 +4,8 @@ import { createManagedSource } from "@/lib/sources";
 type SourcePayload = {
   name?: unknown;
   rssUrl?: unknown;
+  rss_url?: unknown;
+  vertical_id?: unknown;
   verticalSlug?: unknown;
   category?: unknown;
   enabled?: unknown;
@@ -36,14 +38,15 @@ export async function POST(request: Request) {
   }
 
   const name = text(body.name);
-  const rssUrl = text(body.rssUrl);
+  const rssUrl = text(body.rss_url) || text(body.rssUrl);
+  const verticalId = text(body.vertical_id);
   const verticalSlug = text(body.verticalSlug);
   const category = text(body.category);
   const errors: Record<string, string> = {};
 
   if (!name) errors.name = "Source name is required.";
   if (!rssUrl || !validUrl(rssUrl)) errors.rssUrl = "A valid RSS URL is required.";
-  if (!verticalSlug) errors.verticalSlug = "Vertical is required.";
+  if (!verticalId && !verticalSlug) errors.vertical = "Vertical is required.";
 
   if (Object.keys(errors).length) {
     return NextResponse.json(
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
   const result = await createManagedSource({
     name,
     rssUrl,
+    verticalId,
     verticalSlug,
     category: category || null,
     enabled: typeof body.enabled === "boolean" ? body.enabled : true,

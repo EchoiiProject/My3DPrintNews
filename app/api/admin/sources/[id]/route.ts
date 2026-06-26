@@ -4,8 +4,10 @@ import { deleteManagedSource, updateManagedSource } from "@/lib/sources";
 type SourcePatch = {
   name?: unknown;
   rssUrl?: unknown;
+  rss_url?: unknown;
   category?: unknown;
   enabled?: unknown;
+  vertical_id?: unknown;
   verticalSlug?: unknown;
 };
 
@@ -39,7 +41,7 @@ export async function PATCH(
     );
   }
 
-  const rssUrl = text(body.rssUrl);
+  const rssUrl = text(body.rss_url) ?? text(body.rssUrl);
   const errors: Record<string, string> = {};
 
   if (rssUrl !== undefined && !validUrl(rssUrl)) {
@@ -59,6 +61,7 @@ export async function PATCH(
     category: text(body.category) ?? null,
     enabled:
       typeof body.enabled === "boolean" ? body.enabled : undefined,
+    verticalId: text(body.vertical_id),
     verticalSlug: text(body.verticalSlug),
   });
 

@@ -1,7 +1,6 @@
 import { registry, type RegistryItem } from "@/config/registry";
 import type { RssSourceDiagnostic } from "@/lib/rss/diagnostics";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
-import { getVerticalBySlug } from "@/lib/verticals";
 
 export type SourceHealth = "healthy" | "warning" | "offline";
 
@@ -177,6 +176,43 @@ function articleSummaries(records: ArticleSummaryRecord[]) {
 
 function logFallback(context: string, error: unknown) {
   console.warn(`[sources] ${context}; using registry fallback.`, error);
+}
+
+async function resolveVerticalId(input: {
+  verticalId?: string;
+  verticalSlug?: string;
+}) {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) return null;
+
+  if (input.verticalId) {
+    const byId = await supabase
+      .from("verticals")
+      .select("id")
+      .eq("id", input.verticalId)
+      .maybeSingle();
+
+    if (byId.error) return { id: null, error: byId.error.message };
+    if (byId.data?.id) return { id: byId.data.id as string, error: null };
+  }
+
+  const slug = input.verticalSlug ?? input.verticalId;
+
+  if (!slug) return { id: null, error: "Vertical is required." };
+
+  const bySlug = await supabase
+    .from("verticals")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (bySlug.error) return { id: null, error: bySlug.error.message };
+
+  return {
+    id: (bySlug.data?.id as string | undefined) ?? null,
+    error: bySlug.data ? null : `Vertical not found: ${slug}`,
+  };
 }
 
 function daysBetween(oldestArticle: string | null, newestArticle: string | null) {
@@ -369,6 +405,7 @@ export async function sourceDiagnostics(
 export async function createManagedSource(input: {
   name: string;
   rssUrl: string;
+  verticalId?: string;
   verticalSlug: string;
   category?: string | null;
   enabled?: boolean;
@@ -382,26 +419,20 @@ export async function createManagedSource(input: {
     };
   }
 
-  const vertical = await getVerticalBySlug(input.verticalSlug);
+  const dbVertical = await resolveVerticalId({
+    verticalId: input.verticalId,
+    verticalSlug: input.verticalSlug,
+  });
 
-  if (!vertical) {
-    return { ok: false, message: "Vertical not found." };
-  }
-
-  const dbVertical = await supabase
-    .from("verticals")
-    .select("id")
-    .eq("slug", input.verticalSlug)
-    .maybeSingle();
-
-  if (dbVertical.error || !dbVertical.data) {
-    console.error("Supabase source vertical lookup error", dbVertical.error);
-
-    return { ok: false, message: "Vertical could not be found in Supabase." };
+  if (!dbVertical?.id) {
+    return {
+      ok: false,
+      message: dbVertical?.error ?? "Vertical could not be found in Supabase.",
+    };
   }
 
   const { error } = await supabase.from("vertical_sources").insert({
-    vertical_id: dbVertical.data.id,
+    vertical_id: dbVertical.id,
     name: input.name,
     rss_url: input.rssUrl,
     category: input.category ?? null,
@@ -412,7 +443,7 @@ export async function createManagedSource(input: {
 
   if (error) {
     console.error("Supabase source insert error", error);
-    return { ok: false, message: "Source could not be saved." };
+    return { ok: false, message: `Source could not be saved: ${error.message}` };
   }
 
   return { ok: true, message: "Source saved." };
@@ -422,6 +453,7 @@ export async function updateManagedSource(
   id: string,
   patch: Partial<
     Pick<ManagedSource, "name" | "rssUrl" | "category" | "enabled"> & {
+      verticalId: string;
       verticalSlug: string;
     }
   >,
@@ -446,27 +478,30 @@ export async function updateManagedSource(
     update.enabled = patch.enabled;
     update.status = patch.enabled ? "active" : "inactive";
   }
-  if (typeof patch.verticalSlug === "string") {
-    const dbVertical = await supabase
-      .from("verticals")
-      .select("id")
-      .eq("slug", patch.verticalSlug)
-      .maybeSingle();
+  if (
+    typeof patch.verticalId === "string" ||
+    typeof patch.verticalSlug === "string"
+  ) {
+    const dbVertical = await resolveVerticalId({
+      verticalId: patch.verticalId,
+      verticalSlug: patch.verticalSlug,
+    });
 
-    if (dbVertical.error || !dbVertical.data) {
-      console.error("Supabase source vertical update lookup error", dbVertical.error);
-
-      return { ok: false, message: "Vertical could not be found in Supabase." };
+    if (!dbVertical?.id) {
+      return {
+        ok: false,
+        message: dbVertical?.error ?? "Vertical could not be found in Supabase.",
+      };
     }
 
-    update.vertical_id = dbVertical.data.id;
+    update.vertical_id = dbVertical.id;
   }
 
   const { error } = await supabase.from("vertical_sources").update(update).eq("id", id);
 
   if (error) {
     console.error("Supabase source update error", error);
-    return { ok: false, message: "Source could not be updated." };
+    return { ok: false, message: `Source could not be updated: ${error.message}` };
   }
 
   return { ok: true, message: "Source updated." };

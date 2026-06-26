@@ -21,6 +21,7 @@ type SourceFormState = {
   name: string;
   rssUrl: string;
   category: string;
+  verticalId: string;
   verticalSlug: string;
   enabled: boolean;
 };
@@ -107,6 +108,10 @@ function testFeedResult(diagnostic: FeedDiagnostic) {
     .join(" | ");
 }
 
+function verticalDatabaseId(vertical: Vertical) {
+  return vertical.databaseId ?? vertical.id;
+}
+
 export function SourceManagementClient({
   diagnostics,
   sources,
@@ -125,12 +130,16 @@ export function SourceManagementClient({
   const [selectedVertical, setSelectedVertical] = useState(
     verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
   );
+  const [selectedVerticalId, setSelectedVerticalId] = useState(
+    verticals[0] ? verticalDatabaseId(verticals[0]) : "",
+  );
   const [enabled, setEnabled] = useState(true);
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<SourceFormState>({
     name: "",
     rssUrl: "",
     category: "",
+    verticalId: verticals[0] ? verticalDatabaseId(verticals[0]) : "",
     verticalSlug: verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
     enabled: true,
   });
@@ -164,9 +173,9 @@ export function SourceManagementClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          rssUrl,
+          rss_url: rssUrl,
           category,
-          verticalSlug: selectedVertical,
+          vertical_id: selectedVerticalId,
           enabled,
         }),
       },
@@ -196,6 +205,7 @@ export function SourceManagementClient({
       name: source.name,
       rssUrl: source.rssUrl,
       category: source.category ?? "",
+      verticalId: source.verticalId,
       verticalSlug: source.verticalSlug,
       enabled: source.enabled,
     });
@@ -209,9 +219,9 @@ export function SourceManagementClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editValues.name,
-          rssUrl: editValues.rssUrl,
+          rss_url: editValues.rssUrl,
           category: editValues.category,
-          verticalSlug: editValues.verticalSlug,
+          vertical_id: editValues.verticalId,
           enabled: editValues.enabled,
         }),
       },
@@ -387,12 +397,19 @@ export function SourceManagementClient({
           />
           <select
             className="min-h-11 rounded-md border border-blue-100 px-3 text-sm"
-            onChange={(event) => setSelectedVertical(event.target.value)}
-            value={selectedVertical}
+            onChange={(event) => {
+              const nextVertical = verticals.find(
+                (vertical) => verticalDatabaseId(vertical) === event.target.value,
+              );
+
+              setSelectedVerticalId(event.target.value);
+              setSelectedVertical(nextVertical?.slug ?? selectedVertical);
+            }}
+            value={selectedVerticalId}
             disabled={Boolean(verticalSlug)}
           >
             {verticals.map((vertical) => (
-              <option key={vertical.slug} value={vertical.slug}>
+              <option key={vertical.slug} value={verticalDatabaseId(vertical)}>
                 {vertical.name}
               </option>
             ))}
@@ -565,13 +582,19 @@ export function SourceManagementClient({
                             onChange={(event) =>
                               setEditValues((current) => ({
                                 ...current,
-                                verticalSlug: event.target.value,
+                                verticalId: event.target.value,
+                                verticalSlug:
+                                  verticals.find(
+                                    (vertical) =>
+                                      verticalDatabaseId(vertical) ===
+                                      event.target.value,
+                                  )?.slug ?? current.verticalSlug,
                               }))
                             }
-                            value={editValues.verticalSlug}
+                            value={editValues.verticalId}
                           >
                             {verticals.map((vertical) => (
-                              <option key={vertical.slug} value={vertical.slug}>
+                              <option key={vertical.slug} value={verticalDatabaseId(vertical)}>
                                 {vertical.name}
                               </option>
                             ))}

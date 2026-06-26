@@ -1,5 +1,6 @@
 export type Vertical = {
   id: string;
+  databaseId?: string;
   name: string;
   slug: string;
   domain: string;
