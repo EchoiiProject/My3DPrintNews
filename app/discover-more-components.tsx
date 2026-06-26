@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { currentSite } from "@/config/current-site";
 import { verticalBySlug, verticals, type Vertical } from "@/config/verticals";
+import { publicationPath } from "@/lib/publications";
 
 const publicRecommendations = ["mybmxnews", "mydronenews", "mymakernews"];
 
@@ -30,6 +31,7 @@ export function VerticalPublicationCard({
   vertical: Vertical;
 }) {
   const isComingSoon = vertical.comingSoon || vertical.status === "coming-soon";
+  const href = isComingSoon ? vertical.publicUrl : publicationPath(vertical);
 
   return (
     <article
@@ -74,7 +76,7 @@ export function VerticalPublicationCard({
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
-          href={vertical.publicUrl}
+          href={href}
         >
           Visit
         </Link>
