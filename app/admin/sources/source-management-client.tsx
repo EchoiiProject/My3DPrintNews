@@ -99,11 +99,64 @@ function healthClass(status: FeedDiagnostic["healthStatus"]) {
   return "border-amber-100 bg-amber-50 text-amber-700";
 }
 
+function healthLabel(score: number) {
+  if (score >= 85) return { label: "Excellent", marker: "🟢" };
+  if (score >= 70) return { label: "Good", marker: "🟡" };
+  if (score >= 45) return { label: "Needs Attention", marker: "🟠" };
+  return { label: "Poor", marker: "🔴" };
+}
+
 function coverageLabel(days: number) {
   if (days >= 7) return "healthy";
   if (days >= 3) return "usable";
   if (days >= 1) return "thin coverage";
   return "broken or no content";
+}
+
+function sourceHealthDetail(source: ManagedSource, diagnostic: FeedDiagnostic) {
+  if (!source.enabled) {
+    return {
+      label: "Disabled",
+      detail: "Source is disabled and not treated as active.",
+    };
+  }
+
+  if (!diagnostic.reachable || diagnostic.healthStatus === "offline") {
+    return {
+      label: "Failed",
+      detail: diagnostic.errorMessage ?? "Feed could not be reached.",
+    };
+  }
+
+  const latest = diagnostic.latestArticleDate
+    ? new Date(diagnostic.latestArticleDate).getTime()
+    : null;
+  const today = Date.now() - 24 * 60 * 60 * 1000;
+  const stale = !latest || latest < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  if (stale) {
+    return {
+      label: "Stale",
+      detail: "Feed reachable but inactive for 30+ days.",
+    };
+  }
+
+  if (diagnostic.healthStatus === "warning" || diagnostic.itemCount === 0) {
+    return {
+      label: "Warning",
+      detail: diagnostic.itemCount === 0
+        ? "Reachable but returned zero items."
+        : "Reachable but needs review.",
+    };
+  }
+
+  return {
+    label: "Healthy",
+    detail:
+      latest && latest >= today
+        ? "Reachable and fetched today."
+        : "Reachable with recent items.",
+  };
 }
 
 function sourceWarnings(source: ManagedSource, diagnostic: FeedDiagnostic) {
@@ -562,6 +615,173 @@ export function SourceManagementClient({
       ...statusCounts,
     };
   }, [diagnosticBySourceId, visibleSources]);
+  const scopedSources = useMemo(
+    () =>
+      publicationFilter === "all"
+        ? sources
+        : sources.filter((source) => source.verticalId === publicationFilter),
+    [publicationFilter, sources],
+  );
+  const scopedDiagnostics = useMemo(
+    () =>
+      scopedSources.map(
+        (source) =>
+          diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source),
+      ),
+    [diagnosticBySourceId, scopedSources],
+  );
+  const publicationHealth = useMemo(() => {
+    const activeSources = scopedSources.filter((source) => source.enabled);
+    const base = Math.max(activeSources.length, 1);
+    const healthy = activeSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+      return diagnostic.healthStatus === "healthy";
+    }).length;
+    const fresh = activeSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+      const latest = diagnostic.latestArticleDate
+        ? new Date(diagnostic.latestArticleDate).getTime()
+        : 0;
+
+      return latest >= Date.now() - 7 * 24 * 60 * 60 * 1000;
+    }).length;
+    const productive = activeSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+      return diagnostic.itemCount > 0 || source.articlesFetched > 0;
+    }).length;
+    const imageTotal =
+      (fetchSummary?.imageSummary?.imagesFound ?? 0) +
+      (fetchSummary?.imageSummary?.articlesStillMissingImages ?? 0);
+    const imageCoverage =
+      imageTotal > 0
+        ? Math.round(
+            ((fetchSummary?.imageSummary?.imagesFound ?? 0) / imageTotal) * 100,
+          )
+        : null;
+    const sourceHealth = Math.round((healthy / base) * 100);
+    const freshness = Math.round((fresh / base) * 100);
+    const contentHealth = Math.round((productive / base) * 100);
+    const imageHealth = imageCoverage ?? 0;
+    const overall = Math.round(
+      sourceHealth * 0.3 +
+        freshness * 0.3 +
+        contentHealth * 0.2 +
+        imageHealth * 0.2,
+    );
+
+    return {
+      overall,
+      sourceHealth,
+      freshness,
+      contentHealth,
+      imageCoverage,
+      label: healthLabel(overall),
+    };
+  }, [diagnosticBySourceId, fetchSummary, scopedSources]);
+  const operationalSummary = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const today = todayStart.getTime();
+    const contentToday = scopedDiagnostics.reduce((total, diagnostic) => {
+      const latest = diagnostic.latestArticleDate
+        ? new Date(diagnostic.latestArticleDate).getTime()
+        : 0;
+
+      return latest >= today ? total + diagnostic.itemCount : total;
+    }, 0);
+
+    return {
+      lastFetch:
+        scopedDiagnostics
+          .map((diagnostic) => diagnostic.lastCheckedAt)
+          .filter(Boolean)
+          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ??
+        null,
+      contentToday,
+      sourcesNeedingAttention: visibleSources.filter((source) => {
+        const diagnostic =
+          diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+        return diagnostic.healthStatus !== "healthy" || !source.enabled;
+      }).length,
+      failedSources: headerSummary.failed,
+      imagesBackfilled: fetchSummary?.imageSummary?.imagesBackfilled ?? 0,
+      newVideos:
+        fetchSummary?.bySourceType?.youtube?.inserted ??
+        visibleSources
+          .filter((source) => source.sourceType === "youtube")
+          .reduce((total, source) => {
+            const diagnostic =
+              diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+            return total + diagnostic.itemCount;
+          }, 0),
+    };
+  }, [
+    diagnosticBySourceId,
+    fetchSummary,
+    headerSummary.failed,
+    scopedDiagnostics,
+    visibleSources,
+  ]);
+  const networkPublicationRows = useMemo(
+    () =>
+      verticals.map((vertical) => {
+        const verticalId = verticalDatabaseId(vertical);
+        const publicationSources = sources.filter(
+          (source) => source.verticalId === verticalId,
+        );
+        const warnings = publicationSources.filter((source) => {
+          const diagnostic =
+            diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+          return diagnostic.healthStatus === "warning";
+        }).length;
+        const failed = publicationSources.filter((source) => {
+          const diagnostic =
+            diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+          return diagnostic.healthStatus === "offline";
+        }).length;
+        const healthy = publicationSources.filter((source) => {
+          const diagnostic =
+            diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+          return diagnostic.healthStatus === "healthy";
+        }).length;
+        const lastFetch =
+          publicationSources
+            .map((source) => {
+              const diagnostic =
+                diagnosticBySourceId.get(source.id) ??
+                fallbackDiagnostic(source);
+
+              return diagnostic.lastCheckedAt;
+            })
+            .filter(Boolean)
+            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ??
+          null;
+        const score = publicationSources.length
+          ? Math.round((healthy / publicationSources.length) * 100)
+          : 0;
+
+        return {
+          vertical,
+          health: healthLabel(score),
+          sources: publicationSources.length,
+          warnings,
+          failed,
+          lastFetch,
+          status: vertical.publicationStatus ?? vertical.status,
+        };
+      }),
+    [diagnosticBySourceId, sources, verticals],
+  );
   const selectedAdminSlug =
     verticalSlug ?? selectedPublication?.slug ?? selectedVertical;
   const selectedPublicSlug = selectedPublication
@@ -692,6 +912,183 @@ export function SourceManagementClient({
           </label>
         </div>
       </section>
+
+      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Publication Health
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-slate-950">
+            {publicationHealth.label.marker} {publicationHealth.label.label}
+          </h2>
+          <p className="mt-2 text-sm font-semibold text-slate-600">
+            Overall health: {publicationHealth.overall}%
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {[
+              ["Source health", `${publicationHealth.sourceHealth}%`],
+              ["Freshness", `${publicationHealth.freshness}%`],
+              ["Content health", `${publicationHealth.contentHealth}%`],
+              [
+                "Image coverage",
+                publicationHealth.imageCoverage === null
+                  ? "No fetch image data"
+                  : `${publicationHealth.imageCoverage}%`,
+              ],
+            ].map(([label, value]) => (
+              <div className="rounded-md border border-slate-100 bg-slate-50 p-3" key={label}>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {label}
+                </p>
+                <p className="mt-1 text-lg font-bold text-slate-950">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Publication Overview
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {[
+              [
+                "Publication",
+                filteredPublication?.publicationName ??
+                  filteredPublication?.name ??
+                  "All Publications",
+              ],
+              [
+                "Status",
+                filteredPublication?.publicationStatus ??
+                  filteredPublication?.status ??
+                  "Network view",
+              ],
+              ["Strategy", filteredPublication?.sector ?? "Not configured"],
+              ["Sponsor", filteredPublication?.sponsorId ?? "Not configured"],
+              [
+                "Licence Holder",
+                filteredPublication?.ownerName ?? "Not configured",
+              ],
+              ["Hostname", filteredPublication?.hostname ?? "Not configured"],
+              ["Last Fetch", formatDate(operationalSummary.lastFetch)],
+              ["Next Scheduled Fetch", "Daily at 02:00 UTC"],
+              ["Manual Fetch", "Available"],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {label}
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-900">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {[
+          ["Sources", visibleSources.length],
+          ["Healthy", headerSummary.healthy],
+          ["Warnings", headerSummary.warning],
+          ["Failed", headerSummary.failed],
+          ["RSS", headerSummary.rss],
+          ["YouTube", headerSummary.youtube],
+          [
+            "Podcasts",
+            visibleSources.filter((source) => source.sourceType === "podcast").length,
+          ],
+          [
+            "Articles",
+            scopedDiagnostics.reduce(
+              (total, diagnostic) => total + diagnostic.itemCount,
+              0,
+            ),
+          ],
+          ["Videos", operationalSummary.newVideos],
+          [
+            "Images",
+            fetchSummary?.imageSummary?.imagesFound ?? "No fetch data",
+          ],
+        ].map(([label, value]) => (
+          <div
+            className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur"
+            key={label}
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              {label}
+            </p>
+            <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+          Operational Summary
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          {[
+            ["Today's fetch", formatDate(operationalSummary.lastFetch)],
+            ["Content received today", operationalSummary.contentToday],
+            ["Sources needing attention", operationalSummary.sourcesNeedingAttention],
+            ["Images backfilled", operationalSummary.imagesBackfilled],
+            ["Failed sources", operationalSummary.failedSources],
+            ["New videos", operationalSummary.newVideos],
+          ].map(([label, value]) => (
+            <div className="rounded-md border border-slate-100 bg-slate-50 p-3" key={label}>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                {label}
+              </p>
+              <p className="mt-1 text-lg font-bold text-slate-950">{value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {publicationFilter === "all" ? (
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8 backdrop-blur">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h2 className="text-2xl font-bold text-slate-950">
+              Network Publication Operations
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Publication</th>
+                  <th className="px-4 py-3">Health</th>
+                  <th className="px-4 py-3">Sources</th>
+                  <th className="px-4 py-3">Warnings</th>
+                  <th className="px-4 py-3">Failed</th>
+                  <th className="px-4 py-3">Last Fetch</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {networkPublicationRows.map((row) => (
+                  <tr key={row.vertical.slug}>
+                    <td className="px-4 py-3 font-bold text-slate-950">
+                      {row.vertical.publicationName ?? row.vertical.name}
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-700">
+                      {row.health.marker} {row.health.label}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{row.sources}</td>
+                    <td className="px-4 py-3 text-slate-700">{row.warnings}</td>
+                    <td className="px-4 py-3 text-slate-700">{row.failed}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {formatDate(row.lastFetch)}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{row.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -1112,6 +1509,7 @@ export function SourceManagementClient({
                   diagnosticBySourceId.get(source.id) ??
                   fallbackDiagnostic(source);
                 const warnings = sourceWarnings(source, diagnostic);
+                const healthDetail = sourceHealthDetail(source, diagnostic);
 
                 return (
                   <Fragment key={source.id}>
@@ -1159,6 +1557,12 @@ export function SourceManagementClient({
                       >
                         {diagnostic.healthStatus}
                       </span>
+                      <p className="mt-2 text-xs font-bold text-slate-700">
+                        {healthDetail.label}
+                      </p>
+                      <p className="mt-1 max-w-[12rem] text-xs leading-5 text-slate-500">
+                        {healthDetail.detail}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       <p className="font-semibold">
