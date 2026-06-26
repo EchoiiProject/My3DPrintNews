@@ -241,6 +241,10 @@ export default async function VerticalAdminPage({
   const sponsor = vertical.sponsorId ? sponsorById[vertical.sponsorId] : null;
   const isSuperAdmin = currentUser.role === "platform_owner";
   const publicSlug = publicationSlugForVertical(vertical);
+  const internalPublicationUrl = `/publications/${publicSlug}`;
+  const publicUrl = vertical.hostname
+    ? `https://${vertical.hostname}`
+    : internalPublicationUrl;
   const verticalFeedback = await getFeedbackByVertical(vertical.slug);
   const verticalManagementCentres = managementCentres.map((centre) => {
     if (centre.title === "Platform" && isSuperAdmin) {
@@ -432,6 +436,8 @@ export default async function VerticalAdminPage({
                 ["Publication name", vertical.publicationName ?? vertical.name],
                 ["Public slug", publicSlug],
                 ["Hostname", vertical.hostname ?? "Not set"],
+                ["Public URL", publicUrl],
+                ["Internal publication URL", internalPublicationUrl],
                 ["Visibility", vertical.visibility ?? "public"],
                 ["Publication status", vertical.publicationStatus ?? "live"],
                 [
