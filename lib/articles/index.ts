@@ -474,10 +474,11 @@ export async function getArticleArchive(filters: {
     .limit(100);
 
   if (vertical) {
-    query = query.in(
-      "vertical_id",
-      Array.from(new Set([vertical.databaseId, vertical.id].filter(Boolean))),
-    );
+    if (!vertical.databaseId) {
+      return [];
+    }
+
+    query = query.eq("vertical_id", vertical.databaseId);
   }
 
   if (filters.sourceId) {
