@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { ManagedSource, SourceDiagnostics, SourceType } from "@/lib/sources";
 import {
   publicationSlugForVertical,
@@ -77,6 +77,10 @@ const summarySourceTypes: Array<SourceType | "unknown"> = [
   ...sourceTypes,
   "unknown",
 ];
+
+type PublicationFilter = "all" | string;
+type SourceTypeFilter = "all" | SourceType;
+type HealthFilter = "all" | "healthy" | "warning" | "offline";
 
 function formatDate(value: string | null): string {
   if (!value) return "No data";
@@ -243,16 +247,28 @@ export function SourceManagementClient({
   verticals: Vertical[];
 }) {
   const router = useRouter();
+  const initialPublication =
+    verticals.find((vertical) => vertical.slug === verticalSlug) ??
+    verticals[0];
+  const initialPublicationId = initialPublication
+    ? verticalDatabaseId(initialPublication)
+    : "";
   const [name, setName] = useState("");
   const [rssUrl, setRssUrl] = useState("");
   const [category, setCategory] = useState("");
   const [sourceType, setSourceType] = useState<SourceType>("rss");
   const [selectedVertical, setSelectedVertical] = useState(
-    verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
+    initialPublication?.slug ?? "my3dprintnews",
   );
   const [selectedVerticalId, setSelectedVerticalId] = useState(
-    verticals[0] ? verticalDatabaseId(verticals[0]) : "",
+    initialPublicationId,
   );
+  const [publicationFilter, setPublicationFilter] =
+    useState<PublicationFilter>(initialPublicationId);
+  const [sourceTypeFilter, setSourceTypeFilter] =
+    useState<SourceTypeFilter>("all");
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<SourceFormState>({
@@ -260,8 +276,8 @@ export function SourceManagementClient({
     rssUrl: "",
     sourceType: "rss",
     category: "",
-    verticalId: verticals[0] ? verticalDatabaseId(verticals[0]) : "",
-    verticalSlug: verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
+    verticalId: initialPublicationId,
+    verticalSlug: initialPublication?.slug ?? "my3dprintnews",
     enabled: true,
   });
   const [message, setMessage] = useState("");
@@ -325,6 +341,25 @@ export function SourceManagementClient({
     setFetchSummary(null);
 
     if (parsed.errors.length) {
+      return;
+    }
+
+    const importTarget = verticals.find(
+      (vertical) => verticalDatabaseId(vertical) === selectedVerticalId,
+    );
+
+    if (!importTarget) {
+      setBulkErrors(["Choose a publication before importing sources."]);
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `You are about to import ${parsed.rows.length} sources into ${
+          importTarget.publicationName ?? importTarget.name
+        }.`,
+      )
+    ) {
       return;
     }
 
@@ -438,6 +473,10 @@ export function SourceManagementClient({
   }
 
   async function fetchArticlesNow() {
+    const fetchTarget =
+      verticals.find((vertical) => verticalDatabaseId(vertical) === selectedVerticalId) ??
+      verticals.find((vertical) => vertical.slug === selectedVertical);
+
     setFetchingArticles(true);
     setFetchSummary(null);
     setMessage("Fetching articles...");
@@ -445,7 +484,7 @@ export function SourceManagementClient({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        verticalSlug: verticalSlug ?? selectedVertical,
+        verticalSlug: verticalSlug ?? fetchTarget?.slug ?? selectedVertical,
       }),
     });
     const result = (await response.json()) as SourceActionResponse;
@@ -456,16 +495,73 @@ export function SourceManagementClient({
     router.refresh();
   }
 
-  const diagnosticBySourceId = new Map(
-    diagnostics.feedDiagnostics.map((diagnostic) => [
-      diagnostic.sourceId,
-      diagnostic,
-    ]),
+  const diagnosticBySourceId = useMemo(
+    () =>
+      new Map(
+        diagnostics.feedDiagnostics.map((diagnostic) => [
+          diagnostic.sourceId,
+          diagnostic,
+        ]),
+      ),
+    [diagnostics.feedDiagnostics],
   );
   const selectedPublication =
     verticals.find(
       (vertical) => verticalDatabaseId(vertical) === selectedVerticalId,
     ) ?? verticals.find((vertical) => vertical.slug === selectedVertical);
+  const filteredPublication =
+    verticals.find(
+      (vertical) => verticalDatabaseId(vertical) === publicationFilter,
+    ) ?? null;
+  const visibleSources = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return sources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+      const matchesPublication =
+        publicationFilter === "all" || source.verticalId === publicationFilter;
+      const matchesType =
+        sourceTypeFilter === "all" || source.sourceType === sourceTypeFilter;
+      const matchesHealth =
+        healthFilter === "all" || diagnostic.healthStatus === healthFilter;
+      const matchesSearch =
+        !normalizedSearch ||
+        source.name.toLowerCase().includes(normalizedSearch) ||
+        source.rssUrl.toLowerCase().includes(normalizedSearch);
+
+      return matchesPublication && matchesType && matchesHealth && matchesSearch;
+    });
+  }, [
+    diagnosticBySourceId,
+    healthFilter,
+    publicationFilter,
+    searchTerm,
+    sourceTypeFilter,
+    sources,
+  ]);
+  const headerSummary = useMemo(() => {
+    const statusCounts = visibleSources.reduce(
+      (counts, source) => {
+        const diagnostic =
+          diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+        if (diagnostic.healthStatus === "healthy") counts.healthy += 1;
+        if (diagnostic.healthStatus === "warning") counts.warning += 1;
+        if (diagnostic.healthStatus === "offline") counts.failed += 1;
+
+        return counts;
+      },
+      { healthy: 0, warning: 0, failed: 0 },
+    );
+
+    return {
+      rss: visibleSources.filter((source) => source.sourceType === "rss").length,
+      youtube: visibleSources.filter((source) => source.sourceType === "youtube")
+        .length,
+      ...statusCounts,
+    };
+  }, [diagnosticBySourceId, visibleSources]);
   const selectedAdminSlug =
     verticalSlug ?? selectedPublication?.slug ?? selectedVertical;
   const selectedPublicSlug = selectedPublication
@@ -474,6 +570,129 @@ export function SourceManagementClient({
 
   return (
     <div className="space-y-8">
+      <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+        <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-end">
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Publication
+            </span>
+            <select
+              className="mt-2 min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900"
+              disabled={Boolean(verticalSlug)}
+              onChange={(event) => {
+                setPublicationFilter(event.target.value);
+                if (event.target.value !== "all") {
+                  const nextVertical = verticals.find(
+                    (vertical) =>
+                      verticalDatabaseId(vertical) === event.target.value,
+                  );
+
+                  if (nextVertical) {
+                    setSelectedVerticalId(event.target.value);
+                    setSelectedVertical(nextVertical.slug);
+                  }
+                }
+              }}
+              value={publicationFilter}
+            >
+              {!verticalSlug ? <option value="all">All Publications</option> : null}
+              {verticals.map((vertical) => (
+                <option key={vertical.slug} value={verticalDatabaseId(vertical)}>
+                  {vertical.publicationName ?? vertical.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              [
+                "Publication",
+                filteredPublication?.publicationName ??
+                  filteredPublication?.name ??
+                  "All Publications",
+              ],
+              ["Sources", visibleSources.length],
+              ["RSS", headerSummary.rss],
+              ["YouTube", headerSummary.youtube],
+              ["Healthy", headerSummary.healthy],
+              ["Warnings", headerSummary.warning],
+              ["Failed", headerSummary.failed],
+            ].map(([label, value]) => (
+              <div
+                className="rounded-md border border-slate-100 bg-slate-50 px-3 py-2"
+                key={label}
+              >
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  {label}
+                </p>
+                <p className="mt-1 text-lg font-bold text-slate-950">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr_1.4fr]">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Source Type
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(["all", ...sourceTypes] as SourceTypeFilter[]).map((type) => (
+                <button
+                  className={[
+                    "rounded-md border px-2.5 py-1.5 text-xs font-bold capitalize",
+                    sourceTypeFilter === type
+                      ? "border-blue-500 bg-blue-600 text-white"
+                      : "border-slate-200 bg-white text-slate-700",
+                  ].join(" ")}
+                  key={type}
+                  onClick={() => setSourceTypeFilter(type)}
+                  type="button"
+                >
+                  {type === "all" ? "All" : type}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Health
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(["all", "healthy", "warning", "offline"] as HealthFilter[]).map(
+                (status) => (
+                  <button
+                    className={[
+                      "rounded-md border px-2.5 py-1.5 text-xs font-bold capitalize",
+                      healthFilter === status
+                        ? "border-blue-500 bg-blue-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700",
+                    ].join(" ")}
+                    key={status}
+                    onClick={() => setHealthFilter(status)}
+                    type="button"
+                  >
+                    {status === "offline" ? "Failed" : status}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Search
+            </span>
+            <input
+              className="mt-2 min-h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search source name or URL"
+              value={searchTerm}
+            />
+          </label>
+        </div>
+      </section>
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
@@ -816,6 +1035,12 @@ export function SourceManagementClient({
             <p className="mt-2 text-sm font-semibold leading-6 text-blue-900">
               Paste one source per line: name,rss_url,category,enabled,source_type
             </p>
+            <p className="mt-2 rounded-md border border-blue-100 bg-white px-3 py-2 text-sm font-bold text-blue-950">
+              Importing into:{" "}
+              {selectedPublication?.publicationName ??
+                selectedPublication?.name ??
+                "Choose a publication"}
+            </p>
           </div>
           {bulkImported ? (
             <button
@@ -865,23 +1090,24 @@ export function SourceManagementClient({
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8 backdrop-blur">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
+          <table className="min-w-[1120px] divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">RSS URL</th>
                 <th className="px-4 py-3">Publication</th>
                 <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">State</th>
+                <th className="px-4 py-3">Organisation/Category</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Health</th>
-                <th className="px-4 py-3">Fetch</th>
+                <th className="px-4 py-3">Latest Fetch</th>
                 <th className="px-4 py-3">Articles</th>
-                <th className="px-4 py-3">Actions</th>
+                <th className="sticky right-0 z-10 bg-slate-50 px-4 py-3 shadow-[-8px_0_16px_rgba(15,23,42,0.06)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {sources.map((source) => {
+              {visibleSources.map((source) => {
                 const diagnostic =
                   diagnosticBySourceId.get(source.id) ??
                   fallbackDiagnostic(source);
@@ -892,8 +1118,11 @@ export function SourceManagementClient({
                   <tr
                     className={warnings.length ? "bg-amber-50/45" : undefined}
                   >
-                    <td className="px-4 py-3 font-bold text-slate-900">
+                    <td className="max-w-xs px-4 py-3 font-bold text-slate-900">
                       <p>{source.name}</p>
+                      <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                        {source.rssUrl || "Missing URL"}
+                      </p>
                       {warnings.length ? (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {warnings.map((warning) => (
@@ -907,14 +1136,13 @@ export function SourceManagementClient({
                         </div>
                       ) : null}
                     </td>
-                    <td className="max-w-xs truncate px-4 py-3 text-slate-600">
-                      {source.rssUrl || "Missing"}
-                    </td>
                     <td className="px-4 py-3 text-slate-600">
                       {source.verticalName}
                     </td>
-                    <td className="px-4 py-3 font-semibold capitalize text-slate-700">
+                    <td className="px-4 py-3">
+                      <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-bold capitalize text-blue-700">
                       {source.sourceType}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {source.category ?? "General"}
@@ -933,7 +1161,7 @@ export function SourceManagementClient({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      <p>
+                      <p className="font-semibold">
                         {diagnostic.reachable ? "Reachable" : "Failed"}
                       </p>
                       {diagnostic.statusCode ? (
@@ -941,9 +1169,6 @@ export function SourceManagementClient({
                       ) : null}
                       <p className="text-xs">
                         Latest: {formatDate(diagnostic.latestArticleDate)}
-                      </p>
-                      <p className="text-xs">
-                        Oldest: {formatDate(diagnostic.oldestArticleDate)}
                       </p>
                       <p className="text-xs">
                         Checked: {formatDate(diagnostic.lastCheckedAt)}
@@ -960,7 +1185,7 @@ export function SourceManagementClient({
                         live
                       </p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="sticky right-0 bg-white px-4 py-3 shadow-[-8px_0_16px_rgba(15,23,42,0.06)]">
                       <div className="flex flex-wrap gap-2">
                         <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => startEditing(source)} type="button">Edit</button>
                         <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => toggleSource(source)} type="button">{source.enabled ? "Disable" : "Enable"}</button>
@@ -976,7 +1201,7 @@ export function SourceManagementClient({
                   </tr>
                   {editingSourceId === source.id ? (
                     <tr className="bg-blue-50/60">
-                      <td className="px-4 py-4" colSpan={10}>
+                      <td className="px-4 py-4" colSpan={9}>
                         <div className="grid gap-3 lg:grid-cols-7">
                           <input
                             className="min-h-10 rounded-md border border-blue-100 px-3 text-sm"
