@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ArticleArchiveItem } from "@/lib/articles";
 import type { Article } from "@/lib/rss";
-import { rankFeedArticles } from "@/lib/ranking";
+import type { ScoredArticle } from "@/lib/matching";
+import { generateArticleTags } from "@/lib/matching";
+import { getPublishedTimestamp } from "@/lib/ranking";
 import { FeedStoryCards } from "@/app/feed/feed-client";
 import {
   defaultFavourites,
-  defaultPreferences,
   FAVOURITES_KEY,
   normaliseFavourites,
   toggleFavourite,
@@ -21,21 +22,52 @@ function archiveArticleToFeedArticle(article: ArticleArchiveItem): Article {
     source: article.sourceName ?? "Unknown source",
     publishedAt:
       article.publishedAt ?? article.createdAt ?? new Date().toISOString(),
-    summary:
-      article.summary ??
-      "Publisher summary unavailable. Read the original article for full details.",
-    tags: article.tags.length
-      ? article.tags
-      : [article.sourceName ?? "Archive", "article"],
+    summary: article.summary ?? "",
+    tags: article.tags,
     imageUrl: article.imageUrl ?? undefined,
     type: "article",
   };
 }
 
+function archiveArticleToScoredArticle(
+  article: ArticleArchiveItem,
+  index: number,
+  publicationName: string,
+): ScoredArticle {
+  const feedArticle = archiveArticleToFeedArticle(article);
+  const generatedTags = generateArticleTags(feedArticle);
+  const matchedBecause = [
+    article.sourceName ? `Source: ${article.sourceName}` : null,
+    article.tags[0] ? `Category: ${article.tags[0]}` : null,
+    `Publication: ${publicationName}`,
+  ].filter((value): value is string => Boolean(value));
+
+  return {
+    article: feedArticle,
+    generatedTags,
+    matchedBecause,
+    originalIndex: index,
+    score: 0,
+  };
+}
+
+function sortArchiveStories(a: ScoredArticle, b: ScoredArticle): number {
+  const aTimestamp = getPublishedTimestamp(a.article.publishedAt);
+  const bTimestamp = getPublishedTimestamp(b.article.publishedAt);
+
+  if (aTimestamp !== null && bTimestamp !== null) {
+    return bTimestamp - aTimestamp;
+  }
+
+  if (aTimestamp !== null) return -1;
+  if (bTimestamp !== null) return 1;
+
+  return a.originalIndex - b.originalIndex;
+}
+
 export function ArchiveStoryCards({
   articles,
   heading = "Latest stories",
-  periodDays,
   publicationName = "this publication",
 }: {
   articles: ArticleArchiveItem[];
@@ -59,18 +91,12 @@ export function ArchiveStoryCards({
   }, []);
 
   const stories = useMemo(() => {
-    const feedArticles = articles.map(archiveArticleToFeedArticle);
-
-    return rankFeedArticles(
-      feedArticles,
-      {
-        ...defaultPreferences,
-        storiesPerUpdate: String(Math.max(feedArticles.length, 10)),
-      },
-      favourites,
-      { limit: Math.max(feedArticles.length, 10), periodDays },
-    );
-  }, [articles, favourites, periodDays]);
+    return articles
+      .map((article, index) =>
+        archiveArticleToScoredArticle(article, index, publicationName),
+      )
+      .sort(sortArchiveStories);
+  }, [articles, publicationName]);
 
   function toggleSourceFavourite(source: string) {
     setFavourites((current) => {
