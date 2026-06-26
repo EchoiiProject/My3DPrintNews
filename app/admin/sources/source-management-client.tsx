@@ -11,6 +11,7 @@ import {
 type SourceActionResponse = {
   ok: boolean;
   message: string;
+  publicationName?: string;
   errors?: Record<string, string>;
   fetched?: number;
   inserted?: number;
@@ -519,6 +520,13 @@ export function SourceManagementClient({
           </h2>
           <p className="mt-2 text-sm font-semibold text-emerald-900">
             {fetchSummary.message}
+          </p>
+          <p className="mt-1 text-sm font-bold text-emerald-950">
+            Publication:{" "}
+            {fetchSummary.publicationName ??
+              selectedPublication?.publicationName ??
+              selectedPublication?.name ??
+              selectedAdminSlug}
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-4">
             {[

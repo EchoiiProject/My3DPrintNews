@@ -24,6 +24,7 @@ export type ArticleArchiveItem = {
 export type ArticleFetchResult = {
   ok: boolean;
   message: string;
+  publicationName?: string;
   sourcesChecked: number;
   fetched: number;
   inserted: number;
@@ -278,6 +279,7 @@ async function fetchSourceArticles(
 
 async function fetchArticlesForSources(
   sources: ManagedSource[],
+  publicationName?: string,
 ): Promise<ArticleFetchResult> {
   const enabledSources = sources.filter((source) => source.enabled);
   const results = await Promise.all(
@@ -295,7 +297,8 @@ async function fetchArticlesForSources(
 
   return {
     ok: errors === 0,
-    message: `Checked ${enabledSources.length} sources; found ${fetched}; inserted ${inserted}; skipped ${skipped}; failed ${failedSources}.`,
+    message: `${publicationName ? `${publicationName}: ` : ""}Checked ${enabledSources.length} sources; found ${fetched}; inserted ${inserted}; skipped ${skipped}; failed ${failedSources}.`,
+    publicationName,
     sourcesChecked: enabledSources.length,
     fetched,
     inserted,
@@ -315,6 +318,7 @@ export async function fetchArticlesForVertical(
     return {
       ok: false,
       message: "Publication not found.",
+      publicationName: verticalSlug,
       sourcesChecked: 0,
       fetched: 0,
       inserted: 0,
@@ -325,11 +329,14 @@ export async function fetchArticlesForVertical(
     };
   }
 
-  return fetchArticlesForSources(await getManagedSources(vertical.slug));
+  return fetchArticlesForSources(
+    await getManagedSources(vertical.slug),
+    vertical.publicationName ?? vertical.name,
+  );
 }
 
 export async function fetchArticlesForAllEnabledSources(): Promise<ArticleFetchResult> {
-  return fetchArticlesForSources(await getManagedSources());
+  return fetchArticlesForSources(await getManagedSources(), "All publications");
 }
 
 export async function getArticleArchive(filters: {
