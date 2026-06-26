@@ -331,6 +331,7 @@ export function PublicationFeedback({ vertical }: { vertical: Vertical }) {
     <section id="feedback">
       <FeedbackPanel
         publicationName={vertical.publicationName ?? vertical.name}
+        verticalSlug={vertical.slug}
       />
     </section>
   );

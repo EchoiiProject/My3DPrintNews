@@ -18,22 +18,73 @@ const feedbackOptions: {
 
 export function FeedbackPanel({
   publicationName,
+  verticalSlug,
 }: {
   publicationName?: string;
+  verticalSlug?: string;
 }) {
   const currentVertical =
     verticalBySlug(currentSite.verticalSlug) ?? verticals[0];
   const displayName = publicationName ?? currentVertical.publicationName ?? currentVertical.name;
+  const feedbackVerticalSlug = verticalSlug ?? currentVertical.slug;
   const [selected, setSelected] = useState(feedbackOptions[0]);
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function submitFeedback(event: FormEvent<HTMLFormElement>) {
+  async function submitFeedback(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
-    setMessage("");
-    setEmail("");
+    setSubmitting(true);
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          verticalSlug: feedbackVerticalSlug,
+          category: selected.category,
+          rating: selected.rating,
+          message,
+          email,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+      };
+
+      if (response.ok && result.ok) {
+        setMessage("");
+        setEmail("");
+        setStatus({
+          tone: "success",
+          message:
+            result.message ??
+            "Thanks - your feedback has been sent to the publication team.",
+        });
+      } else {
+        setStatus({
+          tone: "error",
+          message:
+            result.message ??
+            "Feedback could not be sent right now. Please try again.",
+        });
+      }
+    } catch {
+      setStatus({
+        tone: "error",
+        message: "Feedback could not be sent right now. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -98,21 +149,24 @@ export function FeedbackPanel({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+              disabled={submitting}
               type="submit"
             >
-              Send feedback
+              {submitting ? "Sending..." : "Send feedback"}
             </button>
-            {submitted ? (
-              <p className="text-sm font-semibold text-emerald-700">
-                Thanks. This prototype captured your feedback locally for the
-                next database-backed sprint.
-              </p>
-            ) : (
-              <p className="text-sm leading-6 text-slate-500">
-                This is a prototype form. Database storage will be connected in
-                a later sprint.
-              </p>
-            )}
+            <p
+              className={[
+                "text-sm leading-6",
+                status?.tone === "success"
+                  ? "font-semibold text-emerald-700"
+                  : status?.tone === "error"
+                    ? "font-semibold text-red-700"
+                    : "text-slate-500",
+              ].join(" ")}
+            >
+              {status?.message ??
+                "Thanks - your feedback has been sent to the publication team."}
+            </p>
           </div>
         </form>
       </div>
