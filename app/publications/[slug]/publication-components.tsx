@@ -35,14 +35,6 @@ export function PublicationShell({
     { href: `/publications/${profile.slug}#feedback`, label: "Feedback" },
     { href: `/admin/${profile.adminSlug}`, label: "Manage Publication" },
   ];
-  const logoText = profile.publicationName
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 3)
-    .toUpperCase();
-
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
@@ -50,18 +42,12 @@ export function PublicationShell({
         <div className="flex-1 py-10">
           <header>
             <div className="mb-4 flex items-center gap-3">
-              {profile.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  alt={`${profile.publicationName} logo`}
-                  className="h-12 w-12 rounded-lg border border-blue-100 bg-white object-contain p-1"
-                  src={profile.logoUrl}
-                />
-              ) : (
-                <span className="flex h-12 w-12 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-sm font-black text-blue-700">
-                  {logoText}
-                </span>
-              )}
+              <Link
+                className="inline-flex min-h-12 items-center rounded-lg border border-blue-100 bg-white px-4 text-base font-black tracking-normal text-slate-950 shadow-sm shadow-blue-100/50"
+                href="/"
+              >
+                MyNewsNetwork
+              </Link>
               <p className="inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
                 Publication
               </p>
