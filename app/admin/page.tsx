@@ -47,6 +47,12 @@ const adminTools = [
     roles: ["platform_owner"],
   },
   {
+    title: "Platform Settings",
+    description: "Scheduler, environment, and deployment-level settings.",
+    href: "/admin/platform",
+    roles: ["platform_owner"],
+  },
+  {
     title: "Feedback Management",
     description: "Private reader feedback, source suggestions, and issue reports.",
     href: "/admin/feedback",

@@ -26,7 +26,11 @@ export function AdminShell({
   title?: string;
 }) {
   const visibleAdminLinks = showOrganisations
-    ? [...adminLinks, { href: "/admin/organisations", label: "Organisations" }]
+    ? [
+        ...adminLinks,
+        { href: "/admin/organisations", label: "Organisations" },
+        { href: "/admin/platform", label: "Platform" },
+      ]
     : adminLinks;
 
   return (
