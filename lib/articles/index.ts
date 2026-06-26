@@ -384,6 +384,44 @@ async function updateExistingArticleImages(
   return updates.reduce((total, update) => total + (update.data?.length ?? 0), 0);
 }
 
+function shouldLogBmxUnionDiagnostics(source: ManagedSource) {
+  return (
+    source.name.toLowerCase().includes("bmx union") ||
+    source.rssUrl.toLowerCase().includes("bmxunion.com")
+  );
+}
+
+async function logBmxUnionResponseBeforeParse(source: ManagedSource) {
+  if (!shouldLogBmxUnionDiagnostics(source)) return;
+
+  try {
+    const response = await fetch(source.rssUrl, {
+      headers: {
+        accept: "application/rss+xml, application/xml, text/xml, */*",
+      },
+      redirect: "follow",
+    });
+    const contentType = response.headers.get("content-type") ?? "unknown";
+    const body = await response.text();
+    const preview = body.slice(0, 300);
+
+    console.warn("[BMX Union RSS diagnostic]", {
+      status: response.status,
+      contentType,
+      finalUrl: response.url,
+      bodyPreview: preview,
+      looksLikeHtml:
+        contentType.toLowerCase().includes("html") ||
+        /^\s*<!doctype html/i.test(preview) ||
+        /^\s*<html/i.test(preview),
+    });
+  } catch (error) {
+    console.warn("[BMX Union RSS diagnostic] Pre-parse fetch failed.", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
+
 async function fetchSourceArticles(
   source: ManagedSource,
   verticalId: string,
@@ -393,6 +431,7 @@ async function fetchSourceArticles(
   bySourceType[source.sourceType].sourcesChecked = 1;
 
   try {
+    await logBmxUnionResponseBeforeParse(source);
     const feed = await parser.parseURL(source.rssUrl);
     const articles = feed.items
       .filter((item) => item.title && item.link)
