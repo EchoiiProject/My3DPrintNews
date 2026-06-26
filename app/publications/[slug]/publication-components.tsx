@@ -60,9 +60,63 @@ export function PublicationLinks({
   vertical: Vertical;
 }) {
   const currentName = vertical.publicationName ?? vertical.name;
+  const visibility = vertical.visibility ?? "public";
+  const publicationStatus = vertical.publicationStatus ?? "live";
+  const showReviewMode =
+    visibility !== "public" || publicationStatus !== "live";
+  const statusLabel = [
+    visibility.charAt(0).toUpperCase() + visibility.slice(1),
+    publicationStatus.charAt(0).toUpperCase() + publicationStatus.slice(1),
+  ].join(" / ");
 
   return (
     <div className="mt-5 space-y-3">
+      {showReviewMode ? (
+        <section className="rounded-lg border border-amber-200 bg-amber-50/90 p-4 shadow-sm shadow-amber-100/60">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                Review Mode
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-slate-950">
+                {currentName} prepared preview
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-950">
+                This is a private demonstration prepared by Echoii. It is not
+                publicly launched yet and can be updated before launch.
+              </p>
+              <p className="mt-2 text-sm font-bold text-amber-900">
+                Status: {statusLabel}
+              </p>
+            </div>
+            <div className="min-w-52">
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                Review tools
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2 lg:justify-end">
+                <Link
+                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-xs font-bold text-amber-800"
+                  href={`/admin/${vertical.slug}`}
+                >
+                  Manage Publication
+                </Link>
+                <Link
+                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-xs font-bold text-amber-800"
+                  href={`/admin/${vertical.slug}/sources`}
+                >
+                  Source Management
+                </Link>
+                <Link
+                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-xs font-bold text-amber-800"
+                  href={`/admin/${vertical.slug}/articles`}
+                >
+                  Article Archive
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
       <section className="rounded-lg border border-blue-100 bg-white/80 p-4 shadow-sm shadow-blue-100/50">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
