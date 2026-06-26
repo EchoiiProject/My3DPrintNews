@@ -52,15 +52,19 @@ type SourceRecord = {
   rss_url: string;
   category: string | null;
   enabled: boolean;
+  status?: string | null;
   health_status: string;
-  last_successful_fetch: string | null;
-  articles_fetched: number | null;
-  last_article_date: string | null;
+  last_successful_fetch_at: string | null;
   created_at: string | null;
   verticals?:
     | { slug: string | null; name: string | null }
     | { slug: string | null; name: string | null }[]
     | null;
+};
+
+type ArticleSummaryRecord = {
+  source_id: string | null;
+  published_at: string | null;
 };
 
 const fallbackArticleCounts = [12, 8, 10, 5, 4, 0, 2, 0, 7, 3];
@@ -116,7 +120,13 @@ function fallbackSources(verticalSlug?: string): ManagedSource[] {
     .filter((source) => !verticalSlug || source.verticalSlug === verticalSlug);
 }
 
-function toManagedSource(record: SourceRecord): ManagedSource {
+function toManagedSource(
+  record: SourceRecord,
+  articleSummary: { count: number; lastArticleDate: string | null } = {
+    count: 0,
+    lastArticleDate: null,
+  },
+): ManagedSource {
   const vertical = Array.isArray(record.verticals)
     ? record.verticals[0]
     : record.verticals;
@@ -130,12 +140,39 @@ function toManagedSource(record: SourceRecord): ManagedSource {
     verticalName: vertical?.name ?? "Unknown vertical",
     category: record.category,
     enabled: record.enabled,
-    lastSuccessfulFetch: record.last_successful_fetch,
-    articlesFetched: record.articles_fetched ?? 0,
-    lastArticleDate: record.last_article_date,
+    lastSuccessfulFetch: record.last_successful_fetch_at,
+    articlesFetched: articleSummary.count,
+    lastArticleDate: articleSummary.lastArticleDate,
     healthStatus: normaliseHealth(record.health_status),
     createdAt: record.created_at ?? new Date().toISOString(),
   };
+}
+
+function articleSummaries(records: ArticleSummaryRecord[]) {
+  const summaries = new Map<string, { count: number; lastArticleDate: string | null }>();
+
+  for (const record of records) {
+    if (!record.source_id) continue;
+
+    const current = summaries.get(record.source_id) ?? {
+      count: 0,
+      lastArticleDate: null,
+    };
+    const publishedAt = record.published_at;
+
+    summaries.set(record.source_id, {
+      count: current.count + 1,
+      lastArticleDate:
+        publishedAt &&
+        (!current.lastArticleDate ||
+          new Date(publishedAt).getTime() >
+            new Date(current.lastArticleDate).getTime())
+          ? publishedAt
+          : current.lastArticleDate,
+    });
+  }
+
+  return summaries;
 }
 
 function logFallback(context: string, error: unknown) {
@@ -188,10 +225,11 @@ export async function getManagedSources(
   }
 
   const query = supabase
-    .from("feed_sources")
+    .from("vertical_sources")
     .select(
-      "id,vertical_id,name,rss_url,category,enabled,health_status,last_successful_fetch,articles_fetched,last_article_date,created_at,verticals(slug,name)",
+      "id,vertical_id,name,rss_url,category,enabled,status,health_status,last_successful_fetch_at,created_at,verticals(slug,name)",
     )
+    .neq("status", "archived")
     .order("created_at", { ascending: false });
 
   const { data, error } = await query;
@@ -201,8 +239,26 @@ export async function getManagedSources(
     return fallbackSources(verticalSlug);
   }
 
-  return (data as SourceRecord[])
-    .map(toManagedSource)
+  const sourceRecords = data as SourceRecord[];
+  const sourceIds = sourceRecords.map((source) => source.id);
+  const articleLookup =
+    sourceIds.length > 0
+      ? await supabase
+          .from("articles")
+          .select("source_id,published_at")
+          .in("source_id", sourceIds)
+      : { data: [], error: null };
+
+  if (articleLookup.error) {
+    console.warn("[sources] Article source summary lookup failed.", articleLookup.error);
+  }
+
+  const summaries = articleSummaries(
+    ((articleLookup.data ?? []) as ArticleSummaryRecord[]),
+  );
+
+  return sourceRecords
+    .map((source) => toManagedSource(source, summaries.get(source.id)))
     .filter((source) => !verticalSlug || source.verticalSlug === verticalSlug);
 }
 
@@ -220,10 +276,12 @@ export async function sourceDiagnostics(
     source.lastArticleDate;
   const sourceArticleCount = (source: ManagedSource) =>
     diagnosticBySourceId.get(source.id)?.itemCount ?? source.articlesFetched;
-  const sourceHealth = (source: ManagedSource) => {
+  const sourceHealth = (source: ManagedSource): SourceHealth | "placeholder" => {
     const diagnostic = diagnosticBySourceId.get(source.id);
 
-    if (!diagnostic || diagnostic.healthStatus === "placeholder") {
+    if (!source.enabled) return "placeholder";
+
+    if (!diagnostic) {
       return source.healthStatus;
     }
 
@@ -313,6 +371,7 @@ export async function createManagedSource(input: {
   rssUrl: string;
   verticalSlug: string;
   category?: string | null;
+  enabled?: boolean;
 }) {
   const supabase = createServiceSupabaseClient();
 
@@ -341,12 +400,13 @@ export async function createManagedSource(input: {
     return { ok: false, message: "Vertical could not be found in Supabase." };
   }
 
-  const { error } = await supabase.from("feed_sources").insert({
+  const { error } = await supabase.from("vertical_sources").insert({
     vertical_id: dbVertical.data.id,
     name: input.name,
     rss_url: input.rssUrl,
     category: input.category ?? null,
-    enabled: true,
+    enabled: input.enabled ?? true,
+    status: input.enabled === false ? "inactive" : "active",
     health_status: "warning",
   });
 
@@ -360,7 +420,11 @@ export async function createManagedSource(input: {
 
 export async function updateManagedSource(
   id: string,
-  patch: Partial<Pick<ManagedSource, "name" | "rssUrl" | "category" | "enabled">>,
+  patch: Partial<
+    Pick<ManagedSource, "name" | "rssUrl" | "category" | "enabled"> & {
+      verticalSlug: string;
+    }
+  >,
 ) {
   const supabase = createServiceSupabaseClient();
 
@@ -378,9 +442,27 @@ export async function updateManagedSource(
   if (typeof patch.name === "string") update.name = patch.name;
   if (typeof patch.rssUrl === "string") update.rss_url = patch.rssUrl;
   if (typeof patch.category !== "undefined") update.category = patch.category;
-  if (typeof patch.enabled === "boolean") update.enabled = patch.enabled;
+  if (typeof patch.enabled === "boolean") {
+    update.enabled = patch.enabled;
+    update.status = patch.enabled ? "active" : "inactive";
+  }
+  if (typeof patch.verticalSlug === "string") {
+    const dbVertical = await supabase
+      .from("verticals")
+      .select("id")
+      .eq("slug", patch.verticalSlug)
+      .maybeSingle();
 
-  const { error } = await supabase.from("feed_sources").update(update).eq("id", id);
+    if (dbVertical.error || !dbVertical.data) {
+      console.error("Supabase source vertical update lookup error", dbVertical.error);
+
+      return { ok: false, message: "Vertical could not be found in Supabase." };
+    }
+
+    update.vertical_id = dbVertical.data.id;
+  }
+
+  const { error } = await supabase.from("vertical_sources").update(update).eq("id", id);
 
   if (error) {
     console.error("Supabase source update error", error);
@@ -400,12 +482,19 @@ export async function deleteManagedSource(id: string) {
     };
   }
 
-  const { error } = await supabase.from("feed_sources").delete().eq("id", id);
+  const { error } = await supabase
+    .from("vertical_sources")
+    .update({
+      enabled: false,
+      status: "archived",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
 
   if (error) {
     console.error("Supabase source delete error", error);
-    return { ok: false, message: "Source could not be deleted." };
+    return { ok: false, message: "Source could not be archived." };
   }
 
-  return { ok: true, message: "Source deleted." };
+  return { ok: true, message: "Source archived." };
 }

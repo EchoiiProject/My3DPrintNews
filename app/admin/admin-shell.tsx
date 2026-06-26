@@ -11,6 +11,7 @@ const adminLinks = [
   { href: "/admin/products", label: "Products" },
   { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/sources", label: "Sources" },
+  { href: "/admin/articles", label: "Articles" },
   { href: "/admin/feedback", label: "Feedback" },
   { href: "/admin/referrals", label: "Referrals" },
 ];

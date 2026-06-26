@@ -6,6 +6,7 @@ type SourcePayload = {
   rssUrl?: unknown;
   verticalSlug?: unknown;
   category?: unknown;
+  enabled?: unknown;
 };
 
 function text(value: unknown): string {
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
     rssUrl,
     verticalSlug,
     category: category || null,
+    enabled: typeof body.enabled === "boolean" ? body.enabled : true,
   });
 
   return NextResponse.json(result, { status: result.ok ? 200 : 502 });

@@ -35,6 +35,12 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "Article Archive",
+    description: "Collected articles from vertical source libraries.",
+    href: "/admin/articles",
+    roles: ["platform_owner", "vertical_owner"],
+  },
+  {
     title: "Organisation Management",
     description: "Organisations, ownership, and vertical onboarding.",
     href: "/admin/organisations",

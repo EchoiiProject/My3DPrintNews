@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { ManagedSource, SourceDiagnostics } from "@/lib/sources";
 import type { Vertical } from "@/config/verticals";
 
@@ -9,9 +9,21 @@ type SourceActionResponse = {
   ok: boolean;
   message: string;
   errors?: Record<string, string>;
+  fetched?: number;
+  inserted?: number;
+  skipped?: number;
+  errorsCount?: number;
 };
 
 type FeedDiagnostic = SourceDiagnostics["feedDiagnostics"][number];
+
+type SourceFormState = {
+  name: string;
+  rssUrl: string;
+  category: string;
+  verticalSlug: string;
+  enabled: boolean;
+};
 
 function formatDate(value: string | null): string {
   if (!value) return "No data";
@@ -113,6 +125,15 @@ export function SourceManagementClient({
   const [selectedVertical, setSelectedVertical] = useState(
     verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
   );
+  const [enabled, setEnabled] = useState(true);
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<SourceFormState>({
+    name: "",
+    rssUrl: "",
+    category: "",
+    verticalSlug: verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
+    enabled: true,
+  });
   const [message, setMessage] = useState("");
   const [testingSourceId, setTestingSourceId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, string>>({});
@@ -146,6 +167,7 @@ export function SourceManagementClient({
           rssUrl,
           category,
           verticalSlug: selectedVertical,
+          enabled,
         }),
       },
       "Source added.",
@@ -153,6 +175,7 @@ export function SourceManagementClient({
     setName("");
     setRssUrl("");
     setCategory("");
+    setEnabled(true);
   }
 
   async function toggleSource(source: ManagedSource) {
@@ -167,25 +190,34 @@ export function SourceManagementClient({
     );
   }
 
-  async function editSource(source: ManagedSource) {
-    const nextName = window.prompt("Source name", source.name);
-    if (!nextName) return;
-    const nextUrl = window.prompt("RSS URL", source.rssUrl);
-    if (!nextUrl) return;
+  function startEditing(source: ManagedSource) {
+    setEditingSourceId(source.id);
+    setEditValues({
+      name: source.name,
+      rssUrl: source.rssUrl,
+      category: source.category ?? "",
+      verticalSlug: source.verticalSlug,
+      enabled: source.enabled,
+    });
+  }
 
+  async function saveSource(source: ManagedSource) {
     await sourceRequest(
       `/api/admin/sources/${source.id}`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: nextName,
-          rssUrl: nextUrl,
-          category: source.category,
+          name: editValues.name,
+          rssUrl: editValues.rssUrl,
+          category: editValues.category,
+          verticalSlug: editValues.verticalSlug,
+          enabled: editValues.enabled,
         }),
       },
       "Source updated.",
     );
+    setEditingSourceId(null);
   }
 
   async function deleteSource(source: ManagedSource) {
@@ -194,7 +226,7 @@ export function SourceManagementClient({
     await sourceRequest(
       `/api/admin/sources/${source.id}`,
       { method: "DELETE" },
-      "Source deleted.",
+      "Source archived.",
     );
   }
 
@@ -210,6 +242,21 @@ export function SourceManagementClient({
 
   function refreshDiagnostics() {
     setMessage("Checking RSS feeds...");
+    router.refresh();
+  }
+
+  async function fetchArticlesNow() {
+    setMessage("Fetching articles...");
+    const response = await fetch("/api/admin/articles/fetch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        verticalSlug: verticalSlug ?? selectedVertical,
+      }),
+    });
+    const result = (await response.json()) as SourceActionResponse;
+
+    setMessage(result.message);
     router.refresh();
   }
 
@@ -308,11 +355,18 @@ export function SourceManagementClient({
         >
           Check RSS Feeds
         </button>
+        <button
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white"
+          onClick={fetchArticlesNow}
+          type="button"
+        >
+          Fetch Articles Now
+        </button>
       </div>
 
       <section className="rounded-lg border border-blue-100 bg-blue-50/80 p-5">
         <h2 className="text-2xl font-bold text-blue-950">Add Source</h2>
-        <div className="mt-4 grid gap-3 lg:grid-cols-5">
+        <div className="mt-4 grid gap-3 lg:grid-cols-6">
           <input
             className="min-h-11 rounded-md border border-blue-100 px-3 text-sm"
             onChange={(event) => setName(event.target.value)}
@@ -335,6 +389,7 @@ export function SourceManagementClient({
             className="min-h-11 rounded-md border border-blue-100 px-3 text-sm"
             onChange={(event) => setSelectedVertical(event.target.value)}
             value={selectedVertical}
+            disabled={Boolean(verticalSlug)}
           >
             {verticals.map((vertical) => (
               <option key={vertical.slug} value={vertical.slug}>
@@ -342,6 +397,14 @@ export function SourceManagementClient({
               </option>
             ))}
           </select>
+          <label className="flex min-h-11 items-center gap-2 rounded-md border border-blue-100 bg-white px-3 text-sm font-bold text-blue-950">
+            <input
+              checked={enabled}
+              onChange={(event) => setEnabled(event.target.checked)}
+              type="checkbox"
+            />
+            Enabled
+          </label>
         </div>
         <button
           className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white"
@@ -379,9 +442,9 @@ export function SourceManagementClient({
                 const warnings = sourceWarnings(source, diagnostic);
 
                 return (
+                  <Fragment key={source.id}>
                   <tr
                     className={warnings.length ? "bg-amber-50/45" : undefined}
-                    key={source.id}
                   >
                     <td className="px-4 py-3 font-bold text-slate-900">
                       <p>{source.name}</p>
@@ -450,7 +513,7 @@ export function SourceManagementClient({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
-                        <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => editSource(source)} type="button">Edit</button>
+                        <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => startEditing(source)} type="button">Edit</button>
                         <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => toggleSource(source)} type="button">{source.enabled ? "Disable" : "Enable"}</button>
                         <button className="rounded-md border border-red-100 px-2 py-1 text-xs font-bold text-red-700" onClick={() => deleteSource(source)} type="button">Delete</button>
                         <button className="rounded-md border border-blue-100 px-2 py-1 text-xs font-bold text-blue-700" onClick={() => testFeed(source, diagnostic)} type="button">Test Feed</button>
@@ -462,6 +525,91 @@ export function SourceManagementClient({
                       ) : null}
                     </td>
                   </tr>
+                  {editingSourceId === source.id ? (
+                    <tr className="bg-blue-50/60">
+                      <td className="px-4 py-4" colSpan={9}>
+                        <div className="grid gap-3 lg:grid-cols-6">
+                          <input
+                            className="min-h-10 rounded-md border border-blue-100 px-3 text-sm"
+                            onChange={(event) =>
+                              setEditValues((current) => ({
+                                ...current,
+                                name: event.target.value,
+                              }))
+                            }
+                            value={editValues.name}
+                          />
+                          <input
+                            className="min-h-10 rounded-md border border-blue-100 px-3 text-sm lg:col-span-2"
+                            onChange={(event) =>
+                              setEditValues((current) => ({
+                                ...current,
+                                rssUrl: event.target.value,
+                              }))
+                            }
+                            value={editValues.rssUrl}
+                          />
+                          <input
+                            className="min-h-10 rounded-md border border-blue-100 px-3 text-sm"
+                            onChange={(event) =>
+                              setEditValues((current) => ({
+                                ...current,
+                                category: event.target.value,
+                              }))
+                            }
+                            value={editValues.category}
+                          />
+                          <select
+                            className="min-h-10 rounded-md border border-blue-100 px-3 text-sm"
+                            disabled={Boolean(verticalSlug)}
+                            onChange={(event) =>
+                              setEditValues((current) => ({
+                                ...current,
+                                verticalSlug: event.target.value,
+                              }))
+                            }
+                            value={editValues.verticalSlug}
+                          >
+                            {verticals.map((vertical) => (
+                              <option key={vertical.slug} value={vertical.slug}>
+                                {vertical.name}
+                              </option>
+                            ))}
+                          </select>
+                          <label className="flex min-h-10 items-center gap-2 rounded-md border border-blue-100 bg-white px-3 text-sm font-bold text-blue-950">
+                            <input
+                              checked={editValues.enabled}
+                              onChange={(event) =>
+                                setEditValues((current) => ({
+                                  ...current,
+                                  enabled: event.target.checked,
+                                }))
+                              }
+                              type="checkbox"
+                            />
+                            Enabled
+                          </label>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            className="rounded-md bg-blue-600 px-3 py-2 text-xs font-bold text-white"
+                            onClick={() => saveSource(source)}
+                            type="button"
+                          >
+                            Save Source
+                          </button>
+                          <button
+                            className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                            onClick={() => setEditingSourceId(null)}
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                  </Fragment>
                 );
               })}
             </tbody>
