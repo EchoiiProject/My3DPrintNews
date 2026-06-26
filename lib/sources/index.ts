@@ -23,11 +23,20 @@ export type ManagedSource = {
 export type SourceDiagnostics = {
   totalConfiguredSources: number;
   enabledSources: number;
+  disabledSources: number;
   healthySources: number;
+  offlineSources: number;
   sourcesWithNoRecentArticles: number;
   totalArticlesCollected: number;
   newestArticle: string | null;
   oldestArticle: string | null;
+  daysOfNewsCoverage: number;
+  newsHealthScore: number;
+  newsHealthLabel: "Excellent" | "Good" | "Needs Attention" | "Poor";
+  verticalReadiness:
+    | "Ready for Demo"
+    | "Needs Source Review"
+    | "Not Enough Feed Coverage";
   zeroArticleSources: ManagedSource[];
   topContributors: ManagedSource[];
   noActivitySevenDays: ManagedSource[];
@@ -131,6 +140,42 @@ function logFallback(context: string, error: unknown) {
   console.warn(`[sources] ${context}; using registry fallback.`, error);
 }
 
+function daysBetween(oldestArticle: string | null, newestArticle: string | null) {
+  if (!oldestArticle || !newestArticle) return 0;
+
+  const oldest = new Date(oldestArticle).getTime();
+  const newest = new Date(newestArticle).getTime();
+
+  if (!Number.isFinite(oldest) || !Number.isFinite(newest) || newest < oldest) {
+    return 0;
+  }
+
+  return Math.ceil((newest - oldest) / (24 * 60 * 60 * 1000));
+}
+
+function coverageScore(daysOfNewsCoverage: number) {
+  if (daysOfNewsCoverage >= 7) return 30;
+  if (daysOfNewsCoverage >= 3) return 20;
+  if (daysOfNewsCoverage >= 1) return 10;
+  return 0;
+}
+
+function newsHealthLabel(score: number): SourceDiagnostics["newsHealthLabel"] {
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Good";
+  if (score >= 45) return "Needs Attention";
+  return "Poor";
+}
+
+function verticalReadiness(
+  score: number,
+  daysOfNewsCoverage: number,
+): SourceDiagnostics["verticalReadiness"] {
+  if (score >= 70 && daysOfNewsCoverage >= 7) return "Ready for Demo";
+  if (score < 45 || daysOfNewsCoverage < 3) return "Not Enough Feed Coverage";
+  return "Needs Source Review";
+}
+
 export async function getManagedSources(
   verticalSlug?: string,
 ): Promise<ManagedSource[]> {
@@ -168,32 +213,67 @@ export async function sourceDiagnostics(
     .filter((value): value is string => Boolean(value))
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const enabledSources = sources.filter((source) => source.enabled);
+  const healthySources = sources.filter(
+    (source) => source.healthStatus === "healthy",
+  );
+  const offlineSources = sources.filter(
+    (source) => source.healthStatus === "offline",
+  );
+  const zeroArticleSources = sources.filter(
+    (source) => source.articlesFetched === 0,
+  );
+  const noActivitySevenDays = sources.filter(
+    (source) =>
+      !source.lastArticleDate ||
+      new Date(source.lastArticleDate).getTime() < sevenDaysAgo,
+  );
+  const newestArticle = datedArticles.at(-1) ?? null;
+  const oldestArticle = datedArticles[0] ?? null;
+  const daysOfNewsCoverage = daysBetween(oldestArticle, newestArticle);
+  const sourceBase = Math.max(sources.length, 1);
+  const enabledBase = Math.max(enabledSources.length, 1);
+  const enabledScore = Math.round((enabledSources.length / sourceBase) * 20);
+  const healthyScore = Math.round((healthySources.length / enabledBase) * 30);
+  const activityScore = Math.round(
+    ((enabledSources.length -
+      noActivitySevenDays.filter((source) => source.enabled).length) /
+      enabledBase) *
+      20,
+  );
+  const newsHealthScore = Math.max(
+    0,
+    Math.min(
+      100,
+      enabledScore +
+        healthyScore +
+        activityScore +
+        coverageScore(daysOfNewsCoverage),
+    ),
+  );
 
   return {
     totalConfiguredSources: sources.length,
-    enabledSources: sources.filter((source) => source.enabled).length,
-    healthySources: sources.filter((source) => source.healthStatus === "healthy")
-      .length,
-    sourcesWithNoRecentArticles: sources.filter(
-      (source) =>
-        !source.lastArticleDate ||
-        new Date(source.lastArticleDate).getTime() < sevenDaysAgo,
-    ).length,
+    enabledSources: enabledSources.length,
+    disabledSources: sources.length - enabledSources.length,
+    healthySources: healthySources.length,
+    offlineSources: offlineSources.length,
+    sourcesWithNoRecentArticles: noActivitySevenDays.length,
     totalArticlesCollected: sources.reduce(
       (total, source) => total + source.articlesFetched,
       0,
     ),
-    newestArticle: datedArticles.at(-1) ?? null,
-    oldestArticle: datedArticles[0] ?? null,
-    zeroArticleSources: sources.filter((source) => source.articlesFetched === 0),
+    newestArticle,
+    oldestArticle,
+    daysOfNewsCoverage,
+    newsHealthScore,
+    newsHealthLabel: newsHealthLabel(newsHealthScore),
+    verticalReadiness: verticalReadiness(newsHealthScore, daysOfNewsCoverage),
+    zeroArticleSources,
     topContributors: [...sources]
       .sort((a, b) => b.articlesFetched - a.articlesFetched)
       .slice(0, 5),
-    noActivitySevenDays: sources.filter(
-      (source) =>
-        !source.lastArticleDate ||
-        new Date(source.lastArticleDate).getTime() < sevenDaysAgo,
-    ),
+    noActivitySevenDays,
     recentlyAddedSources: [...sources]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 5),
