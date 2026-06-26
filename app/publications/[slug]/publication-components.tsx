@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ArticleArchiveItem } from "@/lib/articles";
 import type { ManagedSource } from "@/lib/sources";
 import type { Vertical } from "@/config/verticals";
+import { publicationSlugForVertical } from "@/config/verticals";
 import { FeedbackPanel } from "@/app/feedback-panel";
 import { FooterLinks } from "@/app/footer-links";
 import { GlobalNav } from "@/app/global-nav";
@@ -49,27 +50,90 @@ export function PublicationShell({
   );
 }
 
-export function PublicationLinks({ slug }: { slug: string }) {
+export function PublicationLinks({
+  publications = [],
+  slug,
+  vertical,
+}: {
+  publications?: Vertical[];
+  slug: string;
+  vertical: Vertical;
+}) {
+  const currentName = vertical.publicationName ?? vertical.name;
+
   return (
-    <div className="mt-5 flex flex-wrap gap-2">
-      <Link
-        className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white"
-        href={`/publications/${slug}/feed`}
-      >
-        Feed
-      </Link>
-      <Link
-        className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-        href={`/publications/${slug}/catch-up`}
-      >
-        Catch Up
-      </Link>
-      <Link
-        className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-        href="/discover-more"
-      >
-        Discover More
-      </Link>
+    <div className="mt-5 space-y-3">
+      <section className="rounded-lg border border-blue-100 bg-white/80 p-4 shadow-sm shadow-blue-100/50">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Current publication
+            </p>
+            <p className="mt-1 text-lg font-bold text-slate-950">
+              {currentName}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {publications.map((publication) => {
+              const publicationSlug = publicationSlugForVertical(publication);
+              const isCurrent = publication.slug === vertical.slug;
+
+              return (
+                <Link
+                  className={[
+                    "inline-flex min-h-10 items-center justify-center rounded-md border px-3 text-sm font-bold",
+                    isCurrent
+                      ? "border-blue-500 bg-blue-600 text-white"
+                      : "border-blue-200 bg-white text-blue-700",
+                  ].join(" ")}
+                  href={`/publications/${publicationSlug}`}
+                  key={publication.id}
+                >
+                  {publication.publicationName ?? publication.name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+      <nav className="flex flex-wrap gap-2">
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white"
+          href={`/publications/${slug}`}
+        >
+          Home
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
+          href={`/publications/${slug}/feed`}
+        >
+          Feed
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
+          href={`/publications/${slug}/catch-up`}
+        >
+          Catch Up
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
+          href="/discover-more"
+        >
+          Discover More
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
+          href={`/publications/${slug}#feedback`}
+        >
+          Feedback
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-800"
+          href={`/admin/${vertical.slug}`}
+        >
+          Manage this publication
+        </Link>
+      </nav>
     </div>
   );
 }
@@ -196,5 +260,9 @@ export function FeedFilters({
 }
 
 export function PublicationFeedback() {
-  return <FeedbackPanel />;
+  return (
+    <section id="feedback">
+      <FeedbackPanel />
+    </section>
+  );
 }

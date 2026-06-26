@@ -4,6 +4,7 @@ import {
   demoAdminUsers,
   demoUserById,
   ownershipRoles,
+  publicationSlugForVertical,
 } from "@/config/verticals";
 import { getVerticals } from "@/lib/verticals";
 import { AdminAccessGate } from "./admin-access";
@@ -192,6 +193,7 @@ export default async function AdminHubPage({
               const sponsor = vertical.sponsorId
                 ? sponsorById[vertical.sponsorId]
                 : null;
+              const publicSlug = publicationSlugForVertical(vertical);
 
               return (
                 <article
@@ -239,12 +241,32 @@ export default async function AdminHubPage({
                       </p>
                     </div>
                   </div>
-                  <Link
-                    className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-                    href={`/admin/${vertical.slug}`}
-                  >
-                    Open Admin
-                  </Link>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                      href={`/admin/${vertical.slug}`}
+                    >
+                      Open Admin
+                    </Link>
+                    <Link
+                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                      href={`/publications/${publicSlug}`}
+                    >
+                      View Public Site
+                    </Link>
+                    <Link
+                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                      href={`/admin/${vertical.slug}/sources`}
+                    >
+                      Sources
+                    </Link>
+                    <Link
+                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                      href={`/admin/${vertical.slug}/articles`}
+                    >
+                      Articles
+                    </Link>
+                  </div>
                 </article>
               );
               })

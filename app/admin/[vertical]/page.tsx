@@ -5,7 +5,7 @@ import {
   feedbackCountByCategory,
 } from "@/config/feedback";
 import { sponsorById } from "@/config/sponsors";
-import { demoUserById } from "@/config/verticals";
+import { demoUserById, publicationSlugForVertical } from "@/config/verticals";
 import { getFeedbackByVertical, getVerticalBySlug } from "@/lib/verticals";
 import { AdminAccessGate } from "../admin-access";
 import { AdminShell } from "../admin-shell";
@@ -240,6 +240,7 @@ export default async function VerticalAdminPage({
   const currentUser = demoUserById(query?.view);
   const sponsor = vertical.sponsorId ? sponsorById[vertical.sponsorId] : null;
   const isSuperAdmin = currentUser.role === "platform_owner";
+  const publicSlug = publicationSlugForVertical(vertical);
   const verticalFeedback = await getFeedbackByVertical(vertical.slug);
   const verticalManagementCentres = managementCentres.map((centre) => {
     if (centre.title === "Platform" && isSuperAdmin) {
@@ -396,6 +397,31 @@ export default async function VerticalAdminPage({
               </div>
             </div>
           </header>
+
+          <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <h2 className="text-2xl font-bold text-slate-950">
+              Quick links
+            </h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                ["View public site", `/publications/${publicSlug}`],
+                ["View public feed", `/publications/${publicSlug}/feed`],
+                ["View catch up", `/publications/${publicSlug}/catch-up`],
+                ["Article archive", `/admin/${vertical.slug}/articles`],
+                ["Source management", `/admin/${vertical.slug}/sources`],
+                ["Referral analytics", `/admin/${vertical.slug}/referrals`],
+                ["Feedback", `/admin/${vertical.slug}/feedback`],
+              ].map(([label, href]) => (
+                <Link
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                  href={href}
+                  key={label}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </section>
 
           <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
             <h2 className="text-2xl font-bold text-slate-950">

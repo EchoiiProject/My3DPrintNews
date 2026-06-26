@@ -4,7 +4,12 @@ import {
   type FeedbackCategory,
   type FeedbackStatus,
 } from "@/config/feedback";
-import { verticalBySlug as configVerticalBySlug, verticals } from "@/config/verticals";
+import {
+  adminSlugForPublicationSlug,
+  publicSlugForAdminSlug,
+  verticalBySlug as configVerticalBySlug,
+  verticals,
+} from "@/config/verticals";
 import type { Vertical } from "@/config/verticals";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
@@ -37,6 +42,17 @@ type VerticalRecord = {
   description: string | null;
   status: string;
   visibility: string;
+  publication_name: string | null;
+  publication_description: string | null;
+  hostname: string | null;
+  publication_status: string | null;
+  auto_fetch_enabled: boolean | null;
+  show_in_discover: boolean | null;
+  show_newsletter_signup: boolean | null;
+  show_feedback: boolean | null;
+  logo_url: string | null;
+  hero_image_url: string | null;
+  primary_colour: string | null;
   strategy: string;
   sponsor_id: string | null;
   public_url: string | null;
@@ -83,21 +99,70 @@ function initials(name: string): string {
 }
 
 function toAppVertical(record: VerticalRecord): Vertical {
-  const configured = configVerticalBySlug(record.slug);
+  const adminSlug = adminSlugForPublicationSlug(record.slug) ?? record.slug;
+  const configured =
+    configVerticalBySlug(adminSlug) ?? configVerticalBySlug(record.slug);
   const organisation = firstRelation(record.organisations);
-  const isActive = record.status === "active" || record.status === "live";
+  const publicationStatus = record.publication_status ?? configured?.publicationStatus;
+  const isActive =
+    record.status === "active" ||
+    record.status === "live" ||
+    publicationStatus === "live";
+  const publicationName =
+    record.publication_name ?? configured?.publicationName ?? record.name;
+  const publicationDescription =
+    record.publication_description ??
+    configured?.publicationDescription ??
+    record.description ??
+    configured?.description ??
+    "";
+  const recordHasPublicSlug = Boolean(adminSlugForPublicationSlug(record.slug));
+  const publicationSlug =
+    (recordHasPublicSlug ? record.slug : undefined) ??
+    configured?.publicationSlug ??
+    publicSlugForAdminSlug(adminSlug) ??
+    record.slug;
+  const publicUrl =
+    record.public_url ??
+    (publicationSlug ? `/publications/${publicationSlug}` : configured?.publicUrl) ??
+    "/discover-more";
 
   return {
-    id: configured?.id ?? record.slug,
+    id: configured?.id ?? adminSlug,
     databaseId: record.id,
-    name: record.name,
-    slug: record.slug,
-    domain: organisation?.website_url ?? configured?.domain ?? "",
-    description: record.description ?? configured?.description ?? "",
+    name: publicationName,
+    slug: configured?.slug ?? adminSlug,
+    publicationName,
+    publicationDescription,
+    publicationSlug,
+    hostname: record.hostname ?? configured?.hostname ?? null,
+    visibility:
+      record.visibility === "private" ||
+      record.visibility === "demo" ||
+      record.visibility === "public"
+        ? record.visibility
+        : configured?.visibility,
+    publicationStatus:
+      publicationStatus === "draft" ||
+      publicationStatus === "live" ||
+      publicationStatus === "archived"
+        ? publicationStatus
+        : configured?.publicationStatus,
+    autoFetchEnabled:
+      record.auto_fetch_enabled ?? configured?.autoFetchEnabled ?? true,
+    showInDiscover: record.show_in_discover ?? configured?.showInDiscover ?? true,
+    showNewsletterSignup:
+      record.show_newsletter_signup ?? configured?.showNewsletterSignup ?? true,
+    showFeedback: record.show_feedback ?? configured?.showFeedback ?? true,
+    logoUrl: record.logo_url ?? configured?.logoUrl ?? null,
+    heroImageUrl: record.hero_image_url ?? configured?.heroImageUrl ?? null,
+    primaryColour: record.primary_colour ?? configured?.primaryColour ?? null,
+    domain: record.hostname ?? organisation?.website_url ?? configured?.domain ?? "",
+    description: publicationDescription,
     sector: configured?.sector ?? "Specialist news",
     status: isActive ? "active" : "coming-soon",
     relatedVerticalIds: configured?.relatedVerticalIds ?? [],
-    publicUrl: record.public_url ?? configured?.publicUrl ?? "/discover-more",
+    publicUrl,
     subscriberCount: configured?.subscriberCount ?? 0,
     comingSoon: !isActive,
     logo: configured?.logo ?? initials(record.name),
@@ -135,10 +200,13 @@ function normaliseFeedbackStatus(value: string): FeedbackStatus {
 
 function toFeedback(record: FeedbackRecord): Feedback {
   const verticalRelation = firstRelation(record.verticals);
+  const verticalSlug = verticalRelation?.slug
+    ? adminSlugForPublicationSlug(verticalRelation.slug) ?? verticalRelation.slug
+    : record.vertical_id;
 
   return {
     id: record.id,
-    verticalId: verticalRelation?.slug ?? record.vertical_id,
+    verticalId: verticalSlug,
     category: normaliseFeedbackCategory(record.category),
     rating: record.rating,
     message: record.message,
@@ -178,6 +246,9 @@ function logFallback(context: string, error: unknown) {
   console.warn(`[verticals] ${context}; using config fallback.`, error);
 }
 
+const verticalSelect =
+  "id,name,slug,description,status,visibility,publication_name,publication_description,hostname,publication_status,auto_fetch_enabled,show_in_discover,show_newsletter_signup,show_feedback,logo_url,hero_image_url,primary_colour,strategy,sponsor_id,public_url,created_at,updated_at,organisations(name,website_url,contact_email)";
+
 export async function getVerticals(): Promise<Vertical[]> {
   const supabase = createServiceSupabaseClient();
 
@@ -187,9 +258,7 @@ export async function getVerticals(): Promise<Vertical[]> {
 
   const { data, error } = await supabase
     .from("verticals")
-    .select(
-      "id,name,slug,description,status,visibility,strategy,sponsor_id,public_url,created_at,updated_at,organisations(name,website_url,contact_email)",
-    )
+    .select(verticalSelect)
     .order("created_at", { ascending: true });
 
   if (error || !data) {
@@ -252,23 +321,46 @@ export async function getVerticalBySlug(slug: string): Promise<Vertical | null> 
   const supabase = createServiceSupabaseClient();
 
   if (!supabase) {
-    return configVerticalBySlug(slug) ?? null;
+    return (
+      configVerticalBySlug(slug) ??
+      configVerticalBySlug(adminSlugForPublicationSlug(slug) ?? "") ??
+      null
+    );
   }
+
+  const candidateSlugs = Array.from(
+    new Set([
+      slug,
+      publicSlugForAdminSlug(slug),
+      adminSlugForPublicationSlug(slug),
+    ].filter((value): value is string => Boolean(value))),
+  );
 
   const { data, error } = await supabase
     .from("verticals")
-    .select(
-      "id,name,slug,description,status,visibility,strategy,sponsor_id,public_url,created_at,updated_at,organisations(name,website_url,contact_email)",
-    )
-    .eq("slug", slug)
+    .select(verticalSelect)
+    .in("slug", candidateSlugs)
+    .limit(1)
     .maybeSingle();
 
   if (error) {
     logFallback(`Supabase vertical lookup failed for ${slug}`, error);
-    return configVerticalBySlug(slug) ?? null;
+    return (
+      configVerticalBySlug(slug) ??
+      configVerticalBySlug(adminSlugForPublicationSlug(slug) ?? "") ??
+      null
+    );
   }
 
-  return data ? toAppVertical(data as VerticalRecord) : configVerticalBySlug(slug) ?? null;
+  if (data) {
+    return toAppVertical(data as VerticalRecord);
+  }
+
+  return (
+    configVerticalBySlug(slug) ??
+    configVerticalBySlug(adminSlugForPublicationSlug(slug) ?? "") ??
+    null
+  );
 }
 
 export async function getAllFeedback(): Promise<Feedback[]> {
@@ -306,8 +398,8 @@ export async function getFeedbackByVertical(slug: string): Promise<Feedback[]> {
 
   const { data, error } = await supabase
     .from("feedback")
-    .select("id,vertical_id,category,rating,message,email,status,created_at,verticals!inner(slug)")
-    .eq("verticals.slug", slug)
+    .select("id,vertical_id,category,rating,message,email,status,created_at,verticals(slug)")
+    .eq("vertical_id", vertical.databaseId ?? vertical.id)
     .order("created_at", { ascending: false });
 
   if (error || !data) {

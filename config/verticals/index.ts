@@ -3,6 +3,19 @@ export type Vertical = {
   databaseId?: string;
   name: string;
   slug: string;
+  publicationName?: string;
+  publicationDescription?: string;
+  publicationSlug?: string;
+  hostname?: string | null;
+  visibility?: "private" | "demo" | "public";
+  publicationStatus?: "draft" | "live" | "archived";
+  autoFetchEnabled?: boolean;
+  showInDiscover?: boolean;
+  showNewsletterSignup?: boolean;
+  showFeedback?: boolean;
+  logoUrl?: string | null;
+  heroImageUrl?: string | null;
+  primaryColour?: string | null;
   domain: string;
   description: string;
   sector: string;
@@ -71,6 +84,17 @@ export const verticals: Vertical[] = [
     id: "my3dprintnews",
     name: "My3DPrintNews",
     slug: "my3dprintnews",
+    publicationName: "My3DPrintNews",
+    publicationDescription:
+      "Daily news, reviews and industry insight from the global 3D printing sector.",
+    publicationSlug: "3dprint",
+    hostname: "3dprint.mynewsnetwork.uk",
+    visibility: "public",
+    publicationStatus: "live",
+    autoFetchEnabled: true,
+    showInDiscover: true,
+    showNewsletterSignup: true,
+    showFeedback: true,
     domain: "my3dprintnews.vercel.app",
     description: "Personalised 3D printing news, videos, products, and updates.",
     sector: "Making and manufacturing",
@@ -91,6 +115,15 @@ export const verticals: Vertical[] = [
     id: "mybmxnews",
     name: "MyBMXNews",
     slug: "mybmxnews",
+    publicationName: "MyBMXNews",
+    publicationSlug: "bmx",
+    hostname: "bmx.mynewsnetwork.uk",
+    visibility: "demo",
+    publicationStatus: "draft",
+    autoFetchEnabled: true,
+    showInDiscover: true,
+    showNewsletterSignup: true,
+    showFeedback: true,
     domain: "mybmxnews.example.com",
     description: "Demo BMX vertical for reusable personalised feed products.",
     sector: "Cycling and action sports",
@@ -368,6 +401,25 @@ export const verticals: Vertical[] = [
     updatedAt: "2026-06-25T00:00:00.000Z",
   },
 ];
+
+export const publicationSlugByAdminSlug: Record<string, string> = {
+  my3dprintnews: "3dprint",
+  mybmxnews: "bmx",
+};
+
+export function adminSlugForPublicationSlug(slug: string): string | undefined {
+  return Object.entries(publicationSlugByAdminSlug).find(
+    ([, publicationSlug]) => publicationSlug === slug,
+  )?.[0];
+}
+
+export function publicSlugForAdminSlug(slug: string): string | undefined {
+  return publicationSlugByAdminSlug[slug];
+}
+
+export function publicationSlugForVertical(vertical: Vertical): string {
+  return vertical.publicationSlug ?? publicSlugForAdminSlug(vertical.slug) ?? vertical.slug;
+}
 
 export const demoAdminUsers: DemoAdminUser[] = [
   {

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getArticleArchive } from "@/lib/articles";
 import {
   getPublicationByPublicSlug,
+  getPublications,
   publicationAliasMap,
 } from "@/lib/publications";
 import {
@@ -30,6 +31,7 @@ export default async function PublicationCatchUpPage({
 
   const requestedDays = query?.days ? Number(query.days) : 7;
   const days = allowedWindows.includes(requestedDays) ? requestedDays : 7;
+  const publications = await getPublications();
   const articles = await getArticleArchive({
     verticalSlug: vertical.slug,
     recentDays: days,
@@ -40,7 +42,11 @@ export default async function PublicationCatchUpPage({
       description={`Catch up on the last ${days} days from ${vertical.name}.`}
       title={`${vertical.name} Catch Up`}
     >
-      <PublicationLinks slug={slug} />
+      <PublicationLinks
+        publications={publications}
+        slug={slug}
+        vertical={vertical}
+      />
       <div className="mt-8 flex flex-wrap gap-2">
         {allowedWindows.map((windowDays) => (
           <Link

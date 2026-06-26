@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getArticleArchive } from "@/lib/articles";
 import {
   getPublicationByPublicSlug,
+  getPublications,
   publicationAliasMap,
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
@@ -29,6 +30,7 @@ export default async function PublicationFeedPage({
 
   const recentDays = query?.recent ? Number(query.recent) : undefined;
   const sources = await getManagedSources(vertical.slug);
+  const publications = await getPublications();
   const articles = await getArticleArchive({
     verticalSlug: vertical.slug,
     sourceId: query?.source || undefined,
@@ -40,7 +42,11 @@ export default async function PublicationFeedPage({
       description={`Archived feed stories from ${vertical.name}.`}
       title={`${vertical.name} Feed`}
     >
-      <PublicationLinks slug={slug} />
+      <PublicationLinks
+        publications={publications}
+        slug={slug}
+        vertical={vertical}
+      />
       <FeedFilters
         currentRecent={query?.recent}
         currentSourceId={query?.source}

@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import { adminSlugForPublicationSlug } from "@/config/verticals";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { getManagedSources, type ManagedSource } from "@/lib/sources";
 import { getVerticalBySlug } from "@/lib/verticals";
@@ -115,7 +116,9 @@ function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
     tags: Array.isArray(record.tags) ? record.tags.map(String) : [],
     createdAt: record.created_at,
     verticalName: vertical?.name ?? "Unknown vertical",
-    verticalSlug: vertical?.slug ?? "unknown",
+    verticalSlug: vertical?.slug
+      ? adminSlugForPublicationSlug(vertical.slug) ?? vertical.slug
+      : "unknown",
   };
 }
 

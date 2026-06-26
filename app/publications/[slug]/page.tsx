@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getArticleArchive } from "@/lib/articles";
 import {
   getPublicationByPublicSlug,
+  getPublications,
   publicationAliasMap,
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
@@ -27,10 +28,15 @@ export default async function PublicationHomePage({
 
   const articles = await getArticleArchive({ verticalSlug: vertical.slug });
   const sources = await getManagedSources(vertical.slug);
+  const publications = await getPublications();
 
   return (
     <PublicationShell description={vertical.description} title={vertical.name}>
-      <PublicationLinks slug={slug} />
+      <PublicationLinks
+        publications={publications}
+        slug={slug}
+        vertical={vertical}
+      />
       <PublicationStats
         articleCount={articles.length}
         sourceCount={sources.length}

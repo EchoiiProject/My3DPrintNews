@@ -1,4 +1,8 @@
 import { registry, type RegistryItem } from "@/config/registry";
+import {
+  adminSlugForPublicationSlug,
+  publicSlugForAdminSlug,
+} from "@/config/verticals";
 import type { RssSourceDiagnostic } from "@/lib/rss/diagnostics";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
@@ -135,7 +139,9 @@ function toManagedSource(
     name: record.name,
     rssUrl: record.rss_url,
     verticalId: record.vertical_id ?? "",
-    verticalSlug: vertical?.slug ?? "unknown",
+    verticalSlug: vertical?.slug
+      ? adminSlugForPublicationSlug(vertical.slug) ?? vertical.slug
+      : "unknown",
     verticalName: vertical?.name ?? "Unknown vertical",
     category: record.category,
     enabled: record.enabled,
@@ -201,10 +207,19 @@ async function resolveVerticalId(input: {
 
   if (!slug) return { id: null, error: "Vertical is required." };
 
+  const candidateSlugs = Array.from(
+    new Set([
+      slug,
+      publicSlugForAdminSlug(slug),
+      adminSlugForPublicationSlug(slug),
+    ].filter((value): value is string => Boolean(value))),
+  );
+
   const bySlug = await supabase
     .from("verticals")
     .select("id")
-    .eq("slug", slug)
+    .in("slug", candidateSlugs)
+    .limit(1)
     .maybeSingle();
 
   if (bySlug.error) return { id: null, error: bySlug.error.message };
