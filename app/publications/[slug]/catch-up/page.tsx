@@ -40,7 +40,9 @@ export default async function PublicationCatchUpPage({
   return (
     <PublicationShell
       description={`Catch up on the last ${days} days from ${vertical.name}.`}
+      slug={slug}
       title={`${vertical.name} Catch Up`}
+      vertical={vertical}
     >
       <PublicationLinks
         publications={publications}

@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { currentSite } from "../config/current-site";
-
 const primaryLinks = [
   { href: "/feed", label: "Feed" },
   { href: "/catch-up", label: "Catch Up" },
@@ -9,17 +7,23 @@ const primaryLinks = [
   { href: "/discover-more", label: "Discover More" },
 ];
 
-export function GlobalNav() {
+export function GlobalNav({
+  brandName = "MyNewsNetwork",
+  links = primaryLinks,
+}: {
+  brandName?: string;
+  links?: { href: string; label: string }[];
+}) {
   return (
     <nav className="flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center sm:justify-between">
       <Link
         className="text-lg font-bold tracking-tight text-slate-950"
         href="/"
       >
-        {currentSite.metadata.name}
+        {brandName}
       </Link>
       <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-600 sm:gap-5">
-        {primaryLinks.map((link) => (
+        {links.map((link) => (
           <Link
             className="transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
             href={link.href}

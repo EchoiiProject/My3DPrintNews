@@ -20,16 +20,29 @@ export function formatArticleDate(value: string | null) {
 export function PublicationShell({
   children,
   description,
+  slug,
   title,
+  vertical,
 }: {
   children: React.ReactNode;
   description: string;
+  slug: string;
   title: string;
+  vertical: Vertical;
 }) {
+  const publicationLinks = [
+    { href: `/publications/${slug}`, label: "Home" },
+    { href: `/publications/${slug}/feed`, label: "Feed" },
+    { href: `/publications/${slug}/catch-up`, label: "Catch Up" },
+    { href: "/discover-more", label: "Discover More" },
+    { href: `/publications/${slug}#feedback`, label: "Feedback" },
+    { href: `/admin/${vertical.slug}`, label: "Manage Publication" },
+  ];
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
-        <GlobalNav />
+        <GlobalNav brandName="MyNewsNetwork" links={publicationLinks} />
         <div className="flex-1 py-10">
           <header>
             <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
@@ -313,10 +326,12 @@ export function FeedFilters({
   );
 }
 
-export function PublicationFeedback() {
+export function PublicationFeedback({ vertical }: { vertical: Vertical }) {
   return (
     <section id="feedback">
-      <FeedbackPanel />
+      <FeedbackPanel
+        publicationName={vertical.publicationName ?? vertical.name}
+      />
     </section>
   );
 }

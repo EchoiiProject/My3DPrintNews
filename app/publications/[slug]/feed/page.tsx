@@ -40,7 +40,9 @@ export default async function PublicationFeedPage({
   return (
     <PublicationShell
       description={`Archived feed stories from ${vertical.name}.`}
+      slug={slug}
       title={`${vertical.name} Feed`}
+      vertical={vertical}
     >
       <PublicationLinks
         publications={publications}

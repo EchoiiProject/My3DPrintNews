@@ -16,9 +16,14 @@ const feedbackOptions: {
   { label: "Report a problem", category: "bug_report", rating: 2 },
 ];
 
-export function FeedbackPanel() {
+export function FeedbackPanel({
+  publicationName,
+}: {
+  publicationName?: string;
+}) {
   const currentVertical =
     verticalBySlug(currentSite.verticalSlug) ?? verticals[0];
+  const displayName = publicationName ?? currentVertical.publicationName ?? currentVertical.name;
   const [selected, setSelected] = useState(feedbackOptions[0]);
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +43,7 @@ export function FeedbackPanel() {
           <div>
             <p className="text-sm font-semibold text-blue-700">Feedback</p>
             <h2 className="mt-1 text-2xl font-bold text-slate-950">
-              Help improve {currentVertical.name}
+              Help improve {displayName}
             </h2>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">

@@ -31,7 +31,12 @@ export default async function PublicationHomePage({
   const publications = await getPublications();
 
   return (
-    <PublicationShell description={vertical.description} title={vertical.name}>
+    <PublicationShell
+      description={vertical.description}
+      slug={slug}
+      title={vertical.name}
+      vertical={vertical}
+    >
       <PublicationLinks
         publications={publications}
         slug={slug}
@@ -46,7 +51,7 @@ export default async function PublicationHomePage({
         articles={articles.slice(0, 10)}
         heading="Latest stories"
       />
-      <PublicationFeedback />
+      <PublicationFeedback vertical={vertical} />
     </PublicationShell>
   );
 }
