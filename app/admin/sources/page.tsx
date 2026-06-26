@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { demoUserById } from "@/config/verticals";
+import { checkRssSources } from "@/lib/rss/diagnostics";
 import { getManagedSources, sourceDiagnostics } from "@/lib/sources";
 import { getVerticals } from "@/lib/verticals";
 import { AdminAccessGate } from "../admin-access";
 import { AdminShell } from "../admin-shell";
 import { SourceManagementClient } from "./source-management-client";
+
+export const dynamic = "force-dynamic";
 
 export default async function SourceManagementPage({
   searchParams,
@@ -23,8 +26,13 @@ export default async function SourceManagementPage({
       : verticals.filter((vertical) =>
           currentUser.assignedVerticalIds.includes(vertical.id),
         );
-  const sources = await getManagedSources();
-  const diagnostics = await sourceDiagnostics();
+  const sources = canView ? await getManagedSources() : [];
+  const feedDiagnostics = canView ? await checkRssSources(sources) : [];
+  const diagnostics = await sourceDiagnostics(
+    undefined,
+    sources,
+    feedDiagnostics,
+  );
 
   return (
     <AdminShell

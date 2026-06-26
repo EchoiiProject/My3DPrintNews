@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { demoUserById } from "@/config/verticals";
+import { checkRssSources } from "@/lib/rss/diagnostics";
 import { getManagedSources, sourceDiagnostics } from "@/lib/sources";
 import { getVerticalBySlug } from "@/lib/verticals";
 import { AdminAccessGate } from "../../admin-access";
 import { AdminShell } from "../../admin-shell";
 import { SourceManagementClient } from "../../sources/source-management-client";
+
+export const dynamic = "force-dynamic";
 
 export default async function VerticalSourceManagementPage({
   params,
@@ -32,7 +35,12 @@ export default async function VerticalSourceManagementPage({
   }
 
   const sources = await getManagedSources(vertical.slug);
-  const diagnostics = await sourceDiagnostics(vertical.slug);
+  const feedDiagnostics = await checkRssSources(sources);
+  const diagnostics = await sourceDiagnostics(
+    vertical.slug,
+    sources,
+    feedDiagnostics,
+  );
 
   return (
     <AdminShell

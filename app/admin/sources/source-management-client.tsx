@@ -34,16 +34,27 @@ function coverageLabel(days: number) {
   return "broken or no content";
 }
 
-function sourceWarnings(source: ManagedSource) {
+function sourceWarnings(
+  source: ManagedSource,
+  diagnostic: SourceDiagnostics["feedDiagnostics"][number] | undefined,
+) {
   const warnings: string[] = [];
+  const latestArticleDate = diagnostic?.latestArticleDate ?? source.lastArticleDate;
+  const itemCount = diagnostic?.itemCount ?? source.articlesFetched;
+  const healthStatus =
+    diagnostic?.healthStatus === "placeholder" || !diagnostic
+      ? source.healthStatus
+      : diagnostic.healthStatus;
   const stale =
-    !source.lastArticleDate ||
-    new Date(source.lastArticleDate).getTime() <
+    !latestArticleDate ||
+    new Date(latestArticleDate).getTime() <
       Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   if (!source.rssUrl) warnings.push("No RSS URL");
-  if (source.healthStatus === "offline") warnings.push("Unreachable feed");
-  if (source.articlesFetched === 0) warnings.push("Zero articles");
+  if (healthStatus === "offline" || diagnostic?.reachable === false) {
+    warnings.push("Unreachable feed");
+  }
+  if (itemCount === 0) warnings.push("Zero articles");
   if (stale) warnings.push("Stale feed");
   if (!source.enabled) warnings.push("Disabled source");
 
@@ -170,6 +181,18 @@ export function SourceManagementClient({
     }, 250);
   }
 
+  function refreshDiagnostics() {
+    setMessage("Checking RSS feeds...");
+    router.refresh();
+  }
+
+  const diagnosticBySourceId = new Map(
+    diagnostics.feedDiagnostics.map((diagnostic) => [
+      diagnostic.sourceId,
+      diagnostic,
+    ]),
+  );
+
   return (
     <div className="space-y-8">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -240,6 +263,26 @@ export function SourceManagementClient({
         </div>
       </section>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
+        <div>
+          <p className="text-sm font-bold text-slate-950">
+            Live RSS diagnostics
+          </p>
+          <p className="text-sm font-semibold text-slate-600">
+            {diagnostics.feedDiagnostics.length
+              ? `Last checked ${formatDate(diagnostics.feedDiagnostics[0].lastCheckedAt)}`
+              : "No live checks available"}
+          </p>
+        </div>
+        <button
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white"
+          onClick={refreshDiagnostics}
+          type="button"
+        >
+          Check RSS Feeds
+        </button>
+      </div>
+
       <section className="rounded-lg border border-blue-100 bg-blue-50/80 p-5">
         <h2 className="text-2xl font-bold text-blue-950">Add Source</h2>
         <div className="mt-4 grid gap-3 lg:grid-cols-5">
@@ -303,7 +346,16 @@ export function SourceManagementClient({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sources.map((source) => {
-                const warnings = sourceWarnings(source);
+                const diagnostic = diagnosticBySourceId.get(source.id);
+                const warnings = sourceWarnings(source, diagnostic);
+                const healthStatus =
+                  diagnostic?.healthStatus === "placeholder" || !diagnostic
+                    ? source.healthStatus
+                    : diagnostic.healthStatus;
+                const itemCount = diagnostic?.itemCount ?? source.articlesFetched;
+                const latestArticleDate =
+                  diagnostic?.latestArticleDate ?? source.lastArticleDate;
+                const oldestArticleDate = diagnostic?.oldestArticleDate ?? null;
 
                 return (
                   <tr
@@ -341,20 +393,47 @@ export function SourceManagementClient({
                       <span
                         className={[
                           "rounded-full border px-2 py-0.5 text-xs font-bold capitalize",
-                          healthClass(source.healthStatus),
+                          healthClass(healthStatus),
                         ].join(" ")}
                       >
-                        {source.healthStatus}
+                        {healthStatus}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      <p>{formatDate(source.lastSuccessfulFetch)}</p>
-                      <p className="text-xs">
-                        Last article: {formatDate(source.lastArticleDate)}
+                      <p>
+                        {diagnostic
+                          ? diagnostic.reachable
+                            ? "Reachable"
+                            : "Failed"
+                          : formatDate(source.lastSuccessfulFetch)}
                       </p>
+                      {diagnostic?.statusCode ? (
+                        <p className="text-xs">HTTP {diagnostic.statusCode}</p>
+                      ) : null}
+                      <p className="text-xs">
+                        Latest: {formatDate(latestArticleDate)}
+                      </p>
+                      <p className="text-xs">
+                        Oldest: {formatDate(oldestArticleDate)}
+                      </p>
+                      {diagnostic ? (
+                        <p className="text-xs">
+                          Checked: {formatDate(diagnostic.lastCheckedAt)}
+                        </p>
+                      ) : null}
+                      {diagnostic?.errorMessage ? (
+                        <p className="text-xs font-semibold text-red-700">
+                          {diagnostic.errorMessage}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 font-bold text-slate-900">
-                      {source.articlesFetched}
+                      {itemCount}
+                      {diagnostic ? (
+                        <p className="text-xs font-semibold text-slate-500">
+                          live
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import { registry, type RegistryItem } from "@/config/registry";
+import type { RssSourceDiagnostic } from "@/lib/rss/diagnostics";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { getVerticalBySlug } from "@/lib/verticals";
 
@@ -41,6 +42,7 @@ export type SourceDiagnostics = {
   topContributors: ManagedSource[];
   noActivitySevenDays: ManagedSource[];
   recentlyAddedSources: ManagedSource[];
+  feedDiagnostics: RssSourceDiagnostic[];
 };
 
 type SourceRecord = {
@@ -206,27 +208,52 @@ export async function getManagedSources(
 
 export async function sourceDiagnostics(
   verticalSlug?: string,
+  managedSources?: ManagedSource[],
+  feedDiagnostics: RssSourceDiagnostic[] = [],
 ): Promise<SourceDiagnostics> {
-  const sources = await getManagedSources(verticalSlug);
-  const datedArticles = sources
-    .map((source) => source.lastArticleDate)
+  const sources = managedSources ?? (await getManagedSources(verticalSlug));
+  const diagnosticBySourceId = new Map(
+    feedDiagnostics.map((diagnostic) => [diagnostic.sourceId, diagnostic]),
+  );
+  const sourceArticleDate = (source: ManagedSource) =>
+    diagnosticBySourceId.get(source.id)?.latestArticleDate ??
+    source.lastArticleDate;
+  const sourceArticleCount = (source: ManagedSource) =>
+    diagnosticBySourceId.get(source.id)?.itemCount ?? source.articlesFetched;
+  const sourceHealth = (source: ManagedSource) => {
+    const diagnostic = diagnosticBySourceId.get(source.id);
+
+    if (!diagnostic || diagnostic.healthStatus === "placeholder") {
+      return source.healthStatus;
+    }
+
+    return diagnostic.healthStatus;
+  };
+  const datedArticles = (
+    feedDiagnostics.length
+      ? feedDiagnostics.flatMap((diagnostic) => [
+          diagnostic.oldestArticleDate,
+          diagnostic.latestArticleDate,
+        ])
+      : sources.map((source) => source.lastArticleDate)
+  )
     .filter((value): value is string => Boolean(value))
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const enabledSources = sources.filter((source) => source.enabled);
   const healthySources = sources.filter(
-    (source) => source.healthStatus === "healthy",
+    (source) => sourceHealth(source) === "healthy",
   );
   const offlineSources = sources.filter(
-    (source) => source.healthStatus === "offline",
+    (source) => sourceHealth(source) === "offline",
   );
   const zeroArticleSources = sources.filter(
-    (source) => source.articlesFetched === 0,
+    (source) => sourceArticleCount(source) === 0,
   );
   const noActivitySevenDays = sources.filter(
     (source) =>
-      !source.lastArticleDate ||
-      new Date(source.lastArticleDate).getTime() < sevenDaysAgo,
+      !sourceArticleDate(source) ||
+      new Date(sourceArticleDate(source) ?? "").getTime() < sevenDaysAgo,
   );
   const newestArticle = datedArticles.at(-1) ?? null;
   const oldestArticle = datedArticles[0] ?? null;
@@ -260,7 +287,7 @@ export async function sourceDiagnostics(
     offlineSources: offlineSources.length,
     sourcesWithNoRecentArticles: noActivitySevenDays.length,
     totalArticlesCollected: sources.reduce(
-      (total, source) => total + source.articlesFetched,
+      (total, source) => total + sourceArticleCount(source),
       0,
     ),
     newestArticle,
@@ -271,12 +298,13 @@ export async function sourceDiagnostics(
     verticalReadiness: verticalReadiness(newsHealthScore, daysOfNewsCoverage),
     zeroArticleSources,
     topContributors: [...sources]
-      .sort((a, b) => b.articlesFetched - a.articlesFetched)
+      .sort((a, b) => sourceArticleCount(b) - sourceArticleCount(a))
       .slice(0, 5),
     noActivitySevenDays,
     recentlyAddedSources: [...sources]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 5),
+    feedDiagnostics,
   };
 }
 
