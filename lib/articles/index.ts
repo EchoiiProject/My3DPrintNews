@@ -23,10 +23,13 @@ export type ArticleArchiveItem = {
 export type ArticleFetchResult = {
   ok: boolean;
   message: string;
+  sourcesChecked: number;
   fetched: number;
   inserted: number;
   skipped: number;
+  failedSources: number;
   errors: number;
+  errorMessages: string[];
 };
 
 type ParsedItem = {
@@ -171,10 +174,34 @@ async function fetchSourceArticles(
       return {
         ok: false,
         message: "Supabase is not configured.",
+        sourcesChecked: 1,
         fetched: articles.length,
         inserted: 0,
         skipped: articles.length,
+        failedSources: 1,
         errors: 1,
+        errorMessages: ["Supabase is not configured."],
+      };
+    }
+
+    if (articles.length === 0) {
+      await updateSourceAfterFetch(source.id, {
+        healthStatus: "warning",
+        lastCheckedAt: checkedAt,
+        lastSuccessfulFetchAt: null,
+        lastError: null,
+      });
+
+      return {
+        ok: true,
+        message: `${source.name} returned no articles.`,
+        sourcesChecked: 1,
+        fetched: 0,
+        inserted: 0,
+        skipped: 0,
+        failedSources: 0,
+        errors: 0,
+        errorMessages: [],
       };
     }
 
@@ -193,10 +220,13 @@ async function fetchSourceArticles(
       return {
         ok: false,
         message: error.message,
+        sourcesChecked: 1,
         fetched: articles.length,
         inserted: 0,
         skipped: articles.length,
+        failedSources: 1,
         errors: 1,
+        errorMessages: [error.message],
       };
     }
 
@@ -212,10 +242,13 @@ async function fetchSourceArticles(
     return {
       ok: true,
       message: `${source.name} fetched.`,
+      sourcesChecked: 1,
       fetched: articles.length,
       inserted,
       skipped: Math.max(articles.length - inserted, 0),
+      failedSources: 0,
       errors: 0,
+      errorMessages: [],
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "RSS fetch failed";
@@ -229,12 +262,45 @@ async function fetchSourceArticles(
     return {
       ok: false,
       message,
+      sourcesChecked: 1,
       fetched: 0,
       inserted: 0,
       skipped: 0,
+      failedSources: 1,
       errors: 1,
+      errorMessages: [`${source.name}: ${message}`],
     };
   }
+}
+
+async function fetchArticlesForSources(
+  sources: ManagedSource[],
+): Promise<ArticleFetchResult> {
+  const enabledSources = sources.filter((source) => source.enabled);
+  const results = await Promise.all(
+    enabledSources.map((source) => fetchSourceArticles(source, source.verticalId)),
+  );
+  const fetched = results.reduce((total, result) => total + result.fetched, 0);
+  const inserted = results.reduce((total, result) => total + result.inserted, 0);
+  const skipped = results.reduce((total, result) => total + result.skipped, 0);
+  const errors = results.reduce((total, result) => total + result.errors, 0);
+  const failedSources = results.reduce(
+    (total, result) => total + result.failedSources,
+    0,
+  );
+  const errorMessages = results.flatMap((result) => result.errorMessages);
+
+  return {
+    ok: errors === 0,
+    message: `Checked ${enabledSources.length} sources; found ${fetched}; inserted ${inserted}; skipped ${skipped}; failed ${failedSources}.`,
+    sourcesChecked: enabledSources.length,
+    fetched,
+    inserted,
+    skipped,
+    failedSources,
+    errors,
+    errorMessages,
+  };
 }
 
 export async function fetchArticlesForVertical(
@@ -246,32 +312,21 @@ export async function fetchArticlesForVertical(
     return {
       ok: false,
       message: "Vertical not found.",
+      sourcesChecked: 0,
       fetched: 0,
       inserted: 0,
       skipped: 0,
+      failedSources: 0,
       errors: 1,
+      errorMessages: ["Vertical not found."],
     };
   }
 
-  const sources = (await getManagedSources(vertical.slug)).filter(
-    (source) => source.enabled,
-  );
-  const results = await Promise.all(
-    sources.map((source) => fetchSourceArticles(source, vertical.id)),
-  );
-  const fetched = results.reduce((total, result) => total + result.fetched, 0);
-  const inserted = results.reduce((total, result) => total + result.inserted, 0);
-  const skipped = results.reduce((total, result) => total + result.skipped, 0);
-  const errors = results.reduce((total, result) => total + result.errors, 0);
+  return fetchArticlesForSources(await getManagedSources(vertical.slug));
+}
 
-  return {
-    ok: errors === 0,
-    message: `Fetched ${fetched}; inserted ${inserted}; skipped ${skipped}; errors ${errors}.`,
-    fetched,
-    inserted,
-    skipped,
-    errors,
-  };
+export async function fetchArticlesForAllEnabledSources(): Promise<ArticleFetchResult> {
+  return fetchArticlesForSources(await getManagedSources());
 }
 
 export async function getArticleArchive(filters: {
