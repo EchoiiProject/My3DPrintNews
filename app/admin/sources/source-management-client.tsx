@@ -11,6 +11,8 @@ type SourceActionResponse = {
   errors?: Record<string, string>;
 };
 
+type FeedDiagnostic = SourceDiagnostics["feedDiagnostics"][number];
+
 function formatDate(value: string | null): string {
   if (!value) return "No data";
 
@@ -21,9 +23,10 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
-function healthClass(status: ManagedSource["healthStatus"]) {
+function healthClass(status: FeedDiagnostic["healthStatus"]) {
   if (status === "healthy") return "border-emerald-100 bg-emerald-50 text-emerald-700";
   if (status === "offline") return "border-red-100 bg-red-50 text-red-700";
+  if (status === "placeholder") return "border-slate-200 bg-slate-50 text-slate-500";
   return "border-amber-100 bg-amber-50 text-amber-700";
 }
 
@@ -34,31 +37,62 @@ function coverageLabel(days: number) {
   return "broken or no content";
 }
 
-function sourceWarnings(
-  source: ManagedSource,
-  diagnostic: SourceDiagnostics["feedDiagnostics"][number] | undefined,
-) {
+function sourceWarnings(source: ManagedSource, diagnostic: FeedDiagnostic) {
   const warnings: string[] = [];
-  const latestArticleDate = diagnostic?.latestArticleDate ?? source.lastArticleDate;
-  const itemCount = diagnostic?.itemCount ?? source.articlesFetched;
-  const healthStatus =
-    diagnostic?.healthStatus === "placeholder" || !diagnostic
-      ? source.healthStatus
-      : diagnostic.healthStatus;
   const stale =
-    !latestArticleDate ||
-    new Date(latestArticleDate).getTime() <
+    !diagnostic.latestArticleDate ||
+    new Date(diagnostic.latestArticleDate).getTime() <
       Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   if (!source.rssUrl) warnings.push("No RSS URL");
-  if (healthStatus === "offline" || diagnostic?.reachable === false) {
+  if (diagnostic.healthStatus === "offline" || !diagnostic.reachable) {
     warnings.push("Unreachable feed");
   }
-  if (itemCount === 0) warnings.push("Zero articles");
+  if (diagnostic.itemCount === 0) warnings.push("Zero articles");
   if (stale) warnings.push("Stale feed");
   if (!source.enabled) warnings.push("Disabled source");
 
   return warnings;
+}
+
+function fallbackDiagnostic(source: ManagedSource): FeedDiagnostic {
+  return {
+    sourceId: source.id,
+    sourceName: source.name,
+    url: source.rssUrl,
+    verticalId: source.verticalId || null,
+    reachable: source.enabled && source.healthStatus !== "offline",
+    statusCode: null,
+    itemCount: source.articlesFetched,
+    latestArticleDate: source.lastArticleDate,
+    oldestArticleDate: null,
+    lastCheckedAt: source.lastSuccessfulFetch ?? new Date().toISOString(),
+    errorMessage: null,
+    healthStatus: source.enabled ? source.healthStatus : "placeholder",
+  };
+}
+
+function testFeedResult(diagnostic: FeedDiagnostic) {
+  if (!diagnostic.reachable) {
+    return [
+      "Errors: feed unavailable",
+      diagnostic.errorMessage,
+      diagnostic.statusCode ? `HTTP ${diagnostic.statusCode}` : null,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+  }
+
+  return [
+    "Feed reachable",
+    diagnostic.statusCode ? `HTTP ${diagnostic.statusCode}` : null,
+    `Items returned: ${diagnostic.itemCount}`,
+    `Latest article date: ${formatDate(diagnostic.latestArticleDate)}`,
+    `Oldest article date: ${formatDate(diagnostic.oldestArticleDate)}`,
+    `Checked: ${formatDate(diagnostic.lastCheckedAt)}`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
 }
 
 export function SourceManagementClient({
@@ -164,16 +198,9 @@ export function SourceManagementClient({
     );
   }
 
-  function testFeed(source: ManagedSource) {
+  function testFeed(source: ManagedSource, diagnostic: FeedDiagnostic) {
     setTestingSourceId(source.id);
-    const reachable = source.enabled && source.healthStatus !== "offline";
-    const result = reachable
-      ? [
-          "Feed reachable",
-          `Items returned: ${source.articlesFetched}`,
-          `Latest article date: ${formatDate(source.lastArticleDate)}`,
-        ].join(" | ")
-      : "Errors: feed unavailable or disabled";
+    const result = testFeedResult(diagnostic);
 
     window.setTimeout(() => {
       setTestResults((current) => ({ ...current, [source.id]: result }));
@@ -346,16 +373,10 @@ export function SourceManagementClient({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sources.map((source) => {
-                const diagnostic = diagnosticBySourceId.get(source.id);
+                const diagnostic =
+                  diagnosticBySourceId.get(source.id) ??
+                  fallbackDiagnostic(source);
                 const warnings = sourceWarnings(source, diagnostic);
-                const healthStatus =
-                  diagnostic?.healthStatus === "placeholder" || !diagnostic
-                    ? source.healthStatus
-                    : diagnostic.healthStatus;
-                const itemCount = diagnostic?.itemCount ?? source.articlesFetched;
-                const latestArticleDate =
-                  diagnostic?.latestArticleDate ?? source.lastArticleDate;
-                const oldestArticleDate = diagnostic?.oldestArticleDate ?? null;
 
                 return (
                   <tr
@@ -393,54 +414,46 @@ export function SourceManagementClient({
                       <span
                         className={[
                           "rounded-full border px-2 py-0.5 text-xs font-bold capitalize",
-                          healthClass(healthStatus),
+                          healthClass(diagnostic.healthStatus),
                         ].join(" ")}
                       >
-                        {healthStatus}
+                        {diagnostic.healthStatus}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       <p>
-                        {diagnostic
-                          ? diagnostic.reachable
-                            ? "Reachable"
-                            : "Failed"
-                          : formatDate(source.lastSuccessfulFetch)}
+                        {diagnostic.reachable ? "Reachable" : "Failed"}
                       </p>
-                      {diagnostic?.statusCode ? (
+                      {diagnostic.statusCode ? (
                         <p className="text-xs">HTTP {diagnostic.statusCode}</p>
                       ) : null}
                       <p className="text-xs">
-                        Latest: {formatDate(latestArticleDate)}
+                        Latest: {formatDate(diagnostic.latestArticleDate)}
                       </p>
                       <p className="text-xs">
-                        Oldest: {formatDate(oldestArticleDate)}
+                        Oldest: {formatDate(diagnostic.oldestArticleDate)}
                       </p>
-                      {diagnostic ? (
-                        <p className="text-xs">
-                          Checked: {formatDate(diagnostic.lastCheckedAt)}
-                        </p>
-                      ) : null}
-                      {diagnostic?.errorMessage ? (
+                      <p className="text-xs">
+                        Checked: {formatDate(diagnostic.lastCheckedAt)}
+                      </p>
+                      {diagnostic.errorMessage ? (
                         <p className="text-xs font-semibold text-red-700">
                           {diagnostic.errorMessage}
                         </p>
                       ) : null}
                     </td>
                     <td className="px-4 py-3 font-bold text-slate-900">
-                      {itemCount}
-                      {diagnostic ? (
-                        <p className="text-xs font-semibold text-slate-500">
-                          live
-                        </p>
-                      ) : null}
+                      {diagnostic.itemCount}
+                      <p className="text-xs font-semibold text-slate-500">
+                        live
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => editSource(source)} type="button">Edit</button>
                         <button className="rounded-md border px-2 py-1 text-xs font-bold" onClick={() => toggleSource(source)} type="button">{source.enabled ? "Disable" : "Enable"}</button>
                         <button className="rounded-md border border-red-100 px-2 py-1 text-xs font-bold text-red-700" onClick={() => deleteSource(source)} type="button">Delete</button>
-                        <button className="rounded-md border border-blue-100 px-2 py-1 text-xs font-bold text-blue-700" onClick={() => testFeed(source)} type="button">Test Feed</button>
+                        <button className="rounded-md border border-blue-100 px-2 py-1 text-xs font-bold text-blue-700" onClick={() => testFeed(source, diagnostic)} type="button">Test Feed</button>
                       </div>
                       {testResults[source.id] || testingSourceId === source.id ? (
                         <p className="mt-2 text-xs font-semibold text-slate-600">
