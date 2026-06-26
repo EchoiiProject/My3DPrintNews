@@ -282,148 +282,182 @@ export function FeedStoryCards({
 
   return (
     <div className="space-y-4">
-      {stories.map((scoredArticle, index) => (
-        <div
-          className="space-y-4"
-          key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
-        >
-          <article className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5">
-            <div
-              className={
-                isCompact
-                  ? "grid gap-4 sm:grid-cols-[minmax(0,1fr)_8.5rem] sm:items-start"
-                  : ""
-              }
+      {stories.map((scoredArticle, index) => {
+        const hasImage = Boolean(scoredArticle.article.imageUrl);
+        const articleGridClass =
+          hasImage && isCompact
+            ? "grid gap-3 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-start"
+            : hasImage && !isVisual
+              ? "grid gap-5 lg:grid-cols-[minmax(15rem,38%)_minmax(0,1fr)] lg:items-start"
+              : "";
+        const imageClass = [
+          "overflow-hidden rounded-md border border-slate-100 bg-slate-50",
+          isCompact
+            ? "aspect-[4/3] sm:aspect-square"
+            : isVisual
+              ? "mb-4 aspect-video max-h-[28rem]"
+              : "aspect-video max-h-[18rem]",
+        ].join(" ");
+
+        return (
+          <div
+            className="space-y-4"
+            key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
+          >
+            <article
+              className={[
+                "rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40",
+                isCompact ? "p-3 sm:p-4" : "p-4 sm:p-5",
+              ].join(" ")}
             >
-              {scoredArticle.article.imageUrl ? (
-                <div
-                  className={[
-                    "overflow-hidden rounded-md border border-slate-100 bg-slate-50",
-                    isCompact
-                      ? "order-last aspect-square sm:order-last sm:mt-0"
-                      : "mb-4 aspect-video",
-                    isVisual ? "max-h-[28rem]" : "max-h-[20rem]",
-                  ].join(" ")}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt={scoredArticle.article.title}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    src={scoredArticle.article.imageUrl}
-                  />
-                </div>
-              ) : null}
-              <div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                {scoredArticle.article.type === "video" ? (
-                  <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                    Video
-                  </span>
-                ) : null}
-                <div className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
-                  <span>{scoredArticle.article.source.toUpperCase()}</span>
-                  <button
-                    aria-label={
-                      favourites.sources.includes(scoredArticle.article.source)
-                        ? `Remove ${scoredArticle.article.source} from favourite sources`
-                        : `Add ${scoredArticle.article.source} to favourite sources`
-                    }
-                    aria-pressed={favourites.sources.includes(
-                      scoredArticle.article.source,
-                    )}
-                    className={[
-                      "inline-flex h-6 w-6 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                      favourites.sources.includes(scoredArticle.article.source)
-                        ? "text-red-600 hover:bg-red-50"
-                        : "text-slate-600 hover:bg-white hover:text-red-600",
-                    ].join(" ")}
-                    onClick={() =>
-                      onToggleSourceFavourite(scoredArticle.article.source)
-                    }
-                    type="button"
-                  >
-                    <SourceHeartIcon
-                      filled={favourites.sources.includes(
-                        scoredArticle.article.source,
-                      )}
+              <div className={articleGridClass}>
+                {scoredArticle.article.imageUrl ? (
+                  <div className={imageClass}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt={scoredArticle.article.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      src={scoredArticle.article.imageUrl}
                     />
-                  </button>
-                  <span>{"\u2022"}</span>
-                  <span>{formatDate(scoredArticle.article.publishedAt)}</span>
+                  </div>
+                ) : null}
+                <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {scoredArticle.article.type === "video" ? (
+                        <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                          Video
+                        </span>
+                      ) : null}
+                      <div className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
+                        <span>{scoredArticle.article.source.toUpperCase()}</span>
+                        <button
+                          aria-label={
+                            favourites.sources.includes(
+                              scoredArticle.article.source,
+                            )
+                              ? `Remove ${scoredArticle.article.source} from favourite sources`
+                              : `Add ${scoredArticle.article.source} to favourite sources`
+                          }
+                          aria-pressed={favourites.sources.includes(
+                            scoredArticle.article.source,
+                          )}
+                          className={[
+                            "inline-flex h-6 w-6 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                            favourites.sources.includes(
+                              scoredArticle.article.source,
+                            )
+                              ? "text-red-600 hover:bg-red-50"
+                              : "text-slate-600 hover:bg-white hover:text-red-600",
+                          ].join(" ")}
+                          onClick={() =>
+                            onToggleSourceFavourite(scoredArticle.article.source)
+                          }
+                          type="button"
+                        >
+                          <SourceHeartIcon
+                            filled={favourites.sources.includes(
+                              scoredArticle.article.source,
+                            )}
+                          />
+                        </button>
+                        <span>{"\u2022"}</span>
+                        <span>{formatDate(scoredArticle.article.publishedAt)}</span>
+                      </div>
+                    </div>
+                    <a
+                      className="text-sm font-bold text-blue-700 hover:text-blue-900"
+                      href={scoredArticle.article.link}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {scoredArticle.article.type === "video"
+                        ? "Watch on YouTube"
+                        : "Read original article"}
+                    </a>
+                  </div>
+                  <h3
+                    className={[
+                      "mt-3 font-bold text-slate-950",
+                      isCompact ? "text-xl leading-7" : "text-2xl leading-8",
+                    ].join(" ")}
+                  >
+                    {scoredArticle.article.title}
+                  </h3>
+                  <p
+                    className={[
+                      "mt-3 text-slate-600",
+                      isCompact ? "text-sm leading-6" : "text-base leading-7",
+                    ].join(" ")}
+                  >
+                    {scoredArticle.article.summary}
+                  </p>
+                  <div
+                    className={
+                      isCompact
+                        ? "mt-3 flex flex-wrap gap-1.5"
+                        : "mt-4 flex flex-wrap gap-2"
+                    }
+                  >
+                    {(scoredArticle.generatedTags.length
+                      ? scoredArticle.generatedTags
+                      : ["General"]
+                    ).map((tag) => (
+                      <span
+                        className={[
+                          "rounded-md bg-slate-50 font-semibold text-slate-600",
+                          isCompact
+                            ? "px-2 py-1 text-xs"
+                            : "px-3 py-2 text-sm",
+                        ].join(" ")}
+                        key={tag}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div
+                    className={[
+                      "rounded-md border border-blue-100 bg-blue-50 px-3",
+                      isCompact ? "mt-3 py-2" : "mt-4 py-3",
+                    ].join(" ")}
+                  >
+                    <p className="text-sm font-bold text-blue-950">
+                      Matched because:
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(scoredArticle.matchedBecause.length
+                        ? scoredArticle.matchedBecause
+                        : ["General match"]
+                      ).map((reason) => (
+                        <span
+                          className="text-sm font-semibold text-blue-900"
+                          key={reason}
+                        >
+                          {"\u2713"} {reason}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <p
+                    className={[
+                      "rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900",
+                      isCompact ? "mt-3" : "mt-4",
+                    ].join(" ")}
+                  >
+                    Publisher attribution: {scoredArticle.article.source}.
+                    Summary and metadata are attributed to the source above.
+                  </p>
                 </div>
               </div>
-              <a
-                className="text-sm font-bold text-blue-700 hover:text-blue-900"
-                href={scoredArticle.article.link}
-                rel="noreferrer"
-                target="_blank"
-              >
-                {scoredArticle.article.type === "video"
-                  ? "Watch on YouTube"
-                  : "Read original article"}
-              </a>
-            </div>
-            <h3
-              className={[
-                "mt-3 font-bold text-slate-950",
-                isCompact ? "text-xl leading-7" : "text-2xl leading-8",
-              ].join(" ")}
-            >
-              {scoredArticle.article.title}
-            </h3>
-            <p
-              className={[
-                "mt-3 text-slate-600",
-                isCompact ? "text-sm leading-6" : "text-base leading-7",
-              ].join(" ")}
-            >
-              {scoredArticle.article.summary}
-            </p>
-            <div className={isCompact ? "mt-3 flex flex-wrap gap-2" : "mt-4 flex flex-wrap gap-2"}>
-              {(scoredArticle.generatedTags.length
-                ? scoredArticle.generatedTags
-                : ["General"]
-              ).map((tag) => (
-                <span
-                  className="rounded-md bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600"
-                  key={tag}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className={isCompact ? "mt-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-3" : "mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-3"}>
-              <p className="text-sm font-bold text-blue-950">
-                Matched because:
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(scoredArticle.matchedBecause.length
-                  ? scoredArticle.matchedBecause
-                  : ["General match"]
-                ).map((reason) => (
-                  <span
-                    className="text-sm font-semibold text-blue-900"
-                    key={reason}
-                  >
-                    {"\u2713"} {reason}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <p className={isCompact ? "mt-3 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900" : "mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900"}>
-              Publisher attribution: {scoredArticle.article.source}. Summary
-              and metadata are attributed to the source above.
-            </p>
-              </div>
-            </div>
-          </article>
-          {showFeedAds && index === 2 ? (
-            <AdPlacement placementId="feed-inline-1" />
-          ) : null}
-        </div>
-      ))}
+            </article>
+            {showFeedAds && index === 2 ? (
+              <AdPlacement placementId="feed-inline-1" />
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
