@@ -7,6 +7,7 @@ import type { Article } from "@/lib/rss";
 import {
   matchesFocus,
   preferenceFocusFilters,
+  type ScoredArticle,
   type FocusFilter,
 } from "@/lib/matching";
 import {
@@ -261,6 +262,137 @@ function formatDate(value: string): string {
   })
     .format(new Date(timestamp))
     .toUpperCase();
+}
+
+export function FeedStoryCards({
+  favourites,
+  onToggleSourceFavourite,
+  showFeedAds = true,
+  stories,
+}: {
+  favourites: Favourites;
+  onToggleSourceFavourite: (source: string) => void;
+  showFeedAds?: boolean;
+  stories: ScoredArticle[];
+}) {
+  return (
+    <div className="space-y-4">
+      {stories.map((scoredArticle, index) => (
+        <div
+          className="space-y-4"
+          key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
+        >
+          <article className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5">
+            {scoredArticle.article.imageUrl ? (
+              <div className="mb-4 aspect-video overflow-hidden rounded-md border border-slate-100 bg-slate-50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt={scoredArticle.article.title}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  src={scoredArticle.article.imageUrl}
+                />
+              </div>
+            ) : null}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                {scoredArticle.article.type === "video" ? (
+                  <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                    Video
+                  </span>
+                ) : null}
+                <div className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
+                  <span>{scoredArticle.article.source.toUpperCase()}</span>
+                  <button
+                    aria-label={
+                      favourites.sources.includes(scoredArticle.article.source)
+                        ? `Remove ${scoredArticle.article.source} from favourite sources`
+                        : `Add ${scoredArticle.article.source} to favourite sources`
+                    }
+                    aria-pressed={favourites.sources.includes(
+                      scoredArticle.article.source,
+                    )}
+                    className={[
+                      "inline-flex h-6 w-6 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                      favourites.sources.includes(scoredArticle.article.source)
+                        ? "text-red-600 hover:bg-red-50"
+                        : "text-slate-600 hover:bg-white hover:text-red-600",
+                    ].join(" ")}
+                    onClick={() =>
+                      onToggleSourceFavourite(scoredArticle.article.source)
+                    }
+                    type="button"
+                  >
+                    <SourceHeartIcon
+                      filled={favourites.sources.includes(
+                        scoredArticle.article.source,
+                      )}
+                    />
+                  </button>
+                  <span>{"\u2022"}</span>
+                  <span>{formatDate(scoredArticle.article.publishedAt)}</span>
+                </div>
+              </div>
+              <a
+                className="text-sm font-bold text-blue-700 hover:text-blue-900"
+                href={scoredArticle.article.link}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {scoredArticle.article.type === "video"
+                  ? "Watch on YouTube"
+                  : "Read original article"}
+              </a>
+            </div>
+            <h3 className="mt-3 text-2xl font-bold leading-8 text-slate-950">
+              {scoredArticle.article.title}
+            </h3>
+            <p className="mt-3 text-base leading-7 text-slate-600">
+              {scoredArticle.article.summary}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {(scoredArticle.generatedTags.length
+                ? scoredArticle.generatedTags
+                : ["General"]
+              ).map((tag) => (
+                <span
+                  className="rounded-md bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600"
+                  key={tag}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-3">
+              <p className="text-sm font-bold text-blue-950">
+                Matched because:
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(scoredArticle.matchedBecause.length
+                  ? scoredArticle.matchedBecause
+                  : ["General match"]
+                ).map((reason) => (
+                  <span
+                    className="text-sm font-semibold text-blue-900"
+                    key={reason}
+                  >
+                    {"\u2713"} {reason}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <p className="mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
+              Publisher attribution: {scoredArticle.article.source}. Summary
+              and metadata are attributed to the source above.
+            </p>
+          </article>
+          {showFeedAds && index === 2 ? (
+            <AdPlacement placementId="feed-inline-1" />
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function FeedClient({
@@ -820,134 +952,12 @@ export function FeedClient({
                   </span>
                 </div>
 
-                <div className="space-y-4">
-                  {focusedStories.map((scoredArticle, index) => (
-                    <div
-                      className="space-y-4"
-                      key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
-                    >
-                    <article
-                      className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40 sm:p-5"
-                    >
-                      {scoredArticle.article.imageUrl ? (
-                        <div className="mb-4 aspect-video overflow-hidden rounded-md border border-slate-100 bg-slate-50">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            alt={scoredArticle.article.title}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                            src={scoredArticle.article.imageUrl}
-                          />
-                        </div>
-                      ) : null}
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {scoredArticle.article.type === "video" ? (
-                            <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                              Video
-                            </span>
-                          ) : null}
-                          <div className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
-                            <span>
-                              {scoredArticle.article.source.toUpperCase()}
-                            </span>
-                            <button
-                              aria-label={
-                                favourites.sources.includes(
-                                  scoredArticle.article.source,
-                                )
-                                  ? `Remove ${scoredArticle.article.source} from favourite sources`
-                                  : `Add ${scoredArticle.article.source} to favourite sources`
-                              }
-                              aria-pressed={favourites.sources.includes(
-                                scoredArticle.article.source,
-                              )}
-                              className={[
-                                "inline-flex h-6 w-6 items-center justify-center rounded-md transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                                favourites.sources.includes(
-                                  scoredArticle.article.source,
-                                )
-                                  ? "text-red-600 hover:bg-red-50"
-                                  : "text-slate-600 hover:bg-white hover:text-red-600",
-                              ].join(" ")}
-                              onClick={() =>
-                                toggleSourceFavourite(
-                                  scoredArticle.article.source,
-                                )
-                              }
-                              type="button"
-                            >
-                              <SourceHeartIcon
-                                filled={favourites.sources.includes(
-                                  scoredArticle.article.source,
-                                )}
-                              />
-                            </button>
-                            <span>{"\u2022"}</span>
-                            <span>
-                              {formatDate(scoredArticle.article.publishedAt)}
-                            </span>
-                          </div>
-                        </div>
-                        <a
-                          className="text-sm font-bold text-blue-700 hover:text-blue-900"
-                          href={scoredArticle.article.link}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          {scoredArticle.article.type === "video"
-                            ? "Watch on YouTube"
-                            : "Read original article"}
-                        </a>
-                      </div>
-                      <h3 className="mt-3 text-2xl font-bold leading-8 text-slate-950">
-                        {scoredArticle.article.title}
-                      </h3>
-                      <p className="mt-3 text-base leading-7 text-slate-600">
-                        {scoredArticle.article.summary}
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {(scoredArticle.generatedTags.length
-                          ? scoredArticle.generatedTags
-                          : ["General"]
-                        ).map((tag) => (
-                          <span
-                            className="rounded-md bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600"
-                            key={tag}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-3">
-                        <p className="text-sm font-bold text-blue-950">
-                          Matched because:
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {(scoredArticle.matchedBecause.length
-                            ? scoredArticle.matchedBecause
-                            : ["General match"]
-                          ).map((reason) => (
-                            <span
-                              className="text-sm font-semibold text-blue-900"
-                              key={reason}
-                            >
-                              ✓ {reason}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="mt-4 rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
-                        Publisher attribution: {scoredArticle.article.source}.
-                        Summary and metadata are attributed to the source above.
-                      </p>
-                    </article>
-                    {showFeedAds && index === 2 ? (
-                      <AdPlacement placementId="feed-inline-1" />
-                    ) : null}
-                    </div>
-                  ))}
-                </div>
+                <FeedStoryCards
+                  favourites={favourites}
+                  onToggleSourceFavourite={toggleSourceFavourite}
+                  showFeedAds={showFeedAds}
+                  stories={focusedStories}
+                />
             </div>
             <div className="pt-2">
               <button

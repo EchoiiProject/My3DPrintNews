@@ -7,11 +7,11 @@ import {
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
 import {
-  ArticleList,
   FeedFilters,
   PublicationLinks,
   PublicationShell,
 } from "../publication-components";
+import { ArchiveStoryCards } from "../archive-story-cards";
 
 export default async function PublicationFeedPage({
   params,
@@ -52,7 +52,7 @@ export default async function PublicationFeedPage({
         currentSourceId={query?.source}
         sources={sources}
       />
-      <ArticleList articles={articles} />
+      <ArchiveStoryCards articles={articles} heading="Archived feed stories" />
     </PublicationShell>
   );
 }

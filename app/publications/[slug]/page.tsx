@@ -7,12 +7,12 @@ import {
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
 import {
-  ArticleList,
   PublicationFeedback,
   PublicationLinks,
   PublicationShell,
   PublicationStats,
 } from "./publication-components";
+import { ArchiveStoryCards } from "./archive-story-cards";
 
 export default async function PublicationHomePage({
   params,
@@ -42,10 +42,10 @@ export default async function PublicationHomePage({
         sourceCount={sources.length}
         vertical={vertical}
       />
-      <section className="mt-8">
-        <h2 className="text-2xl font-bold text-slate-950">Latest stories</h2>
-        <ArticleList articles={articles.slice(0, 10)} />
-      </section>
+      <ArchiveStoryCards
+        articles={articles.slice(0, 10)}
+        heading="Latest stories"
+      />
       <PublicationFeedback />
     </PublicationShell>
   );

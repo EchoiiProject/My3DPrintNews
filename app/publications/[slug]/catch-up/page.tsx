@@ -7,10 +7,10 @@ import {
   publicationAliasMap,
 } from "@/lib/publications";
 import {
-  ArticleList,
   PublicationLinks,
   PublicationShell,
 } from "../publication-components";
+import { ArchiveStoryCards } from "../archive-story-cards";
 
 const allowedWindows = [7, 14, 30];
 
@@ -63,7 +63,11 @@ export default async function PublicationCatchUpPage({
           </Link>
         ))}
       </div>
-      <ArticleList articles={articles} />
+      <ArchiveStoryCards
+        articles={articles}
+        heading={`Stories from the last ${days} days`}
+        periodDays={days}
+      />
     </PublicationShell>
   );
 }
