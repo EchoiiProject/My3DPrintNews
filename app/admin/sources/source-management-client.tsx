@@ -782,6 +782,91 @@ export function SourceManagementClient({
       }),
     [diagnosticBySourceId, sources, verticals],
   );
+  const scopedMetrics = useMemo(() => {
+    const sourceCount = scopedSources.length;
+    const enabledSources = scopedSources.filter((source) => source.enabled);
+    const healthySources = scopedSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+      return diagnostic.healthStatus === "healthy";
+    });
+    const offlineSources = scopedSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+      return diagnostic.healthStatus === "offline";
+    });
+    const zeroArticleSources = scopedSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+
+      return diagnostic.itemCount === 0;
+    });
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const noActivitySevenDays = scopedSources.filter((source) => {
+      const diagnostic =
+        diagnosticBySourceId.get(source.id) ?? fallbackDiagnostic(source);
+      const latest = diagnostic.latestArticleDate
+        ? new Date(diagnostic.latestArticleDate).getTime()
+        : 0;
+
+      return !latest || latest < sevenDaysAgo;
+    });
+    const datedArticles = scopedDiagnostics
+      .flatMap((diagnostic) => [
+        diagnostic.oldestArticleDate,
+        diagnostic.latestArticleDate,
+      ])
+      .filter((value): value is string => Boolean(value))
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const oldestArticle = datedArticles[0] ?? null;
+    const newestArticle = datedArticles.at(-1) ?? null;
+    const daysOfNewsCoverage = (() => {
+      if (!oldestArticle || !newestArticle) return 0;
+
+      const oldest = new Date(oldestArticle).getTime();
+      const newest = new Date(newestArticle).getTime();
+
+      return Number.isFinite(oldest) && Number.isFinite(newest) && newest >= oldest
+        ? Math.ceil((newest - oldest) / (24 * 60 * 60 * 1000))
+        : 0;
+    })();
+
+    return {
+      sourceCount,
+      enabledSources: enabledSources.length,
+      disabledSources: sourceCount - enabledSources.length,
+      healthySources: healthySources.length,
+      offlineSources: offlineSources.length,
+      zeroArticleSources,
+      noActivitySevenDays,
+      totalArticlesCollected: scopedDiagnostics.reduce(
+        (total, diagnostic) => total + diagnostic.itemCount,
+        0,
+      ),
+      newestArticle,
+      oldestArticle,
+      daysOfNewsCoverage,
+      topContributors: [...scopedSources]
+        .sort((sourceA, sourceB) => {
+          const diagnosticA =
+            diagnosticBySourceId.get(sourceA.id) ?? fallbackDiagnostic(sourceA);
+          const diagnosticB =
+            diagnosticBySourceId.get(sourceB.id) ?? fallbackDiagnostic(sourceB);
+
+          return diagnosticB.itemCount - diagnosticA.itemCount;
+        })
+        .slice(0, 5),
+      recentlyAddedSources: [...scopedSources]
+        .sort(
+          (sourceA, sourceB) =>
+            new Date(sourceB.createdAt).getTime() -
+            new Date(sourceA.createdAt).getTime(),
+        )
+        .slice(0, 5),
+    };
+  }, [diagnosticBySourceId, scopedDiagnostics, scopedSources]);
   const selectedAdminSlug =
     verticalSlug ?? selectedPublication?.slug ?? selectedVertical;
   const selectedPublicSlug = selectedPublication
@@ -1094,26 +1179,26 @@ export function SourceManagementClient({
         {[
           {
             label: "News Health",
-            value: `${diagnostics.newsHealthScore}%`,
-            detail: diagnostics.newsHealthLabel,
+            value: `${publicationHealth.overall}%`,
+            detail: publicationHealth.label.label,
           },
           {
             label: "Sources",
-            value: diagnostics.totalConfiguredSources,
-            detail: `${diagnostics.enabledSources} enabled | ${diagnostics.disabledSources} disabled | ${diagnostics.healthySources} healthy`,
+            value: scopedMetrics.sourceCount,
+            detail: `${scopedMetrics.enabledSources} enabled | ${scopedMetrics.disabledSources} disabled | ${scopedMetrics.healthySources} healthy`,
           },
           {
             label: "Content Coverage",
-            value: diagnostics.totalArticlesCollected,
-            detail: `${formatDate(diagnostics.oldestArticle)} to ${formatDate(diagnostics.newestArticle)} | ${diagnostics.daysOfNewsCoverage} days`,
+            value: scopedMetrics.totalArticlesCollected,
+            detail: `${formatDate(scopedMetrics.oldestArticle)} to ${formatDate(scopedMetrics.newestArticle)} | ${scopedMetrics.daysOfNewsCoverage} days`,
           },
           {
             label: "Attention",
             value:
-              diagnostics.offlineSources +
-              diagnostics.sourcesWithNoRecentArticles +
-              diagnostics.zeroArticleSources.length,
-            detail: `${diagnostics.offlineSources} offline | ${diagnostics.sourcesWithNoRecentArticles} stale | ${diagnostics.zeroArticleSources.length} zero articles`,
+              scopedMetrics.offlineSources +
+              scopedMetrics.noActivitySevenDays.length +
+              scopedMetrics.zeroArticleSources.length,
+            detail: `${scopedMetrics.offlineSources} offline | ${scopedMetrics.noActivitySevenDays.length} stale | ${scopedMetrics.zeroArticleSources.length} zero articles`,
           },
         ].map((card) => (
           <div
@@ -1139,10 +1224,10 @@ export function SourceManagementClient({
             Days of News Coverage
           </p>
           <p className="mt-2 text-3xl font-bold text-slate-950">
-            {diagnostics.daysOfNewsCoverage} days
+            {scopedMetrics.daysOfNewsCoverage} days
           </p>
           <p className="mt-2 text-sm font-semibold text-slate-600">
-            {coverageLabel(diagnostics.daysOfNewsCoverage)}
+            {coverageLabel(scopedMetrics.daysOfNewsCoverage)}
           </p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
@@ -1150,10 +1235,15 @@ export function SourceManagementClient({
             Publication Readiness
           </p>
           <p className="mt-2 text-3xl font-bold text-slate-950">
-            {diagnostics.verticalReadiness}
+            {publicationHealth.overall >= 70 && scopedMetrics.daysOfNewsCoverage >= 7
+              ? "Ready for Demo"
+              : publicationHealth.overall < 45 ||
+                  scopedMetrics.daysOfNewsCoverage < 3
+                ? "Not Enough Feed Coverage"
+                : "Needs Source Review"}
           </p>
           <p className="mt-2 text-sm font-semibold text-slate-600">
-            {diagnostics.newsHealthLabel} health at {diagnostics.newsHealthScore}%
+            {publicationHealth.label.label} health at {publicationHealth.overall}%
           </p>
         </div>
       </section>
@@ -1164,8 +1254,8 @@ export function SourceManagementClient({
             Live RSS diagnostics
           </p>
           <p className="text-sm font-semibold text-slate-600">
-            {diagnostics.feedDiagnostics.length
-              ? `Last checked ${formatDate(diagnostics.feedDiagnostics[0].lastCheckedAt)}`
+            {operationalSummary.lastFetch
+              ? `Last checked ${formatDate(operationalSummary.lastFetch)}`
               : "No live checks available"}
           </p>
         </div>
@@ -1725,15 +1815,15 @@ export function SourceManagementClient({
           <div className="mt-4 space-y-3">
             <p className="text-sm font-semibold text-slate-700">
               Top contributing sources:{" "}
-              {diagnostics.topContributors.map((source) => source.name).join(", ") || "None"}
+              {scopedMetrics.topContributors.map((source) => source.name).join(", ") || "None"}
             </p>
             <p className="text-sm font-semibold text-slate-700">
               Sources with no activity in 7 days:{" "}
-              {diagnostics.noActivitySevenDays.map((source) => source.name).join(", ") || "None"}
+              {scopedMetrics.noActivitySevenDays.map((source) => source.name).join(", ") || "None"}
             </p>
             <p className="text-sm font-semibold text-slate-700">
               Recently added sources:{" "}
-              {diagnostics.recentlyAddedSources.map((source) => source.name).join(", ") || "None"}
+              {scopedMetrics.recentlyAddedSources.map((source) => source.name).join(", ") || "None"}
             </p>
             <p className="text-sm font-semibold text-slate-700">
               Potential gaps: review disabled, offline, and zero-article sources.
@@ -1745,8 +1835,8 @@ export function SourceManagementClient({
             Feeds Returning Zero Articles
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            {diagnostics.zeroArticleSources.length ? (
-              diagnostics.zeroArticleSources.map((source) => (
+            {scopedMetrics.zeroArticleSources.length ? (
+              scopedMetrics.zeroArticleSources.map((source) => (
                 <span
                   className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"
                   key={source.id}
