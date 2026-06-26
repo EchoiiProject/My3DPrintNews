@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
 import type { ManagedSource, SourceDiagnostics } from "@/lib/sources";
-import type { Vertical } from "@/config/verticals";
+import {
+  publicationSlugForVertical,
+  type Vertical,
+} from "@/config/verticals";
 
 type SourceActionResponse = {
   ok: boolean;
@@ -12,7 +15,10 @@ type SourceActionResponse = {
   fetched?: number;
   inserted?: number;
   skipped?: number;
+  sourcesChecked?: number;
+  failedSources?: number;
   errorsCount?: number;
+  errorMessages?: string[];
 };
 
 type FeedDiagnostic = SourceDiagnostics["feedDiagnostics"][number];
@@ -24,6 +30,14 @@ type SourceFormState = {
   verticalId: string;
   verticalSlug: string;
   enabled: boolean;
+};
+
+type BulkSourceRow = {
+  name: string;
+  rssUrl: string;
+  category: string;
+  enabled: boolean;
+  lineNumber: number;
 };
 
 function formatDate(value: string | null): string {
@@ -112,6 +126,60 @@ function verticalDatabaseId(vertical: Vertical) {
   return vertical.databaseId ?? vertical.id;
 }
 
+function parseBoolean(value: string | undefined) {
+  if (!value) return true;
+
+  return !["false", "no", "0", "disabled"].includes(value.trim().toLowerCase());
+}
+
+function parseBulkSourceRows(value: string) {
+  const rows: BulkSourceRow[] = [];
+  const errors: string[] = [];
+
+  value
+    .split(/\r?\n/)
+    .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
+    .filter(({ line }) => line.length > 0)
+    .forEach(({ line, lineNumber }) => {
+      const [name = "", rssUrl = "", category = "", enabled = "true"] = line
+        .split(",")
+        .map((field) => field.trim());
+
+      if (!name) {
+        errors.push(`Row ${lineNumber}: source name is required.`);
+      }
+
+      if (!rssUrl) {
+        errors.push(`Row ${lineNumber}: RSS URL is required.`);
+      }
+
+      if (rssUrl) {
+        try {
+          const url = new URL(rssUrl);
+          if (!["http:", "https:"].includes(url.protocol)) {
+            errors.push(`Row ${lineNumber}: RSS URL must be http or https.`);
+          }
+        } catch {
+          errors.push(`Row ${lineNumber}: RSS URL is not valid.`);
+        }
+      }
+
+      rows.push({
+        name,
+        rssUrl,
+        category,
+        enabled: parseBoolean(enabled),
+        lineNumber,
+      });
+    });
+
+  if (!rows.length) {
+    errors.push("Add at least one source row.");
+  }
+
+  return { rows, errors };
+}
+
 export function SourceManagementClient({
   diagnostics,
   sources,
@@ -146,6 +214,14 @@ export function SourceManagementClient({
   const [message, setMessage] = useState("");
   const [testingSourceId, setTestingSourceId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, string>>({});
+  const [bulkSources, setBulkSources] = useState("");
+  const [bulkErrors, setBulkErrors] = useState<string[]>([]);
+  const [bulkImported, setBulkImported] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [fetchSummary, setFetchSummary] = useState<SourceActionResponse | null>(
+    null,
+  );
+  const [fetchingArticles, setFetchingArticles] = useState(false);
 
   async function sourceRequest(
     url: string,
@@ -185,6 +261,54 @@ export function SourceManagementClient({
     setRssUrl("");
     setCategory("");
     setEnabled(true);
+  }
+
+  async function bulkAddSources() {
+    const parsed = parseBulkSourceRows(bulkSources);
+    setBulkErrors(parsed.errors);
+    setBulkImported(false);
+    setFetchSummary(null);
+
+    if (parsed.errors.length) {
+      return;
+    }
+
+    setBulkSaving(true);
+    setMessage("Saving sources...");
+
+    const apiErrors: string[] = [];
+
+    for (const row of parsed.rows) {
+      const response = await fetch("/api/admin/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: row.name,
+          rss_url: row.rssUrl,
+          category: row.category,
+          vertical_id: selectedVerticalId,
+          enabled: row.enabled,
+        }),
+      });
+      const result = (await response.json()) as SourceActionResponse;
+
+      if (!response.ok || !result.ok) {
+        apiErrors.push(`Row ${row.lineNumber}: ${result.message}`);
+      }
+    }
+
+    setBulkSaving(false);
+    setBulkErrors(apiErrors);
+
+    if (apiErrors.length) {
+      setMessage("Some sources could not be saved.");
+      return;
+    }
+
+    setBulkImported(true);
+    setBulkSources("");
+    setMessage(`${parsed.rows.length} sources added.`);
+    router.refresh();
   }
 
   async function toggleSource(source: ManagedSource) {
@@ -256,6 +380,8 @@ export function SourceManagementClient({
   }
 
   async function fetchArticlesNow() {
+    setFetchingArticles(true);
+    setFetchSummary(null);
     setMessage("Fetching articles...");
     const response = await fetch("/api/admin/articles/fetch", {
       method: "POST",
@@ -266,7 +392,9 @@ export function SourceManagementClient({
     });
     const result = (await response.json()) as SourceActionResponse;
 
+    setFetchSummary(result);
     setMessage(result.message);
+    setFetchingArticles(false);
     router.refresh();
   }
 
@@ -276,6 +404,15 @@ export function SourceManagementClient({
       diagnostic,
     ]),
   );
+  const selectedPublication =
+    verticals.find(
+      (vertical) => verticalDatabaseId(vertical) === selectedVerticalId,
+    ) ?? verticals.find((vertical) => vertical.slug === selectedVertical);
+  const selectedAdminSlug =
+    verticalSlug ?? selectedPublication?.slug ?? selectedVertical;
+  const selectedPublicSlug = selectedPublication
+    ? publicationSlugForVertical(selectedPublication)
+    : selectedAdminSlug;
 
   return (
     <div className="space-y-8">
@@ -367,12 +504,67 @@ export function SourceManagementClient({
         </button>
         <button
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white"
+          disabled={fetchingArticles}
           onClick={fetchArticlesNow}
           type="button"
         >
-          Fetch Articles Now
+          {fetchingArticles ? "Fetching..." : "Fetch Articles Now"}
         </button>
       </div>
+
+      {fetchSummary ? (
+        <section className="rounded-lg border border-emerald-100 bg-emerald-50/80 p-5">
+          <h2 className="text-2xl font-bold text-emerald-950">
+            Fetch summary
+          </h2>
+          <p className="mt-2 text-sm font-semibold text-emerald-900">
+            {fetchSummary.message}
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+            {[
+              ["Sources checked", fetchSummary.sourcesChecked ?? 0],
+              ["Articles found", fetchSummary.fetched ?? 0],
+              ["Inserted", fetchSummary.inserted ?? 0],
+              ["Skipped", fetchSummary.skipped ?? 0],
+            ].map(([label, value]) => (
+              <div
+                className="rounded-md border border-emerald-100 bg-white/80 p-3"
+                key={label}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                  {label}
+                </p>
+                <p className="mt-1 text-2xl font-bold text-emerald-950">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+          {fetchSummary.errorMessages?.length ? (
+            <div className="mt-4 space-y-1 text-sm font-semibold text-red-700">
+              {fetchSummary.errorMessages.map((error) => (
+                <p key={error}>{error}</p>
+              ))}
+            </div>
+          ) : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[
+              ["View Article Archive", `/admin/${selectedAdminSlug}/articles`],
+              ["View Public Publication", `/publications/${selectedPublicSlug}`],
+              ["View Feed", `/publications/${selectedPublicSlug}/feed`],
+              ["Source Management", `/admin/${selectedAdminSlug}/sources`],
+            ].map(([label, href]) => (
+              <a
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-emerald-200 bg-white px-3 text-sm font-bold text-emerald-800"
+                href={href}
+                key={label}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-blue-100 bg-blue-50/80 p-5">
         <h2 className="text-2xl font-bold text-blue-950">Add Source</h2>
@@ -433,6 +625,62 @@ export function SourceManagementClient({
         {message ? (
           <p className="mt-3 text-sm font-semibold text-blue-950">{message}</p>
         ) : null}
+      </section>
+
+      <section className="rounded-lg border border-blue-100 bg-blue-50/80 p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-blue-950">
+              Bulk Add Sources
+            </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-blue-900">
+              Paste one source per line: name,rss_url,category,enabled
+            </p>
+          </div>
+          {bulkImported ? (
+            <button
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-bold text-white"
+              disabled={fetchingArticles}
+              onClick={fetchArticlesNow}
+              type="button"
+            >
+              {fetchingArticles ? "Fetching..." : "Fetch Articles Now"}
+            </button>
+          ) : null}
+        </div>
+        <textarea
+          className="mt-4 min-h-36 w-full rounded-md border border-blue-100 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+          onChange={(event) => setBulkSources(event.target.value)}
+          placeholder="BMX Union,https://bmxunion.com/feed/,News,true"
+          value={bulkSources}
+        />
+        {bulkErrors.length ? (
+          <div className="mt-3 space-y-1 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            {bulkErrors.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white disabled:bg-blue-300"
+            disabled={bulkSaving}
+            onClick={bulkAddSources}
+            type="button"
+          >
+            {bulkSaving ? "Saving..." : "Bulk Add Sources"}
+          </button>
+          <button
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-blue-200 bg-white px-4 text-sm font-bold text-blue-700"
+            onClick={() => {
+              setBulkSources("");
+              setBulkErrors([]);
+            }}
+            type="button"
+          >
+            Clear
+          </button>
+        </div>
       </section>
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8 backdrop-blur">
