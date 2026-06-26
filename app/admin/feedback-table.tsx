@@ -44,7 +44,9 @@ export function FeedbackTable({
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
             <tr>
-              {showVertical ? <th className="px-4 py-3">Vertical</th> : null}
+              {showVertical ? (
+                <th className="px-4 py-3">Publication</th>
+              ) : null}
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Message</th>

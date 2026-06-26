@@ -66,8 +66,8 @@ export default async function VerticalReferralAnalyticsPage({
               {vertical.name} Referrals
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Show the referral traffic this vertical is generating for its
-              owner and commercial partners.
+              Show the referral traffic this publication is generating for its
+              licence holder and commercial partners.
             </p>
           </header>
 

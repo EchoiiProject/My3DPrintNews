@@ -98,7 +98,7 @@ export function FeedbackPanel({
             </h2>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
-            Private to the publication owner
+            Private to the publication team
           </span>
         </div>
 

@@ -28,7 +28,7 @@ const managementCentres: ManagementCentre[] = [
   {
     title: "Content",
     description:
-      "Manage the content graph that powers the vertical publication.",
+      "Manage the content graph that powers this publication.",
     stats: [
       { label: "Active sources", value: "17" },
       { label: "Articles today", value: "12" },
@@ -101,7 +101,7 @@ const managementCentres: ManagementCentre[] = [
   {
     title: "Platform",
     description:
-      "Configure ownership, navigation, access, domain, and integrations.",
+      "Configure licence holder access, navigation, domain, and integrations.",
     stats: [
       { label: "Users", value: "3" },
       { label: "Roles", value: "3" },
@@ -110,14 +110,14 @@ const managementCentres: ManagementCentre[] = [
     actions: [
       { label: "Admin Hub", href: "/admin" },
       { label: "Preview Discover More", href: "/discover-more" },
-      { label: "Manage Owners", href: "/admin" },
+      { label: "Manage Licence Holders", href: "/admin" },
       { label: "Review Roles", href: "/admin" },
     ],
     items: [
       { label: "Branding", href: null, status: "Planned" },
-      { label: "Organisation", href: "/admin", status: "Ready" },
+      { label: "Licence Holder", href: "/admin", status: "Ready" },
       { label: "Navigation", href: null, status: "Planned" },
-      { label: "Owners", href: "/admin", status: "Ready" },
+      { label: "Licence Holders", href: "/admin", status: "Ready" },
       { label: "Users", href: null, status: "Planned" },
       { label: "Roles", href: "/admin", status: "Ready" },
       { label: "Domain", href: null, status: "Planned" },
@@ -252,12 +252,12 @@ export default async function VerticalAdminPage({
         ...centre,
         actions: [
           ...centre.actions,
-          { label: "Organisations", href: "/admin/organisations" },
+          { label: "Licence Holders", href: "/admin/organisations" },
         ],
         items: [
           ...centre.items,
           {
-            label: "Organisations",
+            label: "Licence Holders",
             href: "/admin/organisations",
             status: "Ready" as const,
           },
@@ -333,11 +333,11 @@ export default async function VerticalAdminPage({
   return (
     <AdminShell
       showOrganisations={isSuperAdmin}
-      title={`${vertical.name} Management Centre`}
+      title={`${vertical.name} Publication Management Centre`}
     >
       <AdminAccessGate
         error={query?.error}
-        loginTitle={`${vertical.name} Admin Access`}
+        loginTitle={`${vertical.name} Publication Admin Access`}
         redirectTo={`/admin/${vertical.slug}`}
       >
         <div className="flex-1 py-10">
@@ -361,7 +361,7 @@ export default async function VerticalAdminPage({
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Owner
+                  Current Licence Holder
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">
                   {vertical.ownerName}
@@ -431,6 +431,10 @@ export default async function VerticalAdminPage({
             <h2 className="text-2xl font-bold text-slate-950">
               Publication identity
             </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+              Publication owned by MyNewsNetwork. Currently operated under
+              licence by {vertical.ownerName}.
+            </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 ["Publication name", vertical.publicationName ?? vertical.name],
@@ -459,12 +463,12 @@ export default async function VerticalAdminPage({
 
           <section className="mt-6 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
             <h2 className="text-2xl font-bold text-slate-950">
-              Organisation
+              Licence holder
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Organisation name
+                  Licence holder
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">
                   {vertical.ownerName}
@@ -504,7 +508,7 @@ export default async function VerticalAdminPage({
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Owned Vertical
+                  Licensed Publication
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">
                   {vertical.name}

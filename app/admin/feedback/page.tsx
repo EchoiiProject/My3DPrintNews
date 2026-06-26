@@ -66,7 +66,7 @@ export default async function AdminFeedbackPage({
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
               Review private reader comments, source suggestions, ideas, issue
-              reports, and commercial suggestions by vertical.
+              reports, and commercial suggestions by publication.
             </p>
           </header>
 

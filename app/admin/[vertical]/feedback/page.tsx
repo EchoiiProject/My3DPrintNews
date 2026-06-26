@@ -67,7 +67,7 @@ export default async function VerticalFeedbackPage({
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
               Review comments, ideas, missing source requests, and issue
-              reports sent to this publication owner.
+              reports sent to this publication team.
             </p>
           </header>
 

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
   if (!name) errors.name = "Source name is required.";
   if (!rssUrl || !validUrl(rssUrl)) errors.rssUrl = "A valid RSS URL is required.";
-  if (!verticalId && !verticalSlug) errors.vertical = "Vertical is required.";
+  if (!verticalId && !verticalSlug) errors.vertical = "Publication is required.";
 
   if (Object.keys(errors).length) {
     return NextResponse.json(

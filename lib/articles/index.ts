@@ -115,7 +115,7 @@ function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
     sourceName: record.source_name,
     tags: Array.isArray(record.tags) ? record.tags.map(String) : [],
     createdAt: record.created_at,
-    verticalName: vertical?.name ?? "Unknown vertical",
+    verticalName: vertical?.name ?? "Unknown publication",
     verticalSlug: vertical?.slug
       ? adminSlugForPublicationSlug(vertical.slug) ?? vertical.slug
       : "unknown",
@@ -314,14 +314,14 @@ export async function fetchArticlesForVertical(
   if (!vertical) {
     return {
       ok: false,
-      message: "Vertical not found.",
+      message: "Publication not found.",
       sourcesChecked: 0,
       fetched: 0,
       inserted: 0,
       skipped: 0,
       failedSources: 0,
       errors: 1,
-      errorMessages: ["Vertical not found."],
+      errorMessages: ["Publication not found."],
     };
   }
 

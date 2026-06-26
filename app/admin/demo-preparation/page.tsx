@@ -39,8 +39,9 @@ export default async function DemoPreparationPage({
               Prepare New Demo
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Prepare a private vertical demonstration before a sales meeting.
-              This workflow does not publish or assign customer ownership.
+              Prepare a private publication demonstration before a sales
+              meeting. This workflow does not publish or assign a licence
+              holder.
             </p>
           </header>
 

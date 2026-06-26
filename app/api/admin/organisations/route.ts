@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: "Please send a valid organisation request.",
+        message: "Please send a valid licence holder request.",
       },
       { status: 400 },
     );
@@ -72,14 +72,14 @@ export async function POST(request: Request) {
   );
 
   if (!name) {
-    errors.name = "Organisation name is required.";
+    errors.name = "Licence holder name is required.";
   }
 
   if (Object.keys(errors).length > 0) {
     return NextResponse.json(
       {
         ok: false,
-        message: "Please fix the organisation form fields.",
+        message: "Please fix the licence holder form fields.",
         errors,
       },
       { status: 400 },
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         message:
-          "Supabase is not configured, so the organisation could not be saved.",
+          "Supabase is not configured, so the licence holder could not be saved.",
       },
       { status: 503 },
     );
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         message:
-          "The organisation could not be saved right now. Please check the Supabase organisations table and try again.",
+          "The licence holder could not be saved right now. Please check the Supabase organisations table and try again.",
       },
       { status: 502 },
     );
@@ -126,6 +126,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     id: data.id,
-    message: "Organisation created successfully.",
+    message: "Licence holder created successfully.",
   });
 }

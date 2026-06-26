@@ -57,10 +57,10 @@ export default async function SourceManagementPage({
               Feed operations
             </p>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              Source Management Centre
+              Publication Source Management Centre
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Manage, monitor, and improve the quality of each vertical&apos;s
+              Manage, monitor, and improve the quality of each publication&apos;s
               RSS-powered news feed.
             </p>
           </header>
@@ -71,7 +71,7 @@ export default async function SourceManagementPage({
                 Source access unavailable
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Source management is available to Super Admin and Vertical
+                Source management is available to Super Admin and Publication
                 Admin roles.
               </p>
             </section>

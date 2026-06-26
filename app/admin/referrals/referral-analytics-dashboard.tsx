@@ -67,8 +67,8 @@ export function ReferralAnalyticsDashboard({
           Referral Analytics for {scopeName}
         </h2>
         <p className="mt-2 text-sm leading-6 text-blue-900">
-          These values demonstrate the owner-facing referral story before live
-          click tracking is connected.
+          These values demonstrate the licence-holder referral story before
+          live click tracking is connected.
         </p>
       </section>
 

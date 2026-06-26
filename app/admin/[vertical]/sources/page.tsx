@@ -45,7 +45,7 @@ export default async function VerticalSourceManagementPage({
   return (
     <AdminShell
       showOrganisations={currentUser.role === "platform_owner"}
-      title={`${vertical.name} Sources`}
+      title={`${vertical.name} Publication Sources`}
     >
       <AdminAccessGate
         error={query?.error}
@@ -72,10 +72,10 @@ export default async function VerticalSourceManagementPage({
               Feed operations
             </p>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              {vertical.name} Sources
+              {vertical.name} Publication Sources
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Manage source coverage and feed health for this vertical.
+              Manage source coverage and feed health for this publication.
             </p>
           </header>
 

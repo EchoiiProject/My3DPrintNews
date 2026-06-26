@@ -137,7 +137,7 @@ export default async function SponsorAdminPage({
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
             View platform-level sponsors that can present or underwrite a
-            vertical. Sponsors are separate from advertising campaigns and
+            publication. Sponsors are separate from advertising campaigns and
             products.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -175,7 +175,7 @@ export default async function SponsorAdminPage({
               <thead>
                 <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
                   <th className="py-3 pr-4">Sponsor</th>
-                  <th className="py-3 pr-4">Vertical</th>
+                  <th className="py-3 pr-4">Publication</th>
                   <th className="py-3 pr-4">Tier</th>
                   <th className="py-3 pr-4">Status</th>
                   <th className="py-3">Website</th>

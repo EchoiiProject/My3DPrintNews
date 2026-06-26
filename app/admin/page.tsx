@@ -37,13 +37,13 @@ const adminTools = [
   },
   {
     title: "Article Archive",
-    description: "Collected articles from vertical source libraries.",
+    description: "Collected articles from publication source libraries.",
     href: "/admin/articles",
     roles: ["platform_owner", "vertical_owner"],
   },
   {
-    title: "Organisation Management",
-    description: "Organisations, ownership, and vertical onboarding.",
+    title: "Licence Holder Management",
+    description: "Organisations, licence holders, and publication onboarding.",
     href: "/admin/organisations",
     roles: ["platform_owner"],
   },
@@ -67,7 +67,7 @@ const adminTools = [
   },
   {
     title: "Discover More",
-    description: "Reader-facing publication discovery across MyNews verticals.",
+    description: "Reader-facing publication discovery across MyNewsNetwork.",
     href: "/discover-more",
     roles: ["platform_owner", "vertical_owner"],
   },
@@ -113,16 +113,16 @@ export default async function AdminHubPage({
               Platform administration
             </p>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              Verticals
+              Publications
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Manage deployable news platforms and their future ownership,
-              sponsors, products, campaigns, subscribers, sources, updates, and
+              Manage MyNewsNetwork publications, licence holders, sponsors,
+              products, campaigns, subscribers, sources, updates, and
               analytics.
             </p>
             <p className="mt-4 max-w-3xl rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-950">
               Future authentication will restrict each user to their assigned
-              role and vertical.
+              role and publication.
             </p>
           </header>
 
@@ -166,10 +166,10 @@ export default async function AdminHubPage({
                     Sales preparation
                   </p>
                   <h2 className="mt-1 text-2xl font-bold text-blue-950">
-                    Prepare a private demo vertical
+                    Prepare a private demo publication
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-blue-900">
-                    Set up organisation, vertical, sources, previews, and
+                    Set up licence holder, publication, sources, previews, and
                     Super Admin-only sales notes before a prospect meeting.
                   </p>
                 </div>
@@ -185,7 +185,7 @@ export default async function AdminHubPage({
 
           <section className="mt-8">
             <h2 className="text-2xl font-bold text-slate-950">
-              Vertical admin
+              Publication Admin
             </h2>
             <div className="mt-4 grid gap-5 lg:grid-cols-2">
             {visibleVerticals.length ? (
@@ -226,7 +226,7 @@ export default async function AdminHubPage({
                   <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Owner
+                        Current Licence Holder
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-800">
                         {vertical.ownerName}
@@ -273,7 +273,7 @@ export default async function AdminHubPage({
             ) : (
               <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
                 <h3 className="text-xl font-bold text-slate-950">
-                  No vertical access
+                  No publication access
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   Advertisers will only see assigned campaigns and campaign
@@ -308,7 +308,7 @@ export default async function AdminHubPage({
 
           <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
             <h2 className="text-2xl font-bold text-slate-950">
-              Ownership roles
+              Operating roles
             </h2>
             <div className="mt-4 grid gap-3 lg:grid-cols-3">
               {ownershipRoles.map((role) => (

@@ -17,6 +17,6 @@ export const updatePosts: UpdatePost[] = [
     title: "Help shape what comes next",
     date: "21 June 2026",
     content:
-      "We are actively improving publication coverage, archive quality, referral reporting, newsletters and owner tools. If you have suggestions for sources, publishers, organisations or features, please contact us.",
+      "We are actively improving publication coverage, archive quality, referral reporting, newsletters and licence-holder tools. If you have suggestions for sources, publishers, organisations or features, please contact us.",
   },
 ];

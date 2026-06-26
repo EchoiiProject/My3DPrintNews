@@ -95,10 +95,10 @@ export function NewVerticalForm({ organisationId }: { organisationId: string }) 
       setStatus("prospect");
       setVisibility("private");
       setPublicUrl("");
-      setMessage("Vertical created successfully.");
+      setMessage("Publication created successfully.");
       router.refresh();
     } catch {
-      setMessage("The vertical could not be saved. Please try again.");
+      setMessage("The publication could not be saved. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -107,16 +107,18 @@ export function NewVerticalForm({ organisationId }: { organisationId: string }) 
   return (
     <section className="mt-8 rounded-lg border border-blue-100 bg-blue-50/80 p-5">
       <div>
-        <h2 className="text-2xl font-bold text-blue-950">Create Vertical</h2>
+          <h2 className="text-2xl font-bold text-blue-950">
+            Create Publication
+          </h2>
         <p className="mt-2 text-sm leading-6 text-blue-900">
-          Create a real vertical under this organisation in Supabase.
+          Create a publication operated by this licence holder in Supabase.
         </p>
       </div>
       <form className="mt-5 space-y-4" onSubmit={submitVertical}>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block">
             <span className="text-sm font-bold text-blue-950">
-              Vertical name
+              Publication name
             </span>
             <input
               className="mt-1 min-h-11 w-full rounded-md border border-blue-100 bg-white/90 px-3 text-sm text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
@@ -158,7 +160,9 @@ export function NewVerticalForm({ organisationId }: { organisationId: string }) 
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-blue-950">Strategy</span>
+            <span className="text-sm font-bold text-blue-950">
+              Operating Model
+            </span>
             <select
               className="mt-1 min-h-11 w-full rounded-md border border-blue-100 bg-white/90 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
               onChange={(event) => setStrategy(event.target.value)}
@@ -231,7 +235,7 @@ export function NewVerticalForm({ organisationId }: { organisationId: string }) 
             disabled={isSubmitting}
             type="submit"
           >
-            {isSubmitting ? "Saving..." : "Create vertical"}
+            {isSubmitting ? "Saving..." : "Create publication"}
           </button>
           {message ? (
             <p

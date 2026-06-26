@@ -63,7 +63,7 @@ export const productPlacements: ProductPlacement[] = [
   {
     id: "brand-product-panel",
     name: "Brand Product Panel",
-    description: "A brand-context product panel for future vertical pages.",
+    description: "A brand-context product panel for future publication pages.",
     location: "brand",
     enabled: false,
   },

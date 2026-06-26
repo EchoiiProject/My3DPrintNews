@@ -28,7 +28,7 @@ export function AdminShell({
   const visibleAdminLinks = showOrganisations
     ? [
         ...adminLinks,
-        { href: "/admin/organisations", label: "Organisations" },
+        { href: "/admin/organisations", label: "Licence Holders" },
         { href: "/admin/platform", label: "Platform" },
       ]
     : adminLinks;

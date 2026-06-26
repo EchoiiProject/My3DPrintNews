@@ -43,7 +43,7 @@ export default async function ReferralAnalyticsPage({
               Referral Analytics
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Demonstrate how verticals send readers to sponsors, publishers,
+              Demonstrate how publications send readers to sponsors, publishers,
               product partners, and destination sites.
             </p>
           </header>
@@ -54,7 +54,7 @@ export default async function ReferralAnalyticsPage({
                 Referral access unavailable
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Referral analytics are available to Super Admin and Vertical
+                Referral analytics are available to Super Admin and Publication
                 Admin roles.
               </p>
             </section>
@@ -62,7 +62,7 @@ export default async function ReferralAnalyticsPage({
             <div className="mt-8">
               <ReferralAnalyticsDashboard
                 analytics={analytics}
-                scopeName="all active verticals"
+                scopeName="all active publications"
               />
             </div>
           )}

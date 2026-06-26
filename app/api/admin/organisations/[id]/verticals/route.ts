@@ -54,7 +54,7 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        message: "Please send a valid vertical request.",
+        message: "Please send a valid publication request.",
       },
       { status: 400 },
     );
@@ -70,11 +70,11 @@ export async function POST(
   const publicUrl = optionalUrl(stringValue(body.publicUrl), "publicUrl", errors);
 
   if (!organisationId) {
-    errors.organisation = "Organisation is required.";
+    errors.organisation = "Licence holder is required.";
   }
 
   if (!name) {
-    errors.name = "Vertical name is required.";
+    errors.name = "Publication name is required.";
   }
 
   if (!slug) {
@@ -85,7 +85,7 @@ export async function POST(
   }
 
   if (!strategies.has(strategy)) {
-    errors.strategy = "Please choose a valid strategy.";
+    errors.strategy = "Please choose a valid operating model.";
   }
 
   if (!statuses.has(status)) {
@@ -100,7 +100,7 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        message: "Please fix the vertical form fields.",
+        message: "Please fix the publication form fields.",
         errors,
       },
       { status: 400 },
@@ -113,7 +113,8 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        message: "Supabase is not configured, so the vertical could not be saved.",
+        message:
+          "Supabase is not configured, so the publication could not be saved.",
       },
       { status: 503 },
     );
@@ -132,7 +133,7 @@ export async function POST(
       {
         ok: false,
         message:
-          "The organisation could not be checked right now. Please try again.",
+          "The licence holder could not be checked right now. Please try again.",
       },
       { status: 502 },
     );
@@ -142,8 +143,8 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        message: "Organisation not found.",
-        errors: { organisation: "Organisation not found." },
+        message: "Licence holder not found.",
+        errors: { organisation: "Licence holder not found." },
       },
       { status: 404 },
     );
@@ -172,7 +173,7 @@ export async function POST(
       {
         ok: false,
         message:
-          "The vertical could not be saved. Please check the slug is unique and the verticals table exists.",
+          "The publication could not be saved. Please check the slug is unique and the verticals table exists.",
       },
       { status: 502 },
     );
@@ -182,6 +183,6 @@ export async function POST(
     ok: true,
     id: data.id,
     slug: data.slug,
-    message: "Vertical created successfully.",
+    message: "Publication created successfully.",
   });
 }

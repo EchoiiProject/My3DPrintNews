@@ -270,7 +270,7 @@ export const adCampaigns: AdCampaign[] = [
     active: false,
     creative: {
       id: "test-bmx-supplier-feed",
-      headline: "New supplier launch for specialist vertical feeds",
+      headline: "New supplier launch for specialist publication feeds",
       description:
         "White-label example campaign showing that advertising inventory is platform-level.",
       targetUrl: "https://example.com/",

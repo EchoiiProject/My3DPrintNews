@@ -28,11 +28,11 @@ export default async function OrganisationDetailPage({
   return (
     <AdminShell
       showOrganisations={canView}
-      title={`${organisation.name} Organisation`}
+      title={`${organisation.name} Licence Holder`}
     >
       <AdminAccessGate
         error={query?.error}
-        loginTitle="Organisation Admin Access"
+        loginTitle="Licence Holder Admin Access"
         redirectTo={`/admin/organisations/${organisation.id}`}
       >
         <div className="flex-1 py-10">
@@ -46,13 +46,13 @@ export default async function OrganisationDetailPage({
                 className="text-blue-700 hover:text-blue-900"
                 href="/admin/organisations"
               >
-                Organisations
+                Licence Holders
               </Link>
               <span>/</span>
               <span>{organisation.name}</span>
             </div>
             <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-              Organisation profile
+              Licence holder profile
             </p>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
               {organisation.name}
@@ -95,7 +95,7 @@ export default async function OrganisationDetailPage({
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Owned verticals
+                        Licensed publications
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-800">
                         {organisation.verticals.length}
@@ -143,7 +143,7 @@ export default async function OrganisationDetailPage({
 
               <section className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
                 <h2 className="text-2xl font-bold text-slate-950">
-                  Owned verticals
+                  Licensed publications
                 </h2>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   {organisation.verticals.map((vertical) => (

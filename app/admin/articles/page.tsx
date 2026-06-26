@@ -58,7 +58,7 @@ export default async function ArticleArchivePage({
               Article Archive
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Review articles collected from vertical RSS source libraries.
+              Review articles collected from publication RSS source libraries.
             </p>
           </header>
 

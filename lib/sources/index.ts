@@ -142,7 +142,7 @@ function toManagedSource(
     verticalSlug: vertical?.slug
       ? adminSlugForPublicationSlug(vertical.slug) ?? vertical.slug
       : "unknown",
-    verticalName: vertical?.name ?? "Unknown vertical",
+    verticalName: vertical?.name ?? "Unknown publication",
     category: record.category,
     enabled: record.enabled,
     lastSuccessfulFetch: record.last_successful_fetch_at,
@@ -205,7 +205,7 @@ async function resolveVerticalId(input: {
 
   const slug = input.verticalSlug ?? input.verticalId;
 
-  if (!slug) return { id: null, error: "Vertical is required." };
+  if (!slug) return { id: null, error: "Publication is required." };
 
   const candidateSlugs = Array.from(
     new Set([
@@ -226,7 +226,7 @@ async function resolveVerticalId(input: {
 
   return {
     id: (bySlug.data?.id as string | undefined) ?? null,
-    error: bySlug.data ? null : `Vertical not found: ${slug}`,
+    error: bySlug.data ? null : `Publication not found: ${slug}`,
   };
 }
 
@@ -442,7 +442,8 @@ export async function createManagedSource(input: {
   if (!dbVertical?.id) {
     return {
       ok: false,
-      message: dbVertical?.error ?? "Vertical could not be found in Supabase.",
+      message:
+        dbVertical?.error ?? "Publication could not be found in Supabase.",
     };
   }
 
@@ -505,7 +506,8 @@ export async function updateManagedSource(
     if (!dbVertical?.id) {
       return {
         ok: false,
-        message: dbVertical?.error ?? "Vertical could not be found in Supabase.",
+        message:
+          dbVertical?.error ?? "Publication could not be found in Supabase.",
       };
     }
 

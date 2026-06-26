@@ -173,7 +173,7 @@ export default async function AdvertisingAdminPage({
               Advertising Management
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Review platform advertising inventory, campaign status, vertical
+              Review platform advertising inventory, campaign status, publication
               coverage, indicative pricing, and sample sponsored creative before
               database-backed management is added.
             </p>
@@ -208,7 +208,7 @@ export default async function AdvertisingAdminPage({
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
                     <th className="py-3 pr-4">Campaign name</th>
-                    <th className="py-3 pr-4">Vertical</th>
+                    <th className="py-3 pr-4">Publication</th>
                     <th className="py-3 pr-4">Advertiser</th>
                     <th className="py-3 pr-4">Placement</th>
                     <th className="py-3 pr-4">Status</th>
@@ -345,7 +345,7 @@ export default async function AdvertisingAdminPage({
               What placements look like
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Demo-only examples for future vertical owners. These previews do
+              Demo-only examples for future licence holders. These previews do
               not make planned placements live on the public site.
             </p>
             <div className="mt-5 space-y-5">
@@ -412,7 +412,7 @@ export default async function AdvertisingAdminPage({
                     advertiser: "Demo Event Host",
                     headline: "Promote launches, webinars, and industry events",
                     description:
-                      "A time-sensitive event card for audiences following a specialist vertical.",
+                    "A time-sensitive event card for audiences following a specialist publication.",
                     cta: "View event",
                   }}
                 />
@@ -432,7 +432,7 @@ export default async function AdvertisingAdminPage({
                 {[
                   ["Advertiser", "Prusa Research"],
                   ["Campaign headline", "Explore reliable desktop workflows"],
-                  ["Description", "Sponsored message for a vertical feed."],
+                  ["Description", "Sponsored message for a publication feed."],
                   ["Button text", "Learn more"],
                   ["Target URL", "https://www.prusa3d.com/"],
                   ["Placement", "feed-inline-1"],

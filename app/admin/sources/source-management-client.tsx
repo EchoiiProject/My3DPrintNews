@@ -336,7 +336,7 @@ export function SourceManagementClient({
         </div>
         <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            Vertical Readiness
+            Publication Readiness
           </p>
           <p className="mt-2 text-3xl font-bold text-slate-950">
             {diagnostics.verticalReadiness}
@@ -442,7 +442,7 @@ export function SourceManagementClient({
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">RSS URL</th>
-                <th className="px-4 py-3">Vertical</th>
+                <th className="px-4 py-3">Publication</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">State</th>
                 <th className="px-4 py-3">Health</th>

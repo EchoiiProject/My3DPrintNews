@@ -136,8 +136,8 @@ export default async function ProductAdminPage({
             Products
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            Manage static demo product promotions for future white-label
-            verticals. This is not an ecommerce or checkout system.
+            Manage static demo product promotions for future publications.
+            This is not an ecommerce or checkout system.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <button

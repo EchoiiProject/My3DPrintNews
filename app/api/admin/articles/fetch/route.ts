@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   if (!verticalSlug) {
     return NextResponse.json(
-      { ok: false, message: "Vertical is required." },
+      { ok: false, message: "Publication is required." },
       { status: 400 },
     );
   }

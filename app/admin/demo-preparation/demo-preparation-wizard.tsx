@@ -53,12 +53,12 @@ export function DemoPreparationWizard({
   const readinessItems = useMemo(
     () => [
       {
-        label: "Organisation created",
+        label: "Licence holder selected",
         ready:
           organisationMode === "existing" ? Boolean(selectedOrganisation) : true,
       },
       {
-        label: "Vertical created",
+        label: "Publication selected",
         ready: verticalMode === "existing" ? Boolean(selectedVertical) : true,
       },
       { label: "Sources configured", ready: enabledSources.length > 0 },
@@ -109,7 +109,7 @@ export function DemoPreparationWizard({
     <div className="space-y-8">
       <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
         <div className="flex flex-wrap gap-2">
-          {["Organisation", "Vertical", "Sources", "Preview", "Demo Ready"].map(
+          {["Licence Holder", "Publication", "Sources", "Preview", "Demo Ready"].map(
             (step, index) => (
               <span
                 className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700"
@@ -126,7 +126,7 @@ export function DemoPreparationWizard({
         <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
           <p className="text-sm font-semibold text-blue-700">Step 1</p>
           <h2 className="mt-1 text-2xl font-bold text-slate-950">
-            Organisation
+            Licence Holder
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {(["existing", "new"] as const).map((mode) => (
@@ -142,8 +142,8 @@ export function DemoPreparationWizard({
                 type="button"
               >
                 {mode === "existing"
-                  ? "Select existing organisation"
-                  : "Create new organisation"}
+                  ? "Select existing licence holder"
+                  : "Create new licence holder"}
               </button>
             ))}
           </div>
@@ -161,15 +161,17 @@ export function DemoPreparationWizard({
             </select>
           ) : (
             <p className="mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
-              Create the organisation in Organisation Management if it does not
-              exist yet.
+              Create the organisation in Licence Holder Management if it does
+              not exist yet.
             </p>
           )}
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
           <p className="text-sm font-semibold text-blue-700">Step 2</p>
-          <h2 className="mt-1 text-2xl font-bold text-slate-950">Vertical</h2>
+          <h2 className="mt-1 text-2xl font-bold text-slate-950">
+            Publication
+          </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {(["existing", "new"] as const).map((mode) => (
               <button
@@ -184,8 +186,8 @@ export function DemoPreparationWizard({
                 type="button"
               >
                 {mode === "existing"
-                  ? "Select existing vertical"
-                  : "Create new vertical"}
+                  ? "Select existing publication"
+                  : "Create new publication"}
               </button>
             ))}
           </div>
@@ -203,7 +205,7 @@ export function DemoPreparationWizard({
             </select>
           ) : (
             <div className="mt-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
-              <p>Create the vertical under the selected organisation.</p>
+              <p>Create the publication under the selected licence holder.</p>
               <p className="mt-1">Default lifecycle: Demo</p>
               <p>Default visibility: Private</p>
             </div>
@@ -215,7 +217,7 @@ export function DemoPreparationWizard({
         <p className="text-sm font-semibold text-blue-700">Step 3</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-950">Sources</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Display and adjust the current sources for the selected vertical.
+          Display and adjust the current sources for the selected publication.
           Automatic source discovery is intentionally not included.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -272,7 +274,7 @@ export function DemoPreparationWizard({
         <p className="text-sm font-semibold text-blue-700">Step 4</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-950">Preview</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Review the demo before showing it to the customer.
+          Review the demo before showing it to the prospect.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {previewLinks.map((link) => (
@@ -316,12 +318,12 @@ export function DemoPreparationWizard({
           <p className="text-sm font-bold text-emerald-800">Demo Status</p>
           <p className="mt-1 text-xl font-bold text-emerald-900">
             {demoReady
-              ? "Ready for Customer Demonstration"
+              ? "Ready for Prospect Demonstration"
               : "Preparation in progress"}
           </p>
         </div>
         <p className="mt-4 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
-          This demo remains private until a Vertical Admin is assigned.
+          This demo remains private until a Publication Admin is assigned.
         </p>
       </section>
     </div>

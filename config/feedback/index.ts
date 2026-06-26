@@ -70,7 +70,7 @@ export const feedback: Feedback[] = [
     verticalId: "mybmxnews",
     category: "general",
     rating: 4,
-    message: "Would like regional event coverage when the BMX vertical launches.",
+    message: "Would like regional event coverage when the BMX publication launches.",
     status: "new",
     createdAt: "2026-06-24T11:30:00.000Z",
   },

@@ -64,7 +64,7 @@ export default async function Home() {
             {[
               "Each publication is curated for a specialist community.",
               "Readers can follow one publication or build a wider network of interests.",
-              "Organisations can grow audience, referrals, newsletters, and sponsorships.",
+              "Licence holders can grow audience, referrals, newsletters, and sponsorships.",
             ].map((copy) => (
               <div
                 className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur"

@@ -16,10 +16,10 @@ export default async function OrganisationsAdminPage({
   const canView = currentUser.role === "platform_owner";
 
   return (
-    <AdminShell showOrganisations={canView} title="Organisation Management">
+    <AdminShell showOrganisations={canView} title="Licence Holder Management">
       <AdminAccessGate
         error={params?.error}
-        loginTitle="Organisation Admin Access"
+        loginTitle="Licence Holder Admin Access"
         redirectTo="/admin/organisations"
       >
         <div className="flex-1 py-10">
@@ -29,17 +29,17 @@ export default async function OrganisationsAdminPage({
                 Admin
               </Link>
               <span>/</span>
-              <span>Organisations</span>
+              <span>Licence Holders</span>
             </div>
             <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
               Super Admin
             </p>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              Organisations
+              Licence Holders
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Manage organisation records that own or operate vertical
-              publications.
+              Manage organisations that operate MyNewsNetwork publications
+              under licence.
             </p>
           </header>
 
@@ -49,7 +49,7 @@ export default async function OrganisationsAdminPage({
                 Super Admin only
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Organisation management is hidden from Vertical Admin and
+                Licence holder management is hidden from Publication Admin and
                 Advertiser roles in this prototype.
               </p>
             </section>
@@ -81,7 +81,7 @@ export default async function OrganisationsAdminPage({
                       </div>
                       <div className="rounded-md border border-slate-200 bg-slate-50/70 p-4">
                         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                          Linked verticals
+                          Licensed publications
                         </p>
                         <p className="mt-1 text-2xl font-bold text-slate-950">
                           {organisation.verticals.length}
@@ -100,7 +100,7 @@ export default async function OrganisationsAdminPage({
                         ))
                       ) : (
                         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
-                          No verticals linked
+                          No publications linked
                         </span>
                       )}
                     </div>

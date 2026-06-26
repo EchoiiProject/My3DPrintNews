@@ -39,7 +39,7 @@ export function ArticleArchiveTable({
           disabled={verticalLocked}
           name="vertical"
         >
-          <option value="">All verticals</option>
+          <option value="">All publications</option>
           {verticals.map((vertical) => (
             <option key={vertical.slug} value={vertical.slug}>
               {vertical.name}
@@ -84,7 +84,7 @@ export function ArticleArchiveTable({
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Source</th>
                 <th className="px-4 py-3">Published</th>
-                <th className="px-4 py-3">Vertical</th>
+                <th className="px-4 py-3">Publication</th>
                 <th className="px-4 py-3">Tags</th>
                 <th className="px-4 py-3">Original</th>
               </tr>

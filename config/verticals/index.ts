@@ -61,15 +61,15 @@ export const ownershipRoles: OwnershipRoleDefinition[] = [
     id: "platform_owner",
     name: "Super Admin",
     description:
-      "Can manage all verticals, platform tools, subscribers, sources, updates, and analytics.",
-    scope: "all verticals",
+      "Can manage all publications, platform tools, subscribers, sources, updates, and analytics.",
+    scope: "all publications",
   },
   {
     id: "vertical_owner",
-    name: "Vertical Admin",
+    name: "Publication Admin",
     description:
-      "Can manage only assigned verticals and their related platform objects.",
-    scope: "assigned vertical",
+      "Can manage only assigned publications and their related platform objects.",
+    scope: "assigned publication",
   },
   {
     id: "advertiser",
@@ -125,7 +125,7 @@ export const verticals: Vertical[] = [
     showNewsletterSignup: true,
     showFeedback: true,
     domain: "mybmxnews.example.com",
-    description: "Demo BMX vertical for reusable personalised feed products.",
+    description: "Demo BMX publication for reusable personalised feed products.",
     sector: "Cycling and action sports",
     status: "active",
     relatedVerticalIds: ["mycyclingnews", "mymountainbikenews", "mymotonews"],
@@ -435,7 +435,7 @@ export const demoAdminUsers: DemoAdminUser[] = [
   {
     id: "sss-racing-admin",
     name: "SSS Racing",
-    label: "MyBMXNews Vertical Admin",
+    label: "MyBMXNews Publication Admin",
     role: "vertical_owner",
     assignedVerticalIds: ["mybmxnews"],
     assignedCampaignIds: [],

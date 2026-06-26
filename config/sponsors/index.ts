@@ -28,7 +28,7 @@ export const sponsorPlacements: SponsorPlacement[] = [
   {
     id: "homepage-sponsor",
     name: "Homepage Sponsor",
-    description: "Understated sponsor banner near the top of a vertical homepage.",
+    description: "Understated sponsor banner near the top of a publication homepage.",
     location: "homepage",
     enabled: true,
   },
@@ -47,7 +47,7 @@ export const sponsors: Sponsor[] = [
     name: "SSS Racing",
     websiteUrl: "https://example.com/sss-racing",
     description:
-      "Demo presenting sponsor for a future BMX vertical. Sample data only.",
+      "Demo presenting sponsor for a future BMX publication. Sample data only.",
     vertical: "mybmxnews",
     active: true,
     featured: true,

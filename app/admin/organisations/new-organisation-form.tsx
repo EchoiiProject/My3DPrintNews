@@ -54,10 +54,10 @@ export function NewOrganisationForm() {
       setWebsiteUrl("");
       setLogoUrl("");
       setContactEmail("");
-      setMessage("Organisation created successfully.");
+      setMessage("Licence holder created successfully.");
       router.refresh();
     } catch {
-      setMessage("The organisation could not be saved. Please try again.");
+      setMessage("The licence holder could not be saved. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -67,17 +67,18 @@ export function NewOrganisationForm() {
     <section className="mt-8 rounded-lg border border-blue-100 bg-blue-50/80 p-5">
       <div>
         <h2 className="text-2xl font-bold text-blue-950">
-          New Organisation
+          New Licence Holder
         </h2>
         <p className="mt-2 text-sm leading-6 text-blue-900">
-          Create an organisation record in Supabase for a future vertical owner.
+          Create an organisation record in Supabase for a future publication
+          licence holder.
         </p>
       </div>
       <form className="mt-5 space-y-4" onSubmit={submitOrganisation}>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block">
             <span className="text-sm font-bold text-blue-950">
-              Organisation name
+              Licence holder name
             </span>
             <input
               className="mt-1 min-h-11 w-full rounded-md border border-blue-100 bg-white/90 px-3 text-sm text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
@@ -151,7 +152,7 @@ export function NewOrganisationForm() {
             disabled={isSubmitting}
             type="submit"
           >
-            {isSubmitting ? "Saving..." : "Create organisation"}
+            {isSubmitting ? "Saving..." : "Create licence holder"}
           </button>
           {message ? (
             <p

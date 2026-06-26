@@ -78,7 +78,7 @@ export default async function VerticalArticleArchivePage({
               {vertical.name} Articles
             </h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              Review archived articles collected from this vertical&apos;s
+              Review archived articles collected from this publication&apos;s
               enabled RSS sources.
             </p>
           </header>
