@@ -85,14 +85,14 @@ const managementCentres: ManagementCentre[] = [
       { label: "Preview Newsletter", href: "/newsletter-preview/demo" },
       { label: "View Catch Up", href: "/catch-up" },
       { label: "Review Feedback", href: null },
-      { label: "View Analytics", href: null },
+      { label: "Referral Analytics", href: null },
     ],
     items: [
       { label: "Subscribers", href: null, status: "Planned" },
       { label: "Newsletter", href: null, status: "Planned" },
       { label: "Saved Feeds", href: null, status: "Planned" },
       { label: "Feedback", href: null, status: "Ready" },
-      { label: "Analytics", href: null, status: "Planned" },
+      { label: "Referral Analytics", href: null, status: "Ready" },
       { label: "Growth", href: null, status: "Planned" },
     ],
   },
@@ -305,11 +305,15 @@ export default async function VerticalAdminPage({
       actions: centre.actions.map((action) =>
         action.label === "Review Feedback"
           ? { ...action, href: `/admin/${vertical.slug}/feedback` }
+          : action.label === "Referral Analytics"
+            ? { ...action, href: `/admin/${vertical.slug}/referrals` }
           : action,
       ),
       items: centre.items.map((item) =>
         item.label === "Feedback"
           ? { ...item, href: `/admin/${vertical.slug}/feedback` }
+          : item.label === "Referral Analytics"
+            ? { ...item, href: `/admin/${vertical.slug}/referrals` }
           : item,
       ),
     };

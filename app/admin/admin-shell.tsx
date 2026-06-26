@@ -12,6 +12,7 @@ const adminLinks = [
   { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/sources", label: "Sources" },
   { href: "/admin/feedback", label: "Feedback" },
+  { href: "/admin/referrals", label: "Referrals" },
 ];
 
 export function AdminShell({

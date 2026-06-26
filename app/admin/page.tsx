@@ -47,6 +47,12 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "Referral Analytics",
+    description: "Demo referral traffic, outbound clicks, and destination reporting.",
+    href: "/admin/referrals",
+    roles: ["platform_owner", "vertical_owner"],
+  },
+  {
     title: "Discover More",
     description: "Reader-facing publication discovery across MyNews verticals.",
     href: "/discover-more",
