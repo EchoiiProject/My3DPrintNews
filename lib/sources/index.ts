@@ -1,6 +1,6 @@
-import { registry } from "@/config/registry";
+import { registry, type RegistryItem } from "@/config/registry";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
-import { getVerticalBySlug, getVerticals } from "@/lib/verticals";
+import { getVerticalBySlug } from "@/lib/verticals";
 
 export type SourceHealth = "healthy" | "warning" | "offline";
 
@@ -46,7 +46,10 @@ type SourceRecord = {
   articles_fetched: number | null;
   last_article_date: string | null;
   created_at: string | null;
-  verticals?: { slug: string | null; name: string | null } | null;
+  verticals?:
+    | { slug: string | null; name: string | null }
+    | { slug: string | null; name: string | null }[]
+    | null;
 };
 
 const fallbackArticleCounts = [12, 8, 10, 5, 4, 0, 2, 0, 7, 3];
@@ -62,8 +65,13 @@ function normaliseHealth(value: string | undefined): SourceHealth {
 function fallbackSources(verticalSlug?: string): ManagedSource[] {
   const now = new Date();
 
-  return registry.sources
-    .filter((source) => source.url)
+  return (registry.sources as readonly RegistryItem[])
+    .filter(
+      (
+        source,
+      ): source is RegistryItem & { url: string } =>
+        Boolean(source.url),
+    )
     .map((source, index) => {
       const articlesFetched = fallbackArticleCounts[index % fallbackArticleCounts.length];
       const daysAgo = index % 9;
@@ -71,6 +79,12 @@ function fallbackSources(verticalSlug?: string): ManagedSource[] {
         articlesFetched > 0
           ? new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
           : null;
+      const healthStatus: SourceHealth =
+        source.status === "active"
+          ? "healthy"
+          : source.status === "partial"
+            ? "warning"
+            : "offline";
 
       return {
         id: source.id,
@@ -84,12 +98,7 @@ function fallbackSources(verticalSlug?: string): ManagedSource[] {
         lastSuccessfulFetch: lastArticleDate,
         articlesFetched,
         lastArticleDate,
-        healthStatus:
-          source.status === "active"
-            ? "healthy"
-            : source.status === "partial"
-              ? "warning"
-              : "offline",
+        healthStatus,
         createdAt: new Date(now.getTime() - index * 24 * 60 * 60 * 1000).toISOString(),
       };
     })
@@ -97,13 +106,17 @@ function fallbackSources(verticalSlug?: string): ManagedSource[] {
 }
 
 function toManagedSource(record: SourceRecord): ManagedSource {
+  const vertical = Array.isArray(record.verticals)
+    ? record.verticals[0]
+    : record.verticals;
+
   return {
     id: record.id,
     name: record.name,
     rssUrl: record.rss_url,
     verticalId: record.vertical_id ?? "",
-    verticalSlug: record.verticals?.slug ?? "unknown",
-    verticalName: record.verticals?.name ?? "Unknown vertical",
+    verticalSlug: vertical?.slug ?? "unknown",
+    verticalName: vertical?.name ?? "Unknown vertical",
     category: record.category,
     enabled: record.enabled,
     lastSuccessfulFetch: record.last_successful_fetch,
