@@ -192,7 +192,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Choose the brands, model platforms, technologies, and story types
               you care about,
-              then generate a focused 3D printing news feed.
+              then generate a focused specialist news feed.
             </p>
 
             <div

@@ -1,4 +1,4 @@
-// Reusable personalised feed engine with My3DPrintNews as the first vertical.
+// Reusable personalised feed engine with configurable vertical source sets.
 // This registry is the white-label boundary for selectable entities and feeds.
 
 export type RegistryItemType =

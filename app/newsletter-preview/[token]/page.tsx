@@ -155,7 +155,7 @@ export default async function NewsletterPreviewPage({
   });
 
   return (
-    <PreviewShell title="Your next My3DPrintNews update preview">
+    <PreviewShell title="Your next MyNewsNetwork update preview">
       <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
         This safe preview shows the ranked stories that would be included in the
         next personalised email. No newsletter is sent from this page.

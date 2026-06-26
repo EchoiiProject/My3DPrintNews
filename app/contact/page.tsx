@@ -60,7 +60,7 @@ export default function ContactPage() {
         tone: response.ok && result.ok ? "success" : "error",
         message:
           response.ok && result.ok
-            ? "Thank you for contacting My3DPrintNews. Your message has been received."
+            ? "Thank you for contacting MyNewsNetwork. Your message has been received."
             : result.message ??
               "Something went wrong while preparing your message.",
       });
@@ -82,11 +82,11 @@ export default function ContactPage() {
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            MyNewsNetwork
           </Link>
           <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
             <Link className="hover:text-blue-700" href="/">
-              Feed Builder
+              Publications
             </Link>
             <Link className="hover:text-blue-700" href="/publishers">
               Publishers
@@ -100,7 +100,7 @@ export default function ContactPage() {
               Contact
             </p>
             <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              Contact My3DPrintNews
+              Contact MyNewsNetwork
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
               Users, publishers, and partners can get in touch about feedback,

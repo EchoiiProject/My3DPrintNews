@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "My3DPrintNews",
-  description: "Your Personalised 3D Printing News",
+  title: "MyNewsNetwork",
+  description: "Personalised specialist news publications",
 };
 
 export default function RootLayout({

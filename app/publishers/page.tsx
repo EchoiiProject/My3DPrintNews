@@ -17,14 +17,14 @@ export default function PublishersPage() {
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            MyNewsNetwork
           </Link>
           <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
             <Link className="hover:text-blue-700" href="/">
-              Preferences
+              Publications
             </Link>
-            <Link className="hover:text-blue-700" href="/feed">
-              Feed
+            <Link className="hover:text-blue-700" href="/discover-more">
+              Discover More
             </Link>
             <Link className="hover:text-blue-700" href="/contact">
               Contact
@@ -38,12 +38,12 @@ export default function PublishersPage() {
               Publisher policy
             </p>
             <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              Clear attribution for 3D printing news
+              Clear attribution for specialist news
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              My3DPrintNews is designed to help readers discover useful
-              additive manufacturing coverage while sending attention back to
-              the original publisher.
+              MyNewsNetwork is designed to help readers discover useful
+              specialist coverage while sending attention back to the original
+              publisher.
             </p>
           </header>
 

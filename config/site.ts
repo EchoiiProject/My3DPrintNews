@@ -1,15 +1,15 @@
-// Reusable personalised feed engine with My3DPrintNews as the first vertical.
+// Reusable personalised feed engine for the MyNewsNetwork platform.
 export const appConfig = {
-  name: "My3DPrintNews",
-  tagline: "Your Personalised 3D Printing News",
-  onboardingBadge: "Personalised additive manufacturing intelligence",
+  name: "MyNewsNetwork",
+  tagline: "Personalised specialist news publications",
+  onboardingBadge: "Personalised specialist news",
   feedIntro:
     "Based on your feed preferences, here are the latest stories, videos and updates from the brands, creators and platforms you follow.",
   updates: {
     badge: "Product notes",
-    title: "My3DPrintNews Updates",
+    title: "MyNewsNetwork Updates",
     intro:
-      "Follow the latest improvements to My3DPrintNews as we build a personalised 3D printing news feed. We welcome feedback from readers, makers, creators and publishers.",
+      "Follow the latest improvements to MyNewsNetwork as we build personalised specialist publications. We welcome feedback from readers, creators, organisations and publishers.",
     feedbackCta: {
       heading: "Have feedback or want to suggest a source?",
       text: "We welcome suggestions from readers, makers, creators and publishers.",

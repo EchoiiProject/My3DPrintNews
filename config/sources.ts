@@ -1,7 +1,7 @@
 import type { FeedSource } from "../lib/rss";
 import { activeFeedSources, type RegistryItem } from "./registry";
 
-// Reusable personalised feed engine with My3DPrintNews as the first vertical.
+// Reusable personalised feed engine with configurable source registries.
 
 function sourceUrl(source: RegistryItem): string {
   if (source.url) {

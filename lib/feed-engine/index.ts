@@ -1,4 +1,4 @@
-// Reusable personalised feed engine with My3DPrintNews as the first vertical.
+// Reusable personalised feed engine exports.
 // Future white-label sites should swap config/* while keeping these engine
 // modules stable.
 export * from "@/lib/favourites";

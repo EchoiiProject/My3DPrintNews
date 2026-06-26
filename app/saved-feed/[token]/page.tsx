@@ -170,7 +170,7 @@ export default async function SavedFeedPage({
         <div className="mx-auto mt-5 max-w-7xl rounded-lg border border-blue-100 bg-white/80 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
           <p className="text-sm font-semibold text-blue-700">Saved feed</p>
           <h1 className="mt-1 text-3xl font-bold text-slate-950">
-            Your saved My3DPrintNews feed
+            Your saved MyNewsNetwork feed
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
             Saved for {subscriber.data.email}. These stories use the saved

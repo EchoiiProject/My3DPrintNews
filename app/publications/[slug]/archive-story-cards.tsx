@@ -97,11 +97,14 @@ export function ArchiveStoryCards({
       ) : (
         <section className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
           <h2 className="text-xl font-bold text-slate-950">
-            No archived articles yet
+            {articles.length
+              ? "No articles match this view"
+              : "No archived articles yet"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Articles will appear here after the archive fetcher collects this
-            publication&apos;s enabled sources.
+            {articles.length
+              ? "This publication has archived articles, but none match the selected date window."
+              : "Articles will appear after enabled sources are fetched."}
           </p>
         </section>
       )}

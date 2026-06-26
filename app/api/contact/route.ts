@@ -42,7 +42,7 @@ function formatEmailBody({
   submittedAt: string;
 }) {
   return [
-    "New My3DPrintNews contact submission",
+    "New MyNewsNetwork contact submission",
     "",
     `Name: ${name}`,
     `Email: ${email}`,
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       from: fromEmail,
       to: toEmail,
       replyTo: email,
-      subject: `My3DPrintNews contact: ${reason}`,
+      subject: `MyNewsNetwork contact: ${reason}`,
       text: formatEmailBody({
         name,
         email,
@@ -174,6 +174,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     mode: "sent",
-    message: "Thank you for contacting My3DPrintNews. Your message has been received.",
+    message: "Thank you for contacting MyNewsNetwork. Your message has been received.",
   });
 }

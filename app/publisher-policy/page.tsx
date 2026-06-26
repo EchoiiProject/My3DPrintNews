@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FooterLinks } from "../footer-links";
 
 const policyPoints = [
-  "My3DPrintNews aggregates RSS feeds from publishers, platforms, and creator sources.",
+  "MyNewsNetwork aggregates RSS feeds from publishers, platforms, and creator sources.",
   "We do not republish full articles.",
   "Feed cards may show a headline, summary or excerpt, attribution, an image if one is available in the feed, and a clear source link.",
   "Copyright remains with the original publishers, creators, and rights holders.",
@@ -18,7 +18,7 @@ export default function PublisherPolicyPage() {
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            MyNewsNetwork
           </Link>
           <Link className="text-sm font-medium text-slate-600 hover:text-blue-700" href="/contact?reason=publisher">
             Publisher Contact
@@ -34,7 +34,7 @@ export default function PublisherPolicyPage() {
               Attribution-first feed aggregation
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              My3DPrintNews is built to help readers discover 3D printing
+              MyNewsNetwork is built to help readers discover specialist
               coverage while preserving attribution and sending readers back to
               original sources.
             </p>

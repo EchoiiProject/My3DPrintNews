@@ -4,7 +4,7 @@ import { FooterLinks } from "../footer-links";
 const privacySections = [
   {
     title: "Contact Form Data",
-    copy: "When you use the contact form, My3DPrintNews collects the name, email address, reason, and message you provide so we can review and respond to your request.",
+    copy: "When you use the contact form, MyNewsNetwork collects the name, email address, reason, and message you provide so we can review and respond to your request.",
   },
   {
     title: "Newsletter Data",
@@ -20,7 +20,7 @@ const privacySections = [
   },
   {
     title: "Deletion Requests",
-    copy: "Users can request deletion of contact or newsletter data by contacting My3DPrintNews. Local preferences can also be cleared from the user's own browser storage.",
+    copy: "Users can request deletion of contact or newsletter data by contacting MyNewsNetwork. Local preferences can also be cleared from the user's own browser storage.",
   },
 ];
 
@@ -33,10 +33,10 @@ export default function PrivacyPage() {
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            MyNewsNetwork
           </Link>
           <Link className="text-sm font-medium text-slate-600 hover:text-blue-700" href="/">
-            Feed Builder
+            Publications
           </Link>
         </nav>
 
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
             This page explains the basic data handling approach for
-            My3DPrintNews before the real domain and production integrations are
+            MyNewsNetwork before production integrations are
             connected.
           </p>
 

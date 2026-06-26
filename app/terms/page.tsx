@@ -2,9 +2,9 @@ import Link from "next/link";
 import { FooterLinks } from "../footer-links";
 
 const terms = [
-  "My3DPrintNews is provided as-is as a personalised discovery and briefing service.",
+  "MyNewsNetwork is provided as-is as a personalised discovery and briefing service.",
   "External links and original articles belong to their respective publishers, platforms, or creators.",
-  "My3DPrintNews does not guarantee that feeds, summaries, links, videos, or availability will be complete, accurate, current, or uninterrupted.",
+  "MyNewsNetwork does not guarantee that feeds, summaries, links, videos, or availability will be complete, accurate, current, or uninterrupted.",
   "Users are responsible for how they use the information, external links, products, offers, downloads, models, and guidance they discover through the service.",
 ];
 
@@ -17,10 +17,10 @@ export default function TermsPage() {
             className="text-lg font-bold tracking-tight text-slate-950"
             href="/"
           >
-            My3DPrintNews
+            MyNewsNetwork
           </Link>
           <Link className="text-sm font-medium text-slate-600 hover:text-blue-700" href="/">
-            Feed Builder
+            Publications
           </Link>
         </nav>
 
@@ -32,7 +32,7 @@ export default function TermsPage() {
             Terms of Use
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
-            These terms set the baseline for using My3DPrintNews while the
+            These terms set the baseline for using MyNewsNetwork while the
             product is being prepared for a public launch.
           </p>
 

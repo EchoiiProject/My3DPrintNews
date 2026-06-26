@@ -789,7 +789,7 @@ export function FeedClient({
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-slate-700">
                         We&apos;ll use these preferences to prepare your
-                        personalised My3DPrintNews updates.
+                        personalised MyNewsNetwork updates.
                       </p>
                     </div>
                     {!hasNewsletterSignal ? (

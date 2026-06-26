@@ -1,7 +1,7 @@
 import type { MonthlyTiming, WeeklyDay } from "../lib/preferences";
 import { registry, type RegistryItem } from "./registry";
 
-// Reusable personalised feed engine with My3DPrintNews as the first vertical.
+// Reusable personalised feed engine preferences.
 
 function labels(items: readonly { label: string }[]): string[] {
   return items.map((item) => item.label);
