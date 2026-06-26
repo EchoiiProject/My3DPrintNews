@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { deleteManagedSource, updateManagedSource } from "@/lib/sources";
+import {
+  deleteManagedSource,
+  normaliseSourceType,
+  updateManagedSource,
+} from "@/lib/sources";
 
 type SourcePatch = {
   name?: unknown;
   rssUrl?: unknown;
   rss_url?: unknown;
+  source_type?: unknown;
+  sourceType?: unknown;
   category?: unknown;
   enabled?: unknown;
   vertical_id?: unknown;
@@ -42,6 +48,7 @@ export async function PATCH(
   }
 
   const rssUrl = text(body.rss_url) ?? text(body.rssUrl);
+  const rawSourceType = text(body.source_type) ?? text(body.sourceType);
   const errors: Record<string, string> = {};
 
   if (rssUrl !== undefined && !validUrl(rssUrl)) {
@@ -58,6 +65,7 @@ export async function PATCH(
   const result = await updateManagedSource(id, {
     name: text(body.name),
     rssUrl,
+    sourceType: rawSourceType ? normaliseSourceType(rawSourceType) : undefined,
     category: text(body.category) ?? null,
     enabled:
       typeof body.enabled === "boolean" ? body.enabled : undefined,

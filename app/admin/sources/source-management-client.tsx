@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
-import type { ManagedSource, SourceDiagnostics } from "@/lib/sources";
+import type { ManagedSource, SourceDiagnostics, SourceType } from "@/lib/sources";
 import {
   publicationSlugForVertical,
   type Vertical,
@@ -27,6 +27,7 @@ type FeedDiagnostic = SourceDiagnostics["feedDiagnostics"][number];
 type SourceFormState = {
   name: string;
   rssUrl: string;
+  sourceType: SourceType;
   category: string;
   verticalId: string;
   verticalSlug: string;
@@ -37,9 +38,19 @@ type BulkSourceRow = {
   name: string;
   rssUrl: string;
   category: string;
+  sourceType: SourceType;
   enabled: boolean;
   lineNumber: number;
 };
+
+const sourceTypes: SourceType[] = [
+  "rss",
+  "youtube",
+  "podcast",
+  "blog",
+  "brand",
+  "creator",
+];
 
 function formatDate(value: string | null): string {
   if (!value) return "No data";
@@ -133,6 +144,12 @@ function parseBoolean(value: string | undefined) {
   return !["false", "no", "0", "disabled"].includes(value.trim().toLowerCase());
 }
 
+function parseSourceType(value: string | undefined): SourceType {
+  return sourceTypes.includes(value?.trim().toLowerCase() as SourceType)
+    ? (value?.trim().toLowerCase() as SourceType)
+    : "rss";
+}
+
 function parseBulkSourceRows(value: string) {
   const rows: BulkSourceRow[] = [];
   const errors: string[] = [];
@@ -142,7 +159,13 @@ function parseBulkSourceRows(value: string) {
     .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
     .filter(({ line }) => line.length > 0)
     .forEach(({ line, lineNumber }) => {
-      const [name = "", rssUrl = "", category = "", enabled = "true"] = line
+      const [
+        name = "",
+        rssUrl = "",
+        category = "",
+        enabled = "true",
+        sourceType = "rss",
+      ] = line
         .split(",")
         .map((field) => field.trim());
 
@@ -169,6 +192,7 @@ function parseBulkSourceRows(value: string) {
         name,
         rssUrl,
         category,
+        sourceType: parseSourceType(sourceType),
         enabled: parseBoolean(enabled),
         lineNumber,
       });
@@ -196,6 +220,7 @@ export function SourceManagementClient({
   const [name, setName] = useState("");
   const [rssUrl, setRssUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [sourceType, setSourceType] = useState<SourceType>("rss");
   const [selectedVertical, setSelectedVertical] = useState(
     verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
   );
@@ -207,6 +232,7 @@ export function SourceManagementClient({
   const [editValues, setEditValues] = useState<SourceFormState>({
     name: "",
     rssUrl: "",
+    sourceType: "rss",
     category: "",
     verticalId: verticals[0] ? verticalDatabaseId(verticals[0]) : "",
     verticalSlug: verticalSlug ?? verticals[0]?.slug ?? "my3dprintnews",
@@ -251,6 +277,7 @@ export function SourceManagementClient({
         body: JSON.stringify({
           name,
           rss_url: rssUrl,
+          source_type: sourceType,
           category,
           vertical_id: selectedVerticalId,
           enabled,
@@ -260,6 +287,7 @@ export function SourceManagementClient({
     );
     setName("");
     setRssUrl("");
+    setSourceType("rss");
     setCategory("");
     setEnabled(true);
   }
@@ -286,6 +314,7 @@ export function SourceManagementClient({
         body: JSON.stringify({
           name: row.name,
           rss_url: row.rssUrl,
+          source_type: row.sourceType,
           category: row.category,
           vertical_id: selectedVerticalId,
           enabled: row.enabled,
@@ -329,6 +358,7 @@ export function SourceManagementClient({
     setEditValues({
       name: source.name,
       rssUrl: source.rssUrl,
+      sourceType: source.sourceType,
       category: source.category ?? "",
       verticalId: source.verticalId,
       verticalSlug: source.verticalSlug,
@@ -345,6 +375,7 @@ export function SourceManagementClient({
         body: JSON.stringify({
           name: editValues.name,
           rss_url: editValues.rssUrl,
+          source_type: editValues.sourceType,
           category: editValues.category,
           vertical_id: editValues.verticalId,
           enabled: editValues.enabled,
@@ -576,7 +607,7 @@ export function SourceManagementClient({
 
       <section className="rounded-lg border border-blue-100 bg-blue-50/80 p-5">
         <h2 className="text-2xl font-bold text-blue-950">Add Source</h2>
-        <div className="mt-4 grid gap-3 lg:grid-cols-6">
+        <div className="mt-4 grid gap-3 lg:grid-cols-7">
           <input
             className="min-h-11 rounded-md border border-blue-100 px-3 text-sm"
             onChange={(event) => setName(event.target.value)}
@@ -595,6 +626,17 @@ export function SourceManagementClient({
             placeholder="Category"
             value={category}
           />
+          <select
+            className="min-h-11 rounded-md border border-blue-100 px-3 text-sm capitalize"
+            onChange={(event) => setSourceType(event.target.value as SourceType)}
+            value={sourceType}
+          >
+            {sourceTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
           <select
             className="min-h-11 rounded-md border border-blue-100 px-3 text-sm"
             onChange={(event) => {
@@ -642,7 +684,7 @@ export function SourceManagementClient({
               Bulk Add Sources
             </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-blue-900">
-              Paste one source per line: name,rss_url,category,enabled
+              Paste one source per line: name,rss_url,category,enabled,source_type
             </p>
           </div>
           {bulkImported ? (
@@ -659,7 +701,7 @@ export function SourceManagementClient({
         <textarea
           className="mt-4 min-h-36 w-full rounded-md border border-blue-100 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
           onChange={(event) => setBulkSources(event.target.value)}
-          placeholder="BMX Union,https://bmxunion.com/feed/,News,true"
+          placeholder="BMX Union,https://bmxunion.com/feed/,News,true,rss"
           value={bulkSources}
         />
         {bulkErrors.length ? (
@@ -699,6 +741,7 @@ export function SourceManagementClient({
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">RSS URL</th>
                 <th className="px-4 py-3">Publication</th>
+                <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">State</th>
                 <th className="px-4 py-3">Health</th>
@@ -739,6 +782,9 @@ export function SourceManagementClient({
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {source.verticalName}
+                    </td>
+                    <td className="px-4 py-3 font-semibold capitalize text-slate-700">
+                      {source.sourceType}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {source.category ?? "General"}
@@ -800,8 +846,8 @@ export function SourceManagementClient({
                   </tr>
                   {editingSourceId === source.id ? (
                     <tr className="bg-blue-50/60">
-                      <td className="px-4 py-4" colSpan={9}>
-                        <div className="grid gap-3 lg:grid-cols-6">
+                      <td className="px-4 py-4" colSpan={10}>
+                        <div className="grid gap-3 lg:grid-cols-7">
                           <input
                             className="min-h-10 rounded-md border border-blue-100 px-3 text-sm"
                             onChange={(event) =>
@@ -832,6 +878,22 @@ export function SourceManagementClient({
                             }
                             value={editValues.category}
                           />
+                          <select
+                            className="min-h-10 rounded-md border border-blue-100 px-3 text-sm capitalize"
+                            onChange={(event) =>
+                              setEditValues((current) => ({
+                                ...current,
+                                sourceType: event.target.value as SourceType,
+                              }))
+                            }
+                            value={editValues.sourceType}
+                          >
+                            {sourceTypes.map((type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ))}
+                          </select>
                           <select
                             className="min-h-10 rounded-md border border-blue-100 px-3 text-sm"
                             disabled={Boolean(verticalSlug)}

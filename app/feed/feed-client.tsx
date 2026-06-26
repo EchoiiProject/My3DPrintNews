@@ -264,6 +264,16 @@ function formatDate(value: string): string {
     .toUpperCase();
 }
 
+function storyBadge(article: Article): string {
+  if (article.type === "video") return "Video";
+
+  const badge = article.tags.find((tag) =>
+    ["Video", "Podcast", "News", "Brand", "Blog", "Creator"].includes(tag),
+  );
+
+  return badge ?? "News";
+}
+
 export function FeedStoryCards({
   displayMode = "standard",
   favourites,
@@ -298,6 +308,7 @@ export function FeedStoryCards({
               ? "mb-4 aspect-video max-h-[28rem]"
               : "aspect-video max-h-[18rem]",
         ].join(" ");
+        const badge = storyBadge(scoredArticle.article);
 
         return (
           <div
@@ -325,11 +336,9 @@ export function FeedStoryCards({
                 <div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-                      {scoredArticle.article.type === "video" ? (
-                        <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                          Video
-                        </span>
-                      ) : null}
+                      <span className="rounded-md bg-blue-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                        {badge}
+                      </span>
                       <div className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
                         <span>{scoredArticle.article.source.toUpperCase()}</span>
                         <button

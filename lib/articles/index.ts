@@ -1,7 +1,7 @@
 import Parser from "rss-parser";
 import { adminSlugForPublicationSlug } from "@/config/verticals";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
-import { getManagedSources, type ManagedSource } from "@/lib/sources";
+import { getManagedSources, type ManagedSource, type SourceType } from "@/lib/sources";
 import { getVerticalBySlug } from "@/lib/verticals";
 
 export type ArticleArchiveItem = {
@@ -52,6 +52,7 @@ type ParsedItem = {
   };
   mediaContent?: unknown;
   mediaThumbnail?: unknown;
+  mediaGroup?: unknown;
   ogImage?: unknown;
 };
 
@@ -80,6 +81,7 @@ const parser = new Parser<unknown, ParsedItem>({
     item: [
       ["media:content", "mediaContent", { keepArray: true }],
       ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
+      ["media:group", "mediaGroup"],
       ["content:encoded", "contentEncoded"],
       ["description", "description"],
       ["og:image", "ogImage"],
@@ -145,6 +147,27 @@ function firstFieldImage(value: unknown): string | null {
   return null;
 }
 
+function mediaGroupImage(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    firstFieldImage(record.mediaThumbnail) ??
+    firstFieldImage(record["media:thumbnail"]) ??
+    firstFieldImage(record.mediaContent) ??
+    firstFieldImage(record["media:content"])
+  );
+}
+
+function mediaGroupText(value: unknown, key: string): string | null {
+  if (!value || typeof value !== "object") return null;
+
+  const record = value as Record<string, unknown>;
+
+  return stringValue(record[key]) ?? stringValue(record[`media:${key}`]);
+}
+
 function firstHtmlImage(value: string | null | undefined): string | null {
   if (!value) return null;
 
@@ -159,6 +182,9 @@ function imageUrl(item: ParsedItem) {
 
   const mediaThumbnail = firstFieldImage(item.mediaThumbnail);
   if (mediaThumbnail) return mediaThumbnail;
+
+  const groupedImage = mediaGroupImage(item.mediaGroup);
+  if (groupedImage) return groupedImage;
 
   const enclosureType = item.enclosure?.type?.toLowerCase() ?? "";
 
@@ -178,9 +204,28 @@ function imageUrl(item: ParsedItem) {
 }
 
 function cleanSummary(item: ParsedItem) {
-  const value = item.contentSnippet ?? item.description ?? item.content ?? "";
+  const value =
+    item.contentSnippet ??
+    item.description ??
+    item.content ??
+    item.contentEncoded ??
+    mediaGroupText(item.mediaGroup, "description") ??
+    "";
 
   return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || null;
+}
+
+function sourceTypeTags(source: ManagedSource): string[] {
+  const labelByType: Record<SourceType, string[]> = {
+    rss: ["News"],
+    youtube: ["Video", "YouTube", "Creator"],
+    podcast: ["Podcast"],
+    blog: ["Blog"],
+    brand: ["Brand"],
+    creator: ["Creator"],
+  };
+
+  return labelByType[source.sourceType];
 }
 
 function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
@@ -276,7 +321,13 @@ async function fetchSourceArticles(
         author: item.creator ?? item.author ?? null,
         published_at: itemDate(item),
         source_name: source.name,
-        tags: item.categories ?? [],
+        tags: Array.from(
+          new Set([
+            ...sourceTypeTags(source),
+            source.category ?? null,
+            ...(item.categories ?? []),
+          ].filter((tag): tag is string => Boolean(tag))),
+        ),
         updated_at: checkedAt,
       }));
 

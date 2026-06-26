@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createManagedSource } from "@/lib/sources";
+import { createManagedSource, normaliseSourceType } from "@/lib/sources";
 
 type SourcePayload = {
   name?: unknown;
@@ -8,6 +8,8 @@ type SourcePayload = {
   vertical_id?: unknown;
   verticalSlug?: unknown;
   category?: unknown;
+  source_type?: unknown;
+  sourceType?: unknown;
   enabled?: unknown;
 };
 
@@ -42,6 +44,9 @@ export async function POST(request: Request) {
   const verticalId = text(body.vertical_id);
   const verticalSlug = text(body.verticalSlug);
   const category = text(body.category);
+  const sourceType = normaliseSourceType(
+    text(body.source_type) || text(body.sourceType),
+  );
   const errors: Record<string, string> = {};
 
   if (!name) errors.name = "Source name is required.";
@@ -61,6 +66,7 @@ export async function POST(request: Request) {
     verticalId,
     verticalSlug,
     category: category || null,
+    sourceType,
     enabled: typeof body.enabled === "boolean" ? body.enabled : true,
   });
 

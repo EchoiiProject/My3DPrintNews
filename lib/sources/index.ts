@@ -7,11 +7,13 @@ import type { RssSourceDiagnostic } from "@/lib/rss/diagnostics";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
 export type SourceHealth = "healthy" | "warning" | "offline";
+export type SourceType = "rss" | "youtube" | "podcast" | "blog" | "brand" | "creator";
 
 export type ManagedSource = {
   id: string;
   name: string;
   rssUrl: string;
+  sourceType: SourceType;
   verticalId: string;
   verticalSlug: string;
   verticalName: string;
@@ -53,6 +55,7 @@ type SourceRecord = {
   vertical_id: string | null;
   name: string;
   rss_url: string;
+  source_type?: string | null;
   category: string | null;
   enabled: boolean;
   status?: string | null;
@@ -78,6 +81,21 @@ function normaliseHealth(value: string | undefined): SourceHealth {
   }
 
   return "warning";
+}
+
+export function normaliseSourceType(value: string | null | undefined): SourceType {
+  if (
+    value === "rss" ||
+    value === "youtube" ||
+    value === "podcast" ||
+    value === "blog" ||
+    value === "brand" ||
+    value === "creator"
+  ) {
+    return value;
+  }
+
+  return "rss";
 }
 
 function fallbackSources(verticalSlug?: string): ManagedSource[] {
@@ -108,6 +126,7 @@ function fallbackSources(verticalSlug?: string): ManagedSource[] {
         id: source.id,
         name: source.label,
         rssUrl: source.url ?? "",
+        sourceType: "rss" as const,
         verticalId: "my3dprintnews",
         verticalSlug: "my3dprintnews",
         verticalName: "My3DPrintNews",
@@ -138,6 +157,7 @@ function toManagedSource(
     id: record.id,
     name: record.name,
     rssUrl: record.rss_url,
+    sourceType: normaliseSourceType(record.source_type),
     verticalId: record.vertical_id ?? "",
     verticalSlug: vertical?.slug
       ? adminSlugForPublicationSlug(vertical.slug) ?? vertical.slug
@@ -278,7 +298,7 @@ export async function getManagedSources(
   const query = supabase
     .from("vertical_sources")
     .select(
-      "id,vertical_id,name,rss_url,category,enabled,status,health_status,last_successful_fetch_at,created_at,verticals(slug,name)",
+      "id,vertical_id,name,rss_url,source_type,category,enabled,status,health_status,last_successful_fetch_at,created_at,verticals(slug,name)",
     )
     .neq("status", "archived")
     .order("created_at", { ascending: false });
@@ -423,6 +443,7 @@ export async function createManagedSource(input: {
   verticalId?: string;
   verticalSlug: string;
   category?: string | null;
+  sourceType?: SourceType;
   enabled?: boolean;
 }) {
   const supabase = createServiceSupabaseClient();
@@ -451,6 +472,7 @@ export async function createManagedSource(input: {
     vertical_id: dbVertical.id,
     name: input.name,
     rss_url: input.rssUrl,
+    source_type: normaliseSourceType(input.sourceType),
     category: input.category ?? null,
     enabled: input.enabled ?? true,
     status: input.enabled === false ? "inactive" : "active",
@@ -468,7 +490,7 @@ export async function createManagedSource(input: {
 export async function updateManagedSource(
   id: string,
   patch: Partial<
-    Pick<ManagedSource, "name" | "rssUrl" | "category" | "enabled"> & {
+    Pick<ManagedSource, "name" | "rssUrl" | "sourceType" | "category" | "enabled"> & {
       verticalId: string;
       verticalSlug: string;
     }
@@ -489,6 +511,9 @@ export async function updateManagedSource(
 
   if (typeof patch.name === "string") update.name = patch.name;
   if (typeof patch.rssUrl === "string") update.rss_url = patch.rssUrl;
+  if (typeof patch.sourceType === "string") {
+    update.source_type = normaliseSourceType(patch.sourceType);
+  }
   if (typeof patch.category !== "undefined") update.category = patch.category;
   if (typeof patch.enabled === "boolean") {
     update.enabled = patch.enabled;
