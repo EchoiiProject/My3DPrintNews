@@ -452,6 +452,13 @@ export default async function VerticalAdminPage({
                 ["Hostname", vertical.hostname ?? "Not set"],
                 ["Public URL", publicUrl],
                 ["Internal publication URL", internalPublicationUrl],
+                ["Publication type", vertical.publicationType ?? "industry"],
+                [
+                  "Default collections",
+                  vertical.defaultCollections?.length
+                    ? vertical.defaultCollections.join(", ")
+                    : "Not set",
+                ],
                 ["Visibility", vertical.visibility ?? "public"],
                 ["Publication status", vertical.publicationStatus ?? "live"],
                 [

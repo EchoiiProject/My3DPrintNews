@@ -6,6 +6,8 @@ export type Vertical = {
   publicationName?: string;
   publicationDescription?: string;
   publicationSlug?: string;
+  publicationType?: "industry" | "interest" | "place";
+  defaultCollections?: string[];
   hostname?: string | null;
   visibility?: "private" | "demo" | "public";
   publicationStatus?: "draft" | "live" | "archived";
@@ -88,6 +90,15 @@ export const verticals: Vertical[] = [
     publicationDescription:
       "Daily news, reviews and industry insight from the global 3D printing sector.",
     publicationSlug: "3dprint",
+    publicationType: "industry",
+    defaultCollections: [
+      "News",
+      "Reviews",
+      "Products",
+      "Videos",
+      "Business",
+      "Materials",
+    ],
     hostname: "3dprint.mynewsnetwork.uk",
     visibility: "public",
     publicationStatus: "live",
@@ -117,6 +128,15 @@ export const verticals: Vertical[] = [
     slug: "mybmxnews",
     publicationName: "MyBMXNews",
     publicationSlug: "bmx",
+    publicationType: "interest",
+    defaultCollections: [
+      "Racing",
+      "Freestyle",
+      "Events",
+      "Products",
+      "Videos",
+      "Results",
+    ],
     hostname: "bmx.mynewsnetwork.uk",
     visibility: "demo",
     publicationStatus: "draft",
@@ -139,6 +159,52 @@ export const verticals: Vertical[] = [
     active: true,
     createdAt: "2026-06-23T00:00:00.000Z",
     updatedAt: "2026-06-23T00:00:00.000Z",
+  },
+  {
+    id: "mymanchesternews",
+    name: "MyManchesterNews",
+    slug: "mymanchesternews",
+    publicationName: "MyManchesterNews",
+    publicationDescription:
+      "Local news, business, transport, culture, events, and city updates for Manchester.",
+    publicationSlug: "mymanchesternews",
+    publicationType: "place",
+    defaultCollections: [
+      "News",
+      "Business",
+      "Transport",
+      "Planning",
+      "Property",
+      "Food",
+      "Culture",
+      "Events",
+      "Sport",
+      "Universities",
+    ],
+    hostname: "mymanchesternews.mynewsnetwork.uk",
+    visibility: "demo",
+    publicationStatus: "draft",
+    autoFetchEnabled: true,
+    showInDiscover: true,
+    showNewsletterSignup: true,
+    showFeedback: true,
+    primaryColour: "#475569",
+    domain: "mymanchesternews.example.com",
+    description:
+      "Proof-of-concept place-based publication for Manchester readers.",
+    sector: "Place-based local news",
+    status: "active",
+    relatedVerticalIds: [],
+    publicUrl: "/publications/mymanchesternews",
+    subscriberCount: 0,
+    comingSoon: false,
+    logo: "MN",
+    ownerName: "Demo Platform Owner",
+    ownerEmail: "platform-owner@example.com",
+    sponsorId: null,
+    active: true,
+    createdAt: "2026-06-27T00:00:00.000Z",
+    updatedAt: "2026-06-27T00:00:00.000Z",
   },
   {
     id: "mycyclingnews",
@@ -264,6 +330,7 @@ export const verticals: Vertical[] = [
     id: "mydronenews",
     name: "MyDroneNews",
     slug: "mydronenews",
+    publicationType: "industry",
     domain: "mydronenews.example.com",
     description: "Personalised drone industry news and operator updates.",
     sector: "Drones",
@@ -344,6 +411,7 @@ export const verticals: Vertical[] = [
     id: "myainews",
     name: "MyAINews",
     slug: "myainews",
+    publicationType: "industry",
     domain: "myainews.example.com",
     description: "Personalised AI news, tools, research, and product updates.",
     sector: "Artificial intelligence",
@@ -405,6 +473,7 @@ export const verticals: Vertical[] = [
 export const publicationSlugByAdminSlug: Record<string, string> = {
   my3dprintnews: "3dprint",
   mybmxnews: "bmx",
+  mymanchesternews: "mymanchesternews",
 };
 
 export function adminSlugForPublicationSlug(slug: string): string | undefined {

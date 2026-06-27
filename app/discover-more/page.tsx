@@ -1,40 +1,67 @@
 "use client";
 
 import { verticals, type Vertical } from "@/config/verticals";
-import {
-  getCurrentVertical,
-  getRelatedVerticals,
-  VerticalPublicationCard,
-} from "../discover-more-components";
+import { VerticalPublicationCard } from "../discover-more-components";
 import { FooterLinks } from "../footer-links";
 import { GlobalNav } from "../global-nav";
 
-const popularVerticalIds = [
-  "my3dprintnews",
-  "mybmxnews",
-  "mydronenews",
-  "myrcnews",
-];
+const sectionLabels = {
+  industry: "Industries",
+  interest: "Interests",
+  place: "Places",
+} as const;
 
-const comingSoonVerticalIds = [
-  "myphotographynews",
-  "myfishingnews",
-  "myainews",
-  "myroboticsnews",
-  "myelectricbikenews",
-];
+const sectionDescriptions = {
+  industry: "Publications for sectors, markets, and professional communities.",
+  interest: "Publications for hobbies, sports, and enthusiast communities.",
+  place: "Publications for cities, regions, and local communities.",
+} as const;
 
-function findVerticals(ids: string[]) {
-  return ids
-    .map((id) => verticals.find((vertical) => vertical.id === id))
-    .filter((vertical): vertical is Vertical => Boolean(vertical));
+function publicationsByType(type: NonNullable<Vertical["publicationType"]>) {
+  return verticals.filter(
+    (vertical) =>
+      vertical.showInDiscover !== false && vertical.publicationType === type,
+  );
+}
+
+function PublicationSection({
+  publications,
+  type,
+}: {
+  publications: Vertical[];
+  type: NonNullable<Vertical["publicationType"]>;
+}) {
+  if (!publications.length) return null;
+
+  return (
+    <section className="mt-10">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-950">
+            {sectionLabels[type]}
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            {sectionDescriptions[type]}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {publications.map((vertical) => (
+          <VerticalPublicationCard
+            key={vertical.id}
+            showSubscriberCount={vertical.status === "active"}
+            vertical={vertical}
+          />
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export default function DiscoverMorePage() {
-  const currentVertical = getCurrentVertical();
-  const relatedVerticals = getRelatedVerticals(currentVertical);
-  const popularVerticals = findVerticals(popularVerticalIds);
-  const comingSoonVerticals = findVerticals(comingSoonVerticalIds);
+  const industryPublications = publicationsByType("industry");
+  const interestPublications = publicationsByType("interest");
+  const placePublications = publicationsByType("place");
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
@@ -59,40 +86,15 @@ export default function DiscoverMorePage() {
             </p>
           </header>
 
-          <section className="mt-8">
-            <h2 className="text-2xl font-bold text-slate-950">
-              You might also like
-            </h2>
-            <div className="mt-4 grid gap-5 lg:grid-cols-3">
-              {relatedVerticals.map((vertical) => (
-                <VerticalPublicationCard key={vertical.id} vertical={vertical} />
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-10">
-            <h2 className="text-2xl font-bold text-slate-950">
-              Popular Across The MyNews Network
-            </h2>
-            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {popularVerticals.map((vertical) => (
-                <VerticalPublicationCard
-                  key={vertical.id}
-                  showSubscriberCount
-                  vertical={vertical}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-10">
-            <h2 className="text-2xl font-bold text-slate-950">Coming Soon</h2>
-            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {comingSoonVerticals.map((vertical) => (
-                <VerticalPublicationCard key={vertical.id} vertical={vertical} />
-              ))}
-            </div>
-          </section>
+          <PublicationSection
+            publications={industryPublications}
+            type="industry"
+          />
+          <PublicationSection
+            publications={interestPublications}
+            type="interest"
+          />
+          <PublicationSection publications={placePublications} type="place" />
 
           <section className="mt-10 rounded-lg border border-blue-100 bg-blue-50/80 p-5">
             <h2 className="text-2xl font-bold text-blue-950">

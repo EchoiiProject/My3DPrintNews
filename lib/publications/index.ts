@@ -26,6 +26,8 @@ export type PublicationProfile = {
   description: string;
   slug: string;
   adminSlug: string;
+  publicationType: "industry" | "interest" | "place";
+  defaultCollections: string[];
   hostname: string | null;
   logoUrl: string | null;
   heroImageUrl: string | null;
@@ -49,6 +51,8 @@ export function publicationProfileFromVertical(
       "Specialist news, updates and original-source links.",
     slug: publicationSlugForVertical(vertical),
     adminSlug: vertical.slug,
+    publicationType: vertical.publicationType ?? "industry",
+    defaultCollections: vertical.defaultCollections ?? [],
     hostname: vertical.hostname ?? null,
     logoUrl: vertical.logoUrl ?? null,
     heroImageUrl: vertical.heroImageUrl ?? null,

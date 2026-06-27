@@ -44,6 +44,8 @@ type VerticalRecord = {
   visibility: string;
   publication_name: string | null;
   publication_description: string | null;
+  publication_type: string | null;
+  default_collections: string[] | null;
   hostname: string | null;
   publication_status: string | null;
   auto_fetch_enabled: boolean | null;
@@ -135,6 +137,14 @@ function toAppVertical(record: VerticalRecord): Vertical {
     publicationName,
     publicationDescription,
     publicationSlug,
+    publicationType:
+      record.publication_type === "industry" ||
+      record.publication_type === "interest" ||
+      record.publication_type === "place"
+        ? record.publication_type
+        : configured?.publicationType,
+    defaultCollections:
+      record.default_collections ?? configured?.defaultCollections ?? [],
     hostname: record.hostname ?? configured?.hostname ?? null,
     visibility:
       record.visibility === "private" ||
@@ -247,7 +257,7 @@ function logFallback(context: string, error: unknown) {
 }
 
 const verticalSelect =
-  "id,name,slug,description,status,visibility,publication_name,publication_description,hostname,publication_status,auto_fetch_enabled,show_in_discover,show_newsletter_signup,show_feedback,logo_url,hero_image_url,primary_colour,strategy,sponsor_id,public_url,created_at,updated_at,organisations(name,website_url,contact_email)";
+  "id,name,slug,description,status,visibility,publication_name,publication_description,publication_type,default_collections,hostname,publication_status,auto_fetch_enabled,show_in_discover,show_newsletter_signup,show_feedback,logo_url,hero_image_url,primary_colour,strategy,sponsor_id,public_url,created_at,updated_at,organisations(name,website_url,contact_email)";
 
 export async function getVerticals(): Promise<Vertical[]> {
   const supabase = createServiceSupabaseClient();
