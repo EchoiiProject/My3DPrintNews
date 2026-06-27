@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ArticleArchiveItem } from "@/lib/articles";
 import type { ManagedSource } from "@/lib/sources";
 import type { Vertical } from "@/config/verticals";
+import { EditorialActionButtons } from "../editorial-action-buttons";
 
 function formatDate(value: string | null) {
   if (!value) return "No date";
@@ -18,6 +19,7 @@ export function ArticleArchiveTable({
   currentRecent,
   currentSourceId,
   currentVertical,
+  editorialRole = "platform",
   sources,
   verticalLocked = false,
   verticals,
@@ -26,6 +28,7 @@ export function ArticleArchiveTable({
   currentRecent?: string;
   currentSourceId?: string;
   currentVertical?: string;
+  editorialRole?: "licence_holder" | "platform";
   sources: ManagedSource[];
   verticalLocked?: boolean;
   verticals: Vertical[];
@@ -85,8 +88,10 @@ export function ArticleArchiveTable({
                 <th className="px-4 py-3">Source</th>
                 <th className="px-4 py-3">Published</th>
                 <th className="px-4 py-3">Publication</th>
+                <th className="px-4 py-3">Editorial</th>
                 <th className="px-4 py-3">Tags</th>
                 <th className="px-4 py-3">Original</th>
+                <th className="px-4 py-3">Controls</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -105,6 +110,23 @@ export function ArticleArchiveTable({
                     <td className="px-4 py-3 text-slate-700">
                       {article.verticalName}
                     </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={[
+                          "rounded-md border px-2 py-1 text-xs font-bold uppercase",
+                          article.editorialStatus === "published"
+                            ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                            : "border-amber-100 bg-amber-50 text-amber-800",
+                        ].join(" ")}
+                      >
+                        {article.editorialStatus}
+                      </span>
+                      {article.editorialStatusReason ? (
+                        <p className="mt-1 text-xs text-slate-500">
+                          {article.editorialStatusReason}
+                        </p>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3 text-slate-700">
                       {article.tags.length ? article.tags.join(", ") : "None"}
                     </td>
@@ -116,11 +138,36 @@ export function ArticleArchiveTable({
                         Open
                       </Link>
                     </td>
+                    <td className="min-w-64 px-4 py-3">
+                      <EditorialActionButtons
+                        actions={[
+                          {
+                            actionType: "report",
+                            label: "Request platform review",
+                          },
+                          {
+                            actionType: "pause_article",
+                            label: "Pause from publication",
+                          },
+                          {
+                            actionType: "exclude_from_editions",
+                            label: "Exclude from editions",
+                          },
+                          {
+                            actionType: "resume_article",
+                            label: "Resume article",
+                          },
+                        ]}
+                        articleId={article.id}
+                        role={editorialRole}
+                        verticalId={article.verticalId}
+                      />
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td className="px-4 py-6 text-sm font-semibold text-slate-600" colSpan={6}>
+                  <td className="px-4 py-6 text-sm font-semibold text-slate-600" colSpan={8}>
                     No archived articles match these filters.
                   </td>
                 </tr>

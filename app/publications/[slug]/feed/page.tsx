@@ -57,6 +57,7 @@ export default async function PublicationFeedPage({
   const sources = await getManagedSources(profile.adminSlug);
   const publications = await getPublicationProfiles();
   const articles = await getArticleArchive({
+    publicOnly: true,
     verticalSlug: profile.adminSlug,
     sourceId: query?.source || undefined,
     recentDays: Number.isFinite(recentDays) ? recentDays : undefined,

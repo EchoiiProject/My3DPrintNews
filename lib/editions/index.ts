@@ -63,6 +63,9 @@ type EditionArticleRelation = {
   source_name: string | null;
   tags: unknown;
   created_at: string | null;
+  editorial_status?: string | null;
+  editorial_status_reason?: string | null;
+  editorial_status_updated_at?: string | null;
   verticals?:
     | { name: string | null; slug: string | null }
     | { name: string | null; slug: string | null }[]
@@ -189,6 +192,16 @@ function articleFromRelation(
     createdAt: article.created_at,
     verticalName: vertical?.name ?? "Publication",
     verticalSlug: vertical?.slug ?? "",
+    editorialStatus:
+      article.editorial_status === "flagged" ||
+      article.editorial_status === "paused" ||
+      article.editorial_status === "excluded" ||
+      article.editorial_status === "hidden" ||
+      article.editorial_status === "blocked"
+        ? article.editorial_status
+        : "published",
+    editorialStatusReason: article.editorial_status_reason ?? null,
+    editorialStatusUpdatedAt: article.editorial_status_updated_at ?? null,
   };
 }
 
@@ -235,7 +248,7 @@ export async function getNewsletterEditionByToken(
   const result = await supabase
     .from("newsletter_editions")
     .select(
-      "id,vertical_id,reader_id,frequency,edition_date,title,status,magic_token,created_at,verticals(name,slug),newsletter_edition_items(id,section,position,articles(id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,verticals(name,slug)))",
+      "id,vertical_id,reader_id,frequency,edition_date,title,status,magic_token,created_at,verticals(name,slug),newsletter_edition_items(id,section,position,articles(id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,editorial_status,editorial_status_reason,editorial_status_updated_at,verticals(name,slug)))",
     )
     .eq("magic_token", token)
     .maybeSingle<EditionRow>();
@@ -322,10 +335,14 @@ export async function generateNewsletterEdition({
   const windowDays = frequencyWindowDays(frequency);
   const editionDate = new Date().toISOString().slice(0, 10);
   const recentArticles = await getArticleArchive({
+    editionEligible: true,
     verticalSlug: vertical.slug,
     recentDays: windowDays,
   });
-  const fallbackArticles = await getArticleArchive({ verticalSlug: vertical.slug });
+  const fallbackArticles = await getArticleArchive({
+    editionEligible: true,
+    verticalSlug: vertical.slug,
+  });
   const selectedArticles = selectEditionArticles(
     recentArticles,
     fallbackArticles,

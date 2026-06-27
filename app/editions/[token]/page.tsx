@@ -5,6 +5,7 @@ import {
   type NewsletterEditionItem,
 } from "@/lib/editions";
 import { displayMediaType } from "@/lib/media-types";
+import { EditorialReportButton } from "@/app/editorial-report-button";
 import { FooterLinks } from "@/app/footer-links";
 import { GlobalNav } from "@/app/global-nav";
 import {
@@ -320,6 +321,10 @@ function EditionCard({
                 title={article.title}
                 url={article.url}
               />
+              <EditorialReportButton
+                articleId={article.id}
+                verticalId={article.verticalId}
+              />
             </div>
           </div>
         </div>
@@ -355,7 +360,14 @@ export default async function EditionPage({
   const liveFeedHref = edition?.publicationSlug
     ? `/publications/${edition.publicationSlug}/feed`
     : "/feed";
-  const validItems = edition?.items.filter((item) => item.article) ?? [];
+  const validItems =
+    edition?.items.filter(
+      (item) =>
+        item.article &&
+        item.article.editorialStatus !== "paused" &&
+        item.article.editorialStatus !== "hidden" &&
+        item.article.editorialStatus !== "blocked",
+    ) ?? [];
   const videoCount = validItems.filter(
     (item) => itemMediaType(item) === "video",
   ).length;

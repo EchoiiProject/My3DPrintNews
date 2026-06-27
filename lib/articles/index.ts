@@ -23,7 +23,18 @@ export type ArticleArchiveItem = {
   createdAt: string | null;
   verticalName: string;
   verticalSlug: string;
+  editorialStatus: ArticleEditorialStatus;
+  editorialStatusReason: string | null;
+  editorialStatusUpdatedAt: string | null;
 };
+
+export type ArticleEditorialStatus =
+  | "published"
+  | "flagged"
+  | "paused"
+  | "excluded"
+  | "hidden"
+  | "blocked";
 
 export type ArticleFetchResult = {
   ok: boolean;
@@ -98,6 +109,9 @@ type ArticleRecord = {
   source_name: string | null;
   tags: unknown;
   created_at: string | null;
+  editorial_status?: string | null;
+  editorial_status_reason?: string | null;
+  editorial_status_updated_at?: string | null;
   verticals?:
     | { name: string | null; slug: string | null }
     | { name: string | null; slug: string | null }[]
@@ -330,7 +344,24 @@ function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
     verticalSlug: vertical?.slug
       ? adminSlugForPublicationSlug(vertical.slug) ?? vertical.slug
       : "unknown",
+    editorialStatus: normaliseEditorialStatus(record.editorial_status),
+    editorialStatusReason: record.editorial_status_reason ?? null,
+    editorialStatusUpdatedAt: record.editorial_status_updated_at ?? null,
   };
+}
+
+function normaliseEditorialStatus(value: string | null | undefined): ArticleEditorialStatus {
+  if (
+    value === "flagged" ||
+    value === "paused" ||
+    value === "excluded" ||
+    value === "hidden" ||
+    value === "blocked"
+  ) {
+    return value;
+  }
+
+  return "published";
 }
 
 async function updateSourceAfterFetch(
@@ -733,6 +764,8 @@ export async function fetchArticlesForAllEnabledSources(): Promise<ArticleFetchR
 }
 
 export async function getArticleArchive(filters: {
+  editionEligible?: boolean;
+  publicOnly?: boolean;
   verticalSlug?: string;
   sourceId?: string;
   recentDays?: number;
@@ -752,7 +785,7 @@ export async function getArticleArchive(filters: {
   let query = supabase
     .from("articles")
     .select(
-      "id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,verticals(name,slug)",
+      "id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,editorial_status,editorial_status_reason,editorial_status_updated_at,verticals(name,slug)",
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -767,6 +800,12 @@ export async function getArticleArchive(filters: {
 
   if (filters.sourceId) {
     query = query.eq("source_id", filters.sourceId);
+  }
+
+  if (filters.editionEligible) {
+    query = query.not("editorial_status", "in", "(paused,excluded,hidden,blocked)");
+  } else if (filters.publicOnly) {
+    query = query.not("editorial_status", "in", "(paused,hidden,blocked)");
   }
 
   const { data, error } = await query;

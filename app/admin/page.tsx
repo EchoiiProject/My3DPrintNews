@@ -48,6 +48,12 @@ const adminTools = [
     roles: ["platform_owner"],
   },
   {
+    title: "Editorial Governance",
+    description: "Cases, article pauses, platform overrides, and review logs.",
+    href: "/admin/editorial",
+    roles: ["platform_owner"],
+  },
+  {
     title: "Campaign Placements",
     description: "Future platform and licence-holder campaign inventory.",
     href: "/admin/campaigns",

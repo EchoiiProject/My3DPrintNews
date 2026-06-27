@@ -47,6 +47,7 @@ export default async function VerticalArticleArchivePage({
 
   return (
     <AdminShell
+      currentPublicationSlug={vertical.slug}
       showOrganisations={currentUser.role === "platform_owner"}
       title={`${vertical.name} Articles`}
     >
@@ -89,6 +90,11 @@ export default async function VerticalArticleArchivePage({
               currentRecent={query?.recent}
               currentSourceId={query?.source}
               currentVertical={vertical.slug}
+              editorialRole={
+                currentUser.role === "platform_owner"
+                  ? "platform"
+                  : "licence_holder"
+              }
               sources={sources}
               verticalLocked
               verticals={[vertical]}

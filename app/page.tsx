@@ -26,7 +26,10 @@ export default async function Home() {
 
   await Promise.all(
     publications.map(async (publication) => {
-      const articles = await getArticleArchive({ verticalSlug: publication.slug });
+      const articles = await getArticleArchive({
+        publicOnly: true,
+        verticalSlug: publication.slug,
+      });
       articleCounts.set(publication.id, articles.length);
     }),
   );

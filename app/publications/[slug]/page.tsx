@@ -49,7 +49,10 @@ export default async function PublicationHomePage({
     notFound();
   }
 
-  const articles = await getArticleArchive({ verticalSlug: profile.adminSlug });
+  const articles = await getArticleArchive({
+    publicOnly: true,
+    verticalSlug: profile.adminSlug,
+  });
   const sources = await getManagedSources(profile.adminSlug);
   const publications = await getPublicationProfiles();
 

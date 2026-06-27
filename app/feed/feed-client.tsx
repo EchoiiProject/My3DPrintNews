@@ -19,6 +19,7 @@ import {
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
 import { DiscoverMorePanel } from "../discover-more-components";
+import { EditorialReportButton } from "../editorial-report-button";
 import { FeedbackPanel } from "../feedback-panel";
 import {
   defaultFavourites,
@@ -647,6 +648,10 @@ export function FeedStoryCards({
                     >
                       Send to me
                     </button>
+                    <EditorialReportButton
+                      articleId={scoredArticle.article.id}
+                      verticalId={publicationId}
+                    />
                     {actionStatus[articleKey] ? (
                       <span className="text-sm font-semibold text-blue-700">
                         {actionStatus[articleKey]}

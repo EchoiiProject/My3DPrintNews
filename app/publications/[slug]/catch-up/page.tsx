@@ -58,6 +58,7 @@ export default async function PublicationCatchUpPage({
   const days = allowedWindows.includes(requestedDays) ? requestedDays : 7;
   const publications = await getPublicationProfiles();
   const articles = await getArticleArchive({
+    publicOnly: true,
     verticalSlug: profile.adminSlug,
     recentDays: days,
   });
