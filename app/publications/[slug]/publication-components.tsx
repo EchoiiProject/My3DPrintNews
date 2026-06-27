@@ -5,6 +5,10 @@ import type { PublicationProfile } from "@/lib/publications";
 import { FeedbackPanel } from "@/app/feedback-panel";
 import { FooterLinks } from "@/app/footer-links";
 import { GlobalNav } from "@/app/global-nav";
+import {
+  PublicationReaderHeader,
+  type PublicationSectionKey,
+} from "@/app/publication-reader-header";
 
 export function formatArticleDate(value: string | null) {
   if (!value) return "No date";
@@ -17,11 +21,13 @@ export function formatArticleDate(value: string | null) {
 }
 
 export function PublicationShell({
+  activeSection = "home",
   children,
   description,
   profile,
   title,
 }: {
+  activeSection?: PublicationSectionKey;
   children: React.ReactNode;
   description: string;
   profile: PublicationProfile;
@@ -29,7 +35,7 @@ export function PublicationShell({
 }) {
   const publicationLinks = [
     { href: `/publications/${profile.slug}`, label: "Home" },
-    { href: `/publications/${profile.slug}/feed`, label: "Feed" },
+    { href: `/publications/${profile.slug}/feed`, label: "Latest News" },
     { href: `/publications/${profile.slug}/catch-up`, label: "Catch Up" },
     { href: "/discover-more", label: "Discover More" },
     { href: `/publications/${profile.slug}#feedback`, label: "Feedback" },
@@ -40,25 +46,15 @@ export function PublicationShell({
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
         <GlobalNav brandName="MyNewsNetwork" links={publicationLinks} />
         <div className="flex-1 py-10">
-          <header>
-            <div className="mb-4 flex items-center gap-3">
-              <Link
-                className="inline-flex min-h-12 items-center rounded-lg border border-blue-100 bg-white px-4 text-base font-black tracking-normal text-slate-950 shadow-sm shadow-blue-100/50"
-                href="/"
-              >
-                MyNewsNetwork
-              </Link>
-              <p className="inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-                Publication
-              </p>
-            </div>
-            <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              {title}
-            </h1>
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-              {description}
-            </p>
-          </header>
+          <PublicationReaderHeader
+            activeSection={activeSection}
+            catchUpHref={`/publications/${profile.slug}/catch-up`}
+            description={description}
+            editionHref={undefined}
+            latestHref={`/publications/${profile.slug}/feed`}
+            publicationName={profile.publicationName}
+            title={title}
+          />
           {children}
         </div>
         <FooterLinks />
@@ -164,44 +160,6 @@ export function PublicationLinks({
           </div>
         </div>
       </section>
-      <nav className="flex flex-wrap gap-2">
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white"
-          href={`/publications/${profile.slug}`}
-        >
-          Home
-        </Link>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href={`/publications/${profile.slug}/feed`}
-        >
-          Feed
-        </Link>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href={`/publications/${profile.slug}/catch-up`}
-        >
-          Catch Up
-        </Link>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href="/discover-more"
-        >
-          Discover More
-        </Link>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700"
-          href={`/publications/${profile.slug}#feedback`}
-        >
-          Feedback
-        </Link>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-200 bg-amber-50 px-3 text-sm font-bold text-amber-800"
-          href={`/admin/${profile.adminSlug}`}
-        >
-          Manage this publication
-        </Link>
-      </nav>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { displayMediaType } from "@/lib/media-types";
 import { EditorialReportButton } from "@/app/editorial-report-button";
 import { FooterLinks } from "@/app/footer-links";
 import { GlobalNav } from "@/app/global-nav";
+import { PublicationReaderHeader } from "@/app/publication-reader-header";
 import {
   EditionItemShareActions,
   EditionShareActions,
@@ -189,11 +190,11 @@ function EditionModeSelector({
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
           href={liveFeedHref}
         >
-          Live Feed
+          Latest News
         </Link>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-600">
-        This is a saved snapshot. The live feed may already have newer stories.
+        This is a saved snapshot. Latest News may already have newer stories.
       </p>
     </section>
   );
@@ -398,54 +399,49 @@ export default async function EditionPage({
                 fallback
                 label="Platform Campaign"
               />
-              <header className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 sm:p-7">
-                <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-                  MyNewsNetwork
+              <div className="mt-8">
+                <PublicationReaderHeader
+                  activeSection="edition"
+                  catchUpHref={
+                    edition.publicationSlug
+                      ? `/publications/${edition.publicationSlug}/catch-up`
+                      : undefined
+                  }
+                  description={`Your ${edition.publicationName} ${frequencyLabel(
+                    edition.frequency,
+                  )} for ${formatDate(edition.editionDate)}.`}
+                  editionHref={`/editions/${token}`}
+                  latestHref={liveFeedHref}
+                  publicationName={edition.publicationName}
+                  title="Today's Edition"
+                />
+              </div>
+
+              <section className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4 shadow-xl shadow-blue-950/8">
+                <p className="text-sm font-bold text-blue-950">
+                  Edition summary
                 </p>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Your Personal News Network
-                </p>
-                <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
-                  <div>
-                    <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                      Today&apos;s Edition
-                    </p>
-                    <h1 className="mt-2 text-4xl font-bold leading-tight text-slate-950 sm:text-6xl">
-                      {edition.publicationName}
-                    </h1>
-                    <p className="mt-4 text-lg leading-8 text-slate-600">
-                      Your {edition.publicationName}{" "}
-                      {frequencyLabel(edition.frequency)} for{" "}
-                      {formatDate(edition.editionDate)}.
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-                    <p className="text-sm font-bold text-blue-950">
-                      Edition summary
-                    </p>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {validItems.length} items total
-                      </span>
-                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {storyCount} stories
-                      </span>
-                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {videoCount} videos
-                      </span>
-                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {podcastCount} podcasts
-                      </span>
-                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {readingMinutes(validItems)} min read
-                      </span>
-                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        Generated today
-                      </span>
-                    </div>
-                  </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                    {validItems.length} items total
+                  </span>
+                  <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                    {storyCount} stories
+                  </span>
+                  <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                    {videoCount} videos
+                  </span>
+                  <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                    {podcastCount} podcasts
+                  </span>
+                  <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                    {readingMinutes(validItems)} min read
+                  </span>
+                  <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                    Generated today
+                  </span>
                 </div>
-              </header>
+              </section>
 
               <div className="mt-6 grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
                 <EditionModeSelector liveFeedHref={liveFeedHref} token={token} />
@@ -460,7 +456,7 @@ export default async function EditionPage({
                           className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white hover:bg-blue-700"
                           href={liveFeedHref}
                         >
-                          Continue to Live Feed
+                          Continue to Latest News
                         </Link>
                         <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500">
                           Manage Newsletter Preferences coming soon

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getArticleArchive } from "@/lib/articles";
+import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
   getPublicationProfiles,
@@ -58,6 +58,7 @@ export default async function PublicationHomePage({
 
   return (
     <PublicationShell
+      activeSection="home"
       description={profile.description}
       profile={profile}
       title={profile.publicationName}
@@ -72,8 +73,8 @@ export default async function PublicationHomePage({
         profile={profile}
       />
       <ArchiveStoryCards
-        articles={articles.slice(0, 10)}
-        heading="Latest stories"
+        articles={balanceLatestArticles(articles).slice(0, 10)}
+        heading="Latest News"
         publicationId={profile.vertical.databaseId}
         publicationName={profile.publicationName}
         publicationSlug={profile.slug}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getArticleArchive } from "@/lib/articles";
+import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
   getPublicationProfiles,
@@ -65,6 +65,7 @@ export default async function PublicationCatchUpPage({
 
   return (
     <PublicationShell
+      activeSection="catch-up"
       description={`Catch up on the last ${days} days from ${profile.publicationName}.`}
       profile={profile}
       title={`${profile.publicationName} Catch Up`}
@@ -90,7 +91,7 @@ export default async function PublicationCatchUpPage({
         ))}
       </div>
       <ArchiveStoryCards
-        articles={articles}
+        articles={balanceLatestArticles(articles)}
         heading={`Stories from the last ${days} days`}
         periodDays={days}
         publicationId={profile.vertical.databaseId}

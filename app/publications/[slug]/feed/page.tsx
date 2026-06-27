@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
-import { getArticleArchive } from "@/lib/articles";
+import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
   getPublicationProfiles,
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
 import {
-  FeedFilters,
   PublicationLinks,
   PublicationShell,
 } from "../publication-components";
@@ -26,7 +25,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const title = `${profile.publicationName} Feed`;
+  const title = `${profile.publicationName} Latest News`;
 
   return {
     title: `${title} | MyNewsNetwork`,
@@ -62,28 +61,33 @@ export default async function PublicationFeedPage({
     sourceId: query?.source || undefined,
     recentDays: Number.isFinite(recentDays) ? recentDays : undefined,
   });
+  const countArticles = await getArticleArchive({
+    publicOnly: true,
+    verticalSlug: profile.adminSlug,
+    recentDays: Number.isFinite(recentDays) ? recentDays : undefined,
+  });
 
   return (
     <PublicationShell
-      description={`Archived feed stories from ${profile.publicationName}.`}
+      activeSection="latest"
+      description={`Latest archived stories from ${profile.publicationName}.`}
       profile={profile}
-      title={`${profile.publicationName} Feed`}
+      title={`${profile.publicationName} Latest News`}
     >
       <PublicationLinks
         publications={publications}
         profile={profile}
       />
-      <FeedFilters
+      <ArchiveStoryCards
+        articles={balanceLatestArticles(articles)}
+        countArticles={countArticles}
         currentRecent={query?.recent}
         currentSourceId={query?.source}
-        sources={sources}
-      />
-      <ArchiveStoryCards
-        articles={articles}
-        heading="Archived feed stories"
+        heading="Latest News"
         publicationId={profile.vertical.databaseId}
         publicationName={profile.publicationName}
         publicationSlug={profile.slug}
+        sources={sources}
       />
     </PublicationShell>
   );

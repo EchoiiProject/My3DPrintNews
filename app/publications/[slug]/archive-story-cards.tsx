@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ArticleArchiveItem } from "@/lib/articles";
 import type { Article } from "@/lib/rss";
+import type { ManagedSource } from "@/lib/sources";
 import type { ScoredArticle } from "@/lib/matching";
 import { generateArticleTags } from "@/lib/matching";
 import {
@@ -22,6 +23,7 @@ import {
 
 type DisplayMode = "compact" | "standard" | "visual";
 type MediaFilter = "all" | DisplayMediaType;
+type CollectionFilter = "all" | string;
 
 const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
 const MEDIA_FILTER_KEY = "mynewsnetwork-publication-feed-media-filter";
@@ -54,6 +56,38 @@ function archiveArticleToFeedArticle(article: ArticleArchiveItem): Article {
     imageUrl: article.imageUrl ?? undefined,
     type: "article",
   };
+}
+
+function articleCollection(article: ArticleArchiveItem): string {
+  const mediaType = displayMediaType({
+    tags: article.tags,
+    source: article.sourceName,
+  });
+
+  if (mediaType === "video") return "Videos";
+  if (mediaType === "podcast") return "Podcasts";
+  if (mediaType === "review") return "Reviews";
+
+  return article.tags[0] ?? "News";
+}
+
+function queryHref(
+  publicationSlug: string | undefined,
+  values: Record<string, string | undefined>,
+) {
+  if (!publicationSlug) return "#";
+
+  const params = new URLSearchParams();
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return `/publications/${publicationSlug}/feed${query ? `?${query}` : ""}`;
 }
 
 function archiveArticleToScoredArticle(
@@ -94,23 +128,35 @@ function sortArchiveStories(a: ScoredArticle, b: ScoredArticle): number {
 
 export function ArchiveStoryCards({
   articles,
+  countArticles,
+  currentRecent,
+  currentSourceId,
   heading = "Latest stories",
   publicationId,
   publicationName = "this publication",
   publicationSlug,
+  sources = [],
 }: {
   articles: ArticleArchiveItem[];
+  countArticles?: ArticleArchiveItem[];
+  currentRecent?: string;
+  currentSourceId?: string;
   heading?: string;
   periodDays?: number;
   publicationId?: string;
   publicationName?: string;
   publicationSlug?: string;
+  sources?: ManagedSource[];
 }) {
   const [favourites, setFavourites] =
     useState<Favourites>(defaultFavourites);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
+  const [collectionFilter, setCollectionFilter] =
+    useState<CollectionFilter>("all");
   const [feedActionStatus, setFeedActionStatus] = useState("");
+  const [showMore, setShowMore] = useState(false);
+  const countBaseArticles = countArticles ?? articles;
 
   useEffect(() => {
     const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
@@ -141,13 +187,46 @@ export function ArchiveStoryCards({
                 source: article.sourceName,
               }) === mediaFilter,
           );
+    const collectionArticles =
+      collectionFilter === "all"
+        ? filteredArticles
+        : filteredArticles.filter(
+            (article) => articleCollection(article) === collectionFilter,
+          );
 
-    return filteredArticles
+    return collectionArticles
       .map((article, index) =>
         archiveArticleToScoredArticle(article, index, publicationName),
       )
       .sort(sortArchiveStories);
-  }, [articles, mediaFilter, publicationName]);
+  }, [articles, collectionFilter, mediaFilter, publicationName]);
+
+  const collectionCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    countBaseArticles.forEach((article) => {
+      const collection = articleCollection(article);
+      counts.set(collection, (counts.get(collection) ?? 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .sort(([, countA], [, countB]) => countB - countA)
+      .map(([label, count]) => ({ count, label }));
+  }, [countBaseArticles]);
+
+  const sourceCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    countBaseArticles.forEach((article) => {
+      const key = article.sourceId ?? article.sourceName ?? "unknown";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+
+    return sources.map((source) => ({
+      count: counts.get(source.id) ?? counts.get(source.name) ?? 0,
+      source,
+    }));
+  }, [countBaseArticles, sources]);
 
   const mediaCounts = useMemo(() => {
     const counts: Record<MediaFilter, number> = {
@@ -187,6 +266,10 @@ export function ArchiveStoryCards({
   function chooseMediaFilter(filter: MediaFilter) {
     setMediaFilter(filter);
     localStorage.setItem(MEDIA_FILTER_KEY, filter);
+  }
+
+  function chooseCollection(filter: CollectionFilter) {
+    setCollectionFilter(filter);
   }
 
   async function copyFeedLink() {
@@ -290,6 +373,35 @@ export function ArchiveStoryCards({
             <button
               className={[
                 "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                collectionFilter === "all"
+                  ? "bg-slate-950 text-white"
+                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+              ].join(" ")}
+              onClick={() => chooseCollection("all")}
+              type="button"
+            >
+              All ({countBaseArticles.length})
+            </button>
+            {collectionCounts.slice(0, 6).map((collection) => (
+              <button
+                className={[
+                  "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                  collectionFilter === collection.label
+                    ? "bg-slate-950 text-white"
+                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                ].join(" ")}
+                key={collection.label}
+                onClick={() => chooseCollection(collection.label)}
+                type="button"
+              >
+                {collection.label} ({collection.count})
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+            <button
+              className={[
+                "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
                 mediaFilter === "all"
                   ? "bg-slate-950 text-white"
                   : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
@@ -337,11 +449,99 @@ export function ArchiveStoryCards({
               </button>
             ))}
           </div>
+          <button
+            className="min-h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+            onClick={() => setShowMore((value) => !value)}
+            type="button"
+          >
+            More
+          </button>
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             {stories.length} stories
           </span>
         </div>
       </div>
+      {showMore ? (
+        <section className="mb-4 grid gap-4 rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 md:grid-cols-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Time range
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                ["Today", "1"],
+                ["7 days", "7"],
+                ["14 days", "14"],
+                ["Month", "30"],
+                ["All", undefined],
+              ].map(([label, value]) => (
+                <a
+                  className={[
+                    "rounded-md border px-2.5 py-2 text-xs font-bold",
+                    currentRecent === value || (!currentRecent && !value)
+                      ? "border-blue-500 bg-blue-600 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
+                  ].join(" ")}
+                  href={queryHref(publicationSlug, {
+                    recent: value,
+                    source: currentSourceId,
+                  })}
+                  key={label}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Sources
+            </p>
+            <div className="mt-2 flex max-h-36 flex-wrap gap-2 overflow-auto">
+              <a
+                className={[
+                  "rounded-md border px-2.5 py-2 text-xs font-bold",
+                  !currentSourceId
+                    ? "border-blue-500 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
+                ].join(" ")}
+                href={queryHref(publicationSlug, { recent: currentRecent })}
+              >
+                All sources ({countBaseArticles.length})
+              </a>
+              {sourceCounts
+                .filter((item) => item.count > 0)
+                .map(({ count, source }) => (
+                  <a
+                    className={[
+                      "rounded-md border px-2.5 py-2 text-xs font-bold",
+                      currentSourceId === source.id
+                        ? "border-blue-500 bg-blue-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
+                    ].join(" ")}
+                    href={queryHref(publicationSlug, {
+                      recent: currentRecent,
+                      source: source.id,
+                    })}
+                    key={source.id}
+                  >
+                    {source.name} ({count})
+                  </a>
+                ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Reader controls
+            </p>
+            <div className="mt-2 space-y-2 text-sm font-semibold text-slate-600">
+              <p>Newsletter preferences coming soon.</p>
+              <p>Source controls coming soon.</p>
+              <p>Hidden sources coming soon.</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white/88 p-3">
         <button
           className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"

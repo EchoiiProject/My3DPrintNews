@@ -52,6 +52,67 @@ export type ArticleFetchResult = {
   failedSourceDetails: FailedSourceDetail[];
 };
 
+function archiveTimestamp(article: ArticleArchiveItem): number {
+  const timestamp = new Date(
+    article.publishedAt ?? article.createdAt ?? "",
+  ).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function primaryArticleCollection(article: ArticleArchiveItem): string {
+  return article.tags[0] ?? "News";
+}
+
+export function balanceLatestArticles(
+  articles: ArticleArchiveItem[],
+): ArticleArchiveItem[] {
+  const pending = [...articles].sort(
+    (articleA, articleB) => archiveTimestamp(articleB) - archiveTimestamp(articleA),
+  );
+  const balanced: ArticleArchiveItem[] = [];
+  const maxConsecutiveSourceItems = 2;
+
+  while (pending.length) {
+    const recentSources = balanced
+      .slice(-maxConsecutiveSourceItems)
+      .map((article) => article.sourceName ?? article.sourceId ?? "unknown");
+    const recentCollections = balanced
+      .slice(-2)
+      .map(primaryArticleCollection);
+    const repeatedSource =
+      recentSources.length === maxConsecutiveSourceItems &&
+      new Set(recentSources).size === 1
+        ? recentSources[0]
+        : null;
+    const preferredIndex = pending.findIndex((article) => {
+      const sourceKey = article.sourceName ?? article.sourceId ?? "unknown";
+      const collection = primaryArticleCollection(article);
+
+      return (
+        (!repeatedSource || sourceKey !== repeatedSource) &&
+        !recentCollections.includes(collection)
+      );
+    });
+    const fallbackIndex =
+      preferredIndex >= 0
+        ? preferredIndex
+        : pending.findIndex((article) => {
+            const sourceKey = article.sourceName ?? article.sourceId ?? "unknown";
+
+            return !repeatedSource || sourceKey !== repeatedSource;
+          });
+    const nextIndex = fallbackIndex >= 0 ? fallbackIndex : 0;
+    const [nextArticle] = pending.splice(nextIndex, 1);
+
+    if (nextArticle) {
+      balanced.push(nextArticle);
+    }
+  }
+
+  return balanced;
+}
+
 export type SourceTypeFetchStats = {
   sourcesChecked: number;
   fetched: number;
