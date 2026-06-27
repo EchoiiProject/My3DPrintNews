@@ -25,12 +25,14 @@ export function PublicationShell({
   children,
   description,
   profile,
+  showGlobalNav = true,
   title,
 }: {
   activeSection?: PublicationSectionKey;
   children: React.ReactNode;
   description: string;
   profile: PublicationProfile;
+  showGlobalNav?: boolean;
   title: string;
 }) {
   const publicationLinks = [
@@ -44,7 +46,9 @@ export function PublicationShell({
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
-        <GlobalNav brandName="MyNewsNetwork" links={publicationLinks} />
+        {showGlobalNav ? (
+          <GlobalNav brandName="MyNewsNetwork" links={publicationLinks} />
+        ) : null}
         <div className="flex-1 py-10">
           <PublicationReaderHeader
             activeSection={activeSection}

@@ -108,6 +108,7 @@ export default async function PublicationFeedPage({
       activeSection="latest"
       description={`Latest archived stories from ${profile.publicationName}.`}
       profile={profile}
+      showGlobalNav={false}
       title={`${profile.publicationName} Latest News`}
     >
       <PublicationFeedControls
