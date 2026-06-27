@@ -255,3 +255,83 @@ export async function unhideReaderItem({
 
   return true;
 }
+
+export async function hideReaderSource({
+  email,
+  mutedUntil,
+  reason,
+  sourceId,
+  verticalId,
+}: {
+  email?: string | null;
+  mutedUntil?: string | null;
+  reason?: string | null;
+  sourceId: string | null;
+  verticalId?: string | null;
+}): Promise<boolean> {
+  const supabase = createServiceSupabaseClient();
+  const normalisedEmail = email?.trim().toLowerCase() || null;
+
+  if (!supabase || !sourceId) return false;
+
+  const reader = normalisedEmail
+    ? await getOrCreateReaderProfile(normalisedEmail, supabase)
+    : null;
+  const payload = {
+    reader_id: reader?.id ?? null,
+    email: normalisedEmail,
+    vertical_id: verticalId ?? null,
+    source_id: sourceId,
+    muted_until: mutedUntil ?? null,
+    reason: reason ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  const result = reader?.id
+    ? await supabase
+        .from("reader_hidden_sources")
+        .upsert(payload, { onConflict: "reader_id,source_id" })
+    : await supabase
+        .from("reader_hidden_sources")
+        .upsert(payload, { onConflict: "email,source_id" });
+
+  if (result.error) {
+    console.error("Reader hidden source upsert error", result.error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function unhideReaderSource({
+  email,
+  sourceId,
+}: {
+  email?: string | null;
+  sourceId: string | null;
+}): Promise<boolean> {
+  const supabase = createServiceSupabaseClient();
+  const normalisedEmail = email?.trim().toLowerCase();
+
+  if (!supabase || !sourceId || !normalisedEmail) return false;
+
+  const reader = await getOrCreateReaderProfile(normalisedEmail, supabase);
+  let query = supabase
+    .from("reader_hidden_sources")
+    .delete()
+    .eq("source_id", sourceId);
+
+  if (reader) {
+    query = query.or(`reader_id.eq.${reader.id},email.eq.${normalisedEmail}`);
+  } else {
+    query = query.eq("email", normalisedEmail);
+  }
+
+  const result = await query;
+
+  if (result.error) {
+    console.error("Reader hidden source delete error", result.error);
+    return false;
+  }
+
+  return true;
+}

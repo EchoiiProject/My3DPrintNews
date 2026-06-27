@@ -28,7 +28,15 @@ type CollectionFilter = "all" | string;
 const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
 const MEDIA_FILTER_KEY = "mynewsnetwork-publication-feed-media-filter";
 const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
+const HIDDEN_SOURCES_KEY = "mynewsnetwork-hidden-sources";
 const displayModes: DisplayMode[] = ["compact", "standard", "visual"];
+
+type HiddenSourcePreference = {
+  mutedUntil?: string | null;
+  sourceId: string;
+  sourceName: string;
+  verticalId?: string;
+};
 
 function normaliseDisplayMode(value: string | null): DisplayMode {
   return displayModes.includes(value as DisplayMode)
@@ -43,9 +51,32 @@ function normaliseMediaFilter(value: string | null): MediaFilter {
     : "all";
 }
 
+function hiddenSources(): HiddenSourcePreference[] {
+  try {
+    const value = localStorage.getItem(HIDDEN_SOURCES_KEY);
+
+    return value ? (JSON.parse(value) as HiddenSourcePreference[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function activeHiddenSources(): HiddenSourcePreference[] {
+  const now = Date.now();
+
+  return hiddenSources().filter((source) => {
+    if (!source.mutedUntil) return true;
+
+    const mutedUntil = new Date(source.mutedUntil).getTime();
+
+    return Number.isFinite(mutedUntil) && mutedUntil > now;
+  });
+}
+
 function archiveArticleToFeedArticle(article: ArticleArchiveItem): Article {
   return {
     id: article.id,
+    sourceId: article.sourceId,
     title: article.title,
     link: article.url,
     source: article.sourceName ?? "Unknown source",
@@ -155,6 +186,9 @@ export function ArchiveStoryCards({
   const [collectionFilter, setCollectionFilter] =
     useState<CollectionFilter>("all");
   const [feedActionStatus, setFeedActionStatus] = useState("");
+  const [hiddenSourcePreferences, setHiddenSourcePreferences] = useState<
+    HiddenSourcePreference[]
+  >([]);
   const [showMore, setShowMore] = useState(false);
   const countBaseArticles = countArticles ?? articles;
 
@@ -166,14 +200,31 @@ export function ArchiveStoryCards({
     setMediaFilter(
       normaliseMediaFilter(localStorage.getItem(MEDIA_FILTER_KEY)),
     );
+    setHiddenSourcePreferences(activeHiddenSources());
 
-    if (!savedFavourites) return;
-
-    try {
-      setFavourites(normaliseFavourites(JSON.parse(savedFavourites)));
-    } catch {
-      setFavourites(defaultFavourites);
+    function handleSourcePreferencesChanged() {
+      setHiddenSourcePreferences(activeHiddenSources());
     }
+
+    window.addEventListener(
+      "mynewsnetwork:source-preferences-changed",
+      handleSourcePreferencesChanged,
+    );
+
+    if (savedFavourites) {
+      try {
+        setFavourites(normaliseFavourites(JSON.parse(savedFavourites)));
+      } catch {
+        setFavourites(defaultFavourites);
+      }
+    }
+
+    return () => {
+      window.removeEventListener(
+        "mynewsnetwork:source-preferences-changed",
+        handleSourcePreferencesChanged,
+      );
+    };
   }, []);
 
   const stories = useMemo(() => {
@@ -364,6 +415,43 @@ export function ArchiveStoryCards({
     );
   }
 
+  async function unmuteSource(sourceId: string) {
+    const next = hiddenSources().filter((source) => source.sourceId !== sourceId);
+
+    localStorage.setItem(HIDDEN_SOURCES_KEY, JSON.stringify(next));
+    setHiddenSourcePreferences(activeHiddenSources());
+    window.dispatchEvent(
+      new CustomEvent("mynewsnetwork:source-preferences-changed"),
+    );
+
+    const email = localStorage.getItem(READER_EMAIL_KEY);
+
+    if (!email) {
+      setFeedActionStatus("Source restored.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/reader-actions/source", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "unhide",
+          email,
+          sourceId,
+        }),
+      });
+
+      setFeedActionStatus(
+        response.ok
+          ? "Source restored."
+          : "Restored here. We could not sync it yet.",
+      );
+    } catch {
+      setFeedActionStatus("Restored here. We could not sync it yet.");
+    }
+  }
+
   return (
     <section className="mt-8">
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -536,8 +624,44 @@ export function ArchiveStoryCards({
             </p>
             <div className="mt-2 space-y-2 text-sm font-semibold text-slate-600">
               <p>Newsletter preferences coming soon.</p>
-              <p>Source controls coming soon.</p>
-              <p>Hidden sources coming soon.</p>
+              <p>Use card actions to mute or hide sources for your feed.</p>
+            </div>
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Hidden sources
+              </p>
+              {hiddenSourcePreferences.length ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {hiddenSourcePreferences.map((source) => (
+                    <span
+                      className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700"
+                      key={source.sourceId}
+                    >
+                      {source.sourceName}
+                      {source.mutedUntil ? (
+                        <span className="text-slate-400">
+                          until{" "}
+                          {new Intl.DateTimeFormat("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                          }).format(new Date(source.mutedUntil))}
+                        </span>
+                      ) : null}
+                      <button
+                        className="text-blue-700 hover:text-blue-900"
+                        onClick={() => unmuteSource(source.sourceId)}
+                        type="button"
+                      >
+                        Unmute
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm font-semibold text-slate-600">
+                  No hidden or muted sources in this browser.
+                </p>
+              )}
             </div>
           </div>
         </section>

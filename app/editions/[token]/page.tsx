@@ -260,6 +260,8 @@ function EditionCard({
   return (
     <ReaderHiddenItem
       articleId={article.id}
+      sourceId={article.sourceId}
+      sourceName={article.sourceName}
       url={article.url}
       verticalId={article.verticalId}
     >
@@ -326,6 +328,8 @@ function EditionCard({
               </a>
               <EditionItemShareActions
                 articleId={article.id}
+                sourceId={article.sourceId}
+                sourceName={article.sourceName}
                 title={article.title}
                 url={article.url}
                 verticalId={article.verticalId}

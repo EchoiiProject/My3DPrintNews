@@ -42,6 +42,7 @@ const appConfig = currentSite.metadata;
 const SAVED_ITEMS_KEY = "mynewsnetwork-saved-items";
 const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
 const HIDDEN_ITEMS_KEY = "mynewsnetwork-hidden-items";
+const HIDDEN_SOURCES_KEY = "mynewsnetwork-hidden-sources";
 
 type SavedArticle = {
   articleId?: string;
@@ -53,6 +54,13 @@ type SavedArticle = {
   summary?: string;
   imageUrl?: string;
   savedAt: string;
+};
+
+type HiddenSourcePreference = {
+  mutedUntil?: string | null;
+  sourceId: string;
+  sourceName: string;
+  verticalId?: string;
 };
 
 function savedArticleKey(article: Article) {
@@ -81,6 +89,32 @@ function hiddenArticleKeys(): string[] {
   } catch {
     return [];
   }
+}
+
+function hiddenSources(): HiddenSourcePreference[] {
+  try {
+    const value = localStorage.getItem(HIDDEN_SOURCES_KEY);
+
+    return value ? (JSON.parse(value) as HiddenSourcePreference[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function activeHiddenSources(): HiddenSourcePreference[] {
+  const now = Date.now();
+
+  return hiddenSources().filter((source) => {
+    if (!source.mutedUntil) return true;
+
+    const mutedUntil = new Date(source.mutedUntil).getTime();
+
+    return Number.isFinite(mutedUntil) && mutedUntil > now;
+  });
+}
+
+function activeHiddenSourceIds(): string[] {
+  return activeHiddenSources().map((source) => source.sourceId);
 }
 
 async function copyText(value: string) {
@@ -348,11 +382,32 @@ export function FeedStoryCards({
   const isVisual = displayMode === "visual";
   const [savedKeys, setSavedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
+  const [hiddenSourceIds, setHiddenSourceIds] = useState<string[]>([]);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+  const [sourceMenuArticleKey, setSourceMenuArticleKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setSavedKeys(savedArticles().map((article) => article.url));
     setHiddenKeys(hiddenArticleKeys());
+    setHiddenSourceIds(activeHiddenSourceIds());
+
+    function handleSourcePreferencesChanged() {
+      setHiddenSourceIds(activeHiddenSourceIds());
+    }
+
+    window.addEventListener(
+      "mynewsnetwork:source-preferences-changed",
+      handleSourcePreferencesChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "mynewsnetwork:source-preferences-changed",
+        handleSourcePreferencesChanged,
+      );
+    };
   }, []);
 
   function setStatus(article: Article, message: string) {
@@ -425,6 +480,33 @@ export function FeedStoryCards({
     }
   }
 
+  async function syncHiddenSource(
+    article: Article,
+    mutedUntil?: string | null,
+  ): Promise<boolean> {
+    const email = localStorage.getItem(READER_EMAIL_KEY);
+
+    if (!email || !article.sourceId) return true;
+
+    try {
+      const response = await fetch("/api/reader-actions/source", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          mutedUntil,
+          reason: mutedUntil ? "reader_mute" : "reader_hide",
+          sourceId: article.sourceId,
+          verticalId: publicationId,
+        }),
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   function hideArticle(article: Article) {
     const key = hiddenArticleKey(article);
     const next = Array.from(new Set([...hiddenArticleKeys(), key]));
@@ -447,6 +529,47 @@ export function FeedStoryCards({
         setStatus(
           article,
           "Restored here. We could not update your saved preference yet.",
+        );
+      }
+    });
+  }
+
+  function hideSource(article: Article, days?: number) {
+    if (!article.sourceId) {
+      setStatus(article, "Source controls need an archived source record.");
+      return;
+    }
+
+    const mutedUntil = days
+      ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const next = [
+      ...hiddenSources().filter((source) => source.sourceId !== article.sourceId),
+      {
+        mutedUntil,
+        sourceId: article.sourceId,
+        sourceName: article.source,
+        verticalId: publicationId,
+      },
+    ];
+
+    localStorage.setItem(HIDDEN_SOURCES_KEY, JSON.stringify(next));
+    setHiddenSourceIds(activeHiddenSourceIds());
+    window.dispatchEvent(
+      new CustomEvent("mynewsnetwork:source-preferences-changed"),
+    );
+    setSourceMenuArticleKey(null);
+    setStatus(
+      article,
+      days
+        ? `Muted ${article.source} for ${days} days.`
+        : `Hidden ${article.source}.`,
+    );
+    void syncHiddenSource(article, mutedUntil).then((ok) => {
+      if (!ok) {
+        setStatus(
+          article,
+          "Preference saved here. We could not sync it yet.",
         );
       }
     });
@@ -544,7 +667,13 @@ export function FeedStoryCards({
 
   return (
     <div className="space-y-4">
-      {stories.map((scoredArticle, index) => {
+      {stories
+        .filter(
+          (story) =>
+            !story.article.sourceId ||
+            !hiddenSourceIds.includes(story.article.sourceId),
+        )
+        .map((scoredArticle, index) => {
         const hasImage = Boolean(scoredArticle.article.imageUrl);
         const articleGridClass =
           hasImage && isCompact
@@ -565,6 +694,7 @@ export function FeedStoryCards({
         const hiddenKey = hiddenArticleKey(scoredArticle.article);
         const isHidden = hiddenKeys.includes(hiddenKey);
         const isSaved = savedKeys.includes(scoredArticle.article.link);
+        const sourceMenuOpen = sourceMenuArticleKey === articleKey;
 
         return (
           <div
@@ -774,6 +904,44 @@ export function FeedStoryCards({
                     >
                       Hide from my feed
                     </button>
+                    <div className="relative">
+                      <button
+                        className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                        onClick={() =>
+                          setSourceMenuArticleKey((current) =>
+                            current === articleKey ? null : articleKey,
+                          )
+                        }
+                        type="button"
+                      >
+                        Less from this source
+                      </button>
+                      {sourceMenuOpen ? (
+                        <div className="absolute z-10 mt-2 w-56 rounded-md border border-slate-200 bg-white p-2 shadow-xl shadow-blue-950/10">
+                          <button
+                            className="block w-full rounded px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                            onClick={() => hideSource(scoredArticle.article, 7)}
+                            type="button"
+                          >
+                            Mute source for 7 days
+                          </button>
+                          <button
+                            className="block w-full rounded px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                            onClick={() => hideSource(scoredArticle.article, 30)}
+                            type="button"
+                          >
+                            Mute source for 30 days
+                          </button>
+                          <button
+                            className="block w-full rounded px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                            onClick={() => hideSource(scoredArticle.article)}
+                            type="button"
+                          >
+                            Hide this source
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                     {actionStatus[articleKey] ? (
                       <span className="text-sm font-semibold text-blue-700">
                         {actionStatus[articleKey]}
