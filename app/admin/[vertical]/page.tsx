@@ -318,6 +318,8 @@ export default async function VerticalAdminPage({
           ? { ...action, href: `/admin/${vertical.slug}/feedback` }
           : action.label === "Referral Analytics"
             ? { ...action, href: `/admin/${vertical.slug}/referrals` }
+          : action.label === "Preview Newsletter"
+            ? { ...action, href: `/admin/${vertical.slug}/editions` }
           : action,
       ),
       items: centre.items.map((item) =>
@@ -325,6 +327,12 @@ export default async function VerticalAdminPage({
           ? { ...item, href: `/admin/${vertical.slug}/feedback` }
           : item.label === "Referral Analytics"
             ? { ...item, href: `/admin/${vertical.slug}/referrals` }
+          : item.label === "Newsletter"
+            ? {
+                ...item,
+                href: `/admin/${vertical.slug}/editions`,
+                status: "Ready" as const,
+              }
           : item,
       ),
     };
@@ -332,6 +340,7 @@ export default async function VerticalAdminPage({
 
   return (
     <AdminShell
+      currentPublicationSlug={vertical.slug}
       showOrganisations={isSuperAdmin}
       title={`${vertical.name} Publication Management Centre`}
     >
@@ -411,6 +420,7 @@ export default async function VerticalAdminPage({
                 ["View public site", `/publications/${publicSlug}`],
                 ["View public feed", `/publications/${publicSlug}/feed`],
                 ["View catch up", `/publications/${publicSlug}/catch-up`],
+                ["Editions", `/admin/${vertical.slug}/editions`],
                 ["Article archive", `/admin/${vertical.slug}/articles`],
                 ["Source management", `/admin/${vertical.slug}/sources`],
                 ["Referral analytics", `/admin/${vertical.slug}/referrals`],

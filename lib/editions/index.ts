@@ -250,18 +250,36 @@ export async function getNewsletterEditionByToken(
 
 export async function listNewsletterEditions(): Promise<
   NewsletterEditionSummary[]
-> {
+>;
+export async function listNewsletterEditions(options: {
+  verticalSlug?: string;
+}): Promise<NewsletterEditionSummary[]>;
+export async function listNewsletterEditions({
+  verticalSlug,
+}: {
+  verticalSlug?: string;
+} = {}): Promise<NewsletterEditionSummary[]> {
   const supabase = createServiceSupabaseClient();
 
   if (!supabase) return [];
 
-  const result = await supabase
+  const vertical = verticalSlug ? await getVerticalBySlug(verticalSlug) : null;
+
+  if (verticalSlug && !vertical?.databaseId) return [];
+
+  let query = supabase
     .from("newsletter_editions")
     .select(
       "id,frequency,edition_date,title,status,created_at,verticals(name),newsletter_edition_items(id)",
     )
     .order("created_at", { ascending: false })
     .limit(50);
+
+  if (vertical?.databaseId) {
+    query = query.eq("vertical_id", vertical.databaseId);
+  }
+
+  const result = await query;
 
   if (result.error || !result.data) {
     console.warn("Newsletter edition list lookup failed", result.error);

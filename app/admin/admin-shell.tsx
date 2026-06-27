@@ -20,20 +20,37 @@ const adminLinks = [
 
 export function AdminShell({
   children,
+  currentPublicationSlug,
   showOrganisations = false,
   title = "Platform Admin",
 }: {
   children: ReactNode;
+  currentPublicationSlug?: string;
   showOrganisations?: boolean;
   title?: string;
 }) {
+  const contextualLinks = currentPublicationSlug
+    ? adminLinks.map((link) => {
+        const scopedLinks: Record<string, string> = {
+          "/admin/articles": `/admin/${currentPublicationSlug}/articles`,
+          "/admin/editions": `/admin/${currentPublicationSlug}/editions`,
+          "/admin/feedback": `/admin/${currentPublicationSlug}/feedback`,
+          "/admin/referrals": `/admin/${currentPublicationSlug}/referrals`,
+          "/admin/sources": `/admin/${currentPublicationSlug}/sources`,
+        };
+
+        return scopedLinks[link.href]
+          ? { ...link, href: scopedLinks[link.href] }
+          : link;
+      })
+    : adminLinks;
   const visibleAdminLinks = showOrganisations
     ? [
-        ...adminLinks,
+        ...contextualLinks,
         { href: "/admin/organisations", label: "Licence Holders" },
         { href: "/admin/platform", label: "Platform" },
       ]
-    : adminLinks;
+    : contextualLinks;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
