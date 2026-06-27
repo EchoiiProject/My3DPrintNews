@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 async function copyText(value: string) {
   if (!navigator.clipboard?.writeText) {
@@ -19,6 +19,41 @@ function useShareStatus() {
   }
 
   return { showStatus, status };
+}
+
+function hiddenItems(): string[] {
+  try {
+    const value = localStorage.getItem("mynewsnetwork-hidden-items");
+
+    return value ? (JSON.parse(value) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function ReaderHiddenItem({
+  articleId,
+  children,
+  url,
+}: {
+  articleId?: string | null;
+  children: ReactNode;
+  url: string;
+}) {
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const currentHiddenItems = hiddenItems();
+
+    setHidden(
+      currentHiddenItems.includes(articleId ?? "") ||
+        currentHiddenItems.includes(url),
+    );
+  }, [articleId, url]);
+
+  if (hidden) return null;
+
+  return children;
 }
 
 export function EditionShareActions({
@@ -87,11 +122,15 @@ export function EditionShareActions({
 }
 
 export function EditionItemShareActions({
+  articleId,
   title,
   url,
+  verticalId,
 }: {
+  articleId?: string | null;
   title: string;
   url: string;
+  verticalId?: string | null;
 }) {
   const { showStatus, status } = useShareStatus();
 
@@ -128,6 +167,34 @@ export function EditionItemShareActions({
     }
   }
 
+  async function hideItem() {
+    const key = articleId ?? url;
+    const existing = hiddenItems();
+    const next = Array.from(new Set([...existing, key]));
+    const email = localStorage.getItem("mynewsnetwork-reader-email");
+
+    localStorage.setItem("mynewsnetwork-hidden-items", JSON.stringify(next));
+
+    if (email && articleId) {
+      try {
+        await fetch("/api/reader-actions/hide", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            articleId,
+            email,
+            verticalId,
+          }),
+        });
+      } catch {
+        // Local hide still applies to this browser.
+      }
+    }
+
+    showStatus("Hidden from your feed.");
+    window.setTimeout(() => window.location.reload(), 400);
+  }
+
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
       <button
@@ -143,6 +210,13 @@ export function EditionItemShareActions({
         type="button"
       >
         Copy Item Link
+      </button>
+      <button
+        className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 hover:bg-blue-50"
+        onClick={hideItem}
+        type="button"
+      >
+        Hide from my feed
       </button>
       {status ? (
         <span className="text-sm font-semibold text-blue-700">{status}</span>

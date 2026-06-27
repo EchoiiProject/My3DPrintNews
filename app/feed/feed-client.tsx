@@ -41,6 +41,7 @@ import { AdPlacement } from "../ad-placement";
 const appConfig = currentSite.metadata;
 const SAVED_ITEMS_KEY = "mynewsnetwork-saved-items";
 const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
+const HIDDEN_ITEMS_KEY = "mynewsnetwork-hidden-items";
 
 type SavedArticle = {
   articleId?: string;
@@ -58,11 +59,25 @@ function savedArticleKey(article: Article) {
   return `${article.source}:${article.link}`;
 }
 
+function hiddenArticleKey(article: Article) {
+  return article.id ?? article.link;
+}
+
 function savedArticles(): SavedArticle[] {
   try {
     const value = localStorage.getItem(SAVED_ITEMS_KEY);
 
     return value ? (JSON.parse(value) as SavedArticle[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function hiddenArticleKeys(): string[] {
+  try {
+    const value = localStorage.getItem(HIDDEN_ITEMS_KEY);
+
+    return value ? (JSON.parse(value) as string[]) : [];
   } catch {
     return [];
   }
@@ -332,10 +347,12 @@ export function FeedStoryCards({
   const isCompact = displayMode === "compact";
   const isVisual = displayMode === "visual";
   const [savedKeys, setSavedKeys] = useState<string[]>([]);
+  const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSavedKeys(savedArticles().map((article) => article.url));
+    setHiddenKeys(hiddenArticleKeys());
   }, []);
 
   function setStatus(article: Article, message: string) {
@@ -364,6 +381,36 @@ export function FeedStoryCards({
     } catch {
       // Local save remains the reader-facing source until account sync exists.
     }
+  }
+
+  async function syncHiddenArticle(article: Article) {
+    const email = localStorage.getItem(READER_EMAIL_KEY);
+
+    if (!email || !article.id) return;
+
+    try {
+      await fetch("/api/reader-actions/hide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          articleId: article.id,
+          email,
+          verticalId: publicationId,
+        }),
+      });
+    } catch {
+      // Local hide is enough for anonymous/current-browser filtering.
+    }
+  }
+
+  function hideArticle(article: Article) {
+    const key = hiddenArticleKey(article);
+    const next = Array.from(new Set([...hiddenArticleKeys(), key]));
+
+    localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(next));
+    setHiddenKeys(next);
+    setStatus(article, "Hidden from your feed.");
+    void syncHiddenArticle(article);
   }
 
   function saveArticle(article: Article) {
@@ -458,7 +505,12 @@ export function FeedStoryCards({
 
   return (
     <div className="space-y-4">
-      {stories.map((scoredArticle, index) => {
+      {stories
+        .filter(
+          (scoredArticle) =>
+            !hiddenKeys.includes(hiddenArticleKey(scoredArticle.article)),
+        )
+        .map((scoredArticle, index) => {
         const hasImage = Boolean(scoredArticle.article.imageUrl);
         const articleGridClass =
           hasImage && isCompact
@@ -650,8 +702,16 @@ export function FeedStoryCards({
                     </button>
                     <EditorialReportButton
                       articleId={scoredArticle.article.id}
+                      onHide={() => hideArticle(scoredArticle.article)}
                       verticalId={publicationId}
                     />
+                    <button
+                      className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                      onClick={() => hideArticle(scoredArticle.article)}
+                      type="button"
+                    >
+                      Hide from my feed
+                    </button>
                     {actionStatus[articleKey] ? (
                       <span className="text-sm font-semibold text-blue-700">
                         {actionStatus[articleKey]}

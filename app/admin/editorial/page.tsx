@@ -19,10 +19,62 @@ function formatDate(value: string | null) {
 export default async function EditorialGovernancePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; message?: string }>;
 }) {
   const params = await searchParams;
   const cases = await listEditorialCases();
+  const weekStart = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const casesThisWeek = cases.filter((item) => {
+    const timestamp = new Date(item.createdAt ?? "").getTime();
+
+    return Number.isFinite(timestamp) && timestamp >= weekStart;
+  });
+  const openByPublication = new Map<string, number>();
+  const pausedByPublication = new Map<string, number>();
+
+  cases.forEach((item) => {
+    if (item.status === "open" || item.status === "under_review") {
+      openByPublication.set(
+        item.publicationName,
+        (openByPublication.get(item.publicationName) ?? 0) + 1,
+      );
+    }
+
+    if (item.latestActionType === "pause_article") {
+      pausedByPublication.set(
+        item.publicationName,
+        (pausedByPublication.get(item.publicationName) ?? 0) + 1,
+      );
+    }
+  });
+  const licenceHolderThisWeek = casesThisWeek.filter(
+    (item) => item.raisedByRole === "licence_holder",
+  ).length;
+  const readersThisWeek = casesThisWeek.filter(
+    (item) => item.raisedByRole === "reader",
+  ).length;
+  const summaryCards = [
+    {
+      label: "Open cases by publication",
+      value: Array.from(openByPublication.entries())
+        .map(([publication, count]) => `${publication}: ${count}`)
+        .join(", ") || "None",
+    },
+    {
+      label: "Paused articles by publication",
+      value: Array.from(pausedByPublication.entries())
+        .map(([publication, count]) => `${publication}: ${count}`)
+        .join(", ") || "None",
+    },
+    {
+      label: "Licence-holder cases this week",
+      value: String(licenceHolderThisWeek),
+    },
+    {
+      label: "Reader cases this week",
+      value: String(readersThisWeek),
+    },
+  ];
 
   return (
     <AdminShell showOrganisations title="Editorial Governance">
@@ -52,6 +104,28 @@ export default async function EditorialGovernancePage({
             </p>
           </header>
 
+          {params?.message ? (
+            <section className="mt-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900">
+              {params.message}
+            </section>
+          ) : null}
+
+          <section className="mt-8 grid gap-4 lg:grid-cols-4">
+            {summaryCards.map((card) => (
+              <div
+                className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8"
+                key={card.label}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {card.label}
+                </p>
+                <p className="mt-2 text-sm font-bold leading-6 text-slate-950">
+                  {card.value}
+                </p>
+              </div>
+            ))}
+          </section>
+
           <section className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -62,6 +136,7 @@ export default async function EditorialGovernancePage({
                     <th className="px-4 py-3">Item</th>
                     <th className="px-4 py-3">Reason</th>
                     <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Latest Action</th>
                     <th className="px-4 py-3">Raised</th>
                     <th className="px-4 py-3">Platform Controls</th>
                   </tr>
@@ -98,6 +173,15 @@ export default async function EditorialGovernancePage({
                           <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold uppercase text-slate-600">
                             {item.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {item.latestActionType ?? "No action yet"}
+                          {item.latestActionActorRole ? (
+                            <p className="text-xs text-slate-500">
+                              {item.latestActionActorRole} ·{" "}
+                              {formatDate(item.latestActionAt)}
+                            </p>
+                          ) : null}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
                           {formatDate(item.createdAt)}
@@ -142,7 +226,7 @@ export default async function EditorialGovernancePage({
                     <tr>
                       <td
                         className="px-4 py-6 text-sm font-semibold text-slate-600"
-                        colSpan={7}
+                        colSpan={8}
                       >
                         No editorial cases have been raised yet.
                       </td>

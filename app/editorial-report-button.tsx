@@ -12,9 +12,11 @@ const reasonOptions = [
 
 export function EditorialReportButton({
   articleId,
+  onHide,
   verticalId,
 }: {
   articleId?: string | null;
+  onHide?: () => void;
   verticalId?: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -49,6 +51,9 @@ export function EditorialReportButton({
       );
 
       if (response.ok) setExpanded(false);
+      if (response.ok && form.get("alsoHide") === "on") {
+        onHide?.();
+      }
     } catch {
       setStatus("Report could not be recorded.");
     } finally {
@@ -94,6 +99,12 @@ export function EditorialReportButton({
             name="notes"
             placeholder="Optional note"
           />
+          {onHide ? (
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <input className="h-4 w-4" name="alsoHide" type="checkbox" />
+              Also hide this from my feed
+            </label>
+          ) : null}
           <button
             className="min-h-10 rounded-md bg-slate-950 px-3 text-sm font-bold text-white disabled:bg-slate-400"
             disabled={submitting}

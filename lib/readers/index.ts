@@ -152,3 +152,72 @@ export async function unsaveReadingListItem({
 
   return true;
 }
+
+export async function hideReaderItem({
+  articleId,
+  email,
+  reason,
+  verticalId,
+}: {
+  articleId: string | null;
+  email?: string | null;
+  reason?: string | null;
+  verticalId?: string | null;
+}): Promise<boolean> {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase || !articleId) return false;
+
+  const reader = email ? await getOrCreateReaderProfile(email, supabase) : null;
+  const normalisedEmail = email?.trim().toLowerCase() || null;
+  const payload = {
+    reader_id: reader?.id ?? null,
+    email: normalisedEmail,
+    article_id: articleId,
+    vertical_id: verticalId ?? null,
+    reason: reason || null,
+  };
+  const result = reader?.id
+    ? await supabase
+        .from("reader_hidden_items")
+        .upsert(payload, { onConflict: "reader_id,article_id" })
+    : await supabase.from("reader_hidden_items").insert(payload);
+
+  if (result.error) {
+    if (result.error.code === "23505") return true;
+    console.error("Reader hidden item upsert error", result.error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function getHiddenArticleIdsForEmail(
+  email: string | null | undefined,
+): Promise<string[]> {
+  const supabase = createServiceSupabaseClient();
+  const normalisedEmail = email?.trim().toLowerCase();
+
+  if (!supabase || !normalisedEmail) return [];
+
+  const reader = await getOrCreateReaderProfile(normalisedEmail, supabase);
+  let query = supabase
+    .from("reader_hidden_items")
+    .select("article_id")
+    .eq("email", normalisedEmail);
+
+  if (reader) {
+    query = query.or(`reader_id.eq.${reader.id},email.eq.${normalisedEmail}`);
+  }
+
+  const result = await query;
+
+  if (result.error || !result.data) {
+    console.warn("Reader hidden item lookup failed", result.error);
+    return [];
+  }
+
+  return result.data
+    .map((row) => row.article_id)
+    .filter((value): value is string => typeof value === "string");
+}

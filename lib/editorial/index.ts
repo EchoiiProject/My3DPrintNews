@@ -45,6 +45,9 @@ export type EditorialCase = {
   status: EditorialCaseStatus;
   actionTaken: string | null;
   createdAt: string | null;
+  latestActionActorRole: EditorialRole | null;
+  latestActionAt: string | null;
+  latestActionType: EditorialActionType | null;
   resolvedAt: string | null;
   publicationName: string;
   articleTitle: string | null;
@@ -64,6 +67,13 @@ type EditorialCaseRow = {
   status: EditorialCaseStatus;
   action_taken: string | null;
   created_at: string | null;
+  editorial_actions?:
+    | {
+        action_type: EditorialActionType | null;
+        actor_role: EditorialRole | null;
+        created_at: string | null;
+      }[]
+    | null;
   resolved_at: string | null;
   verticals?: { name: string | null } | { name: string | null }[] | null;
   articles?: { title: string | null } | { title: string | null }[] | null;
@@ -75,6 +85,15 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
 }
 
 function toCase(row: EditorialCaseRow): EditorialCase {
+  const latestAction =
+    row.editorial_actions
+      ?.slice()
+      .sort(
+        (actionA, actionB) =>
+          new Date(actionB.created_at ?? "").getTime() -
+          new Date(actionA.created_at ?? "").getTime(),
+      )[0] ?? null;
+
   return {
     id: row.id,
     verticalId: row.vertical_id,
@@ -88,6 +107,9 @@ function toCase(row: EditorialCaseRow): EditorialCase {
     status: row.status,
     actionTaken: row.action_taken,
     createdAt: row.created_at,
+    latestActionActorRole: latestAction?.actor_role ?? null,
+    latestActionAt: latestAction?.created_at ?? null,
+    latestActionType: latestAction?.action_type ?? null,
     resolvedAt: row.resolved_at,
     publicationName: firstRelation(row.verticals)?.name ?? "Network",
     articleTitle: firstRelation(row.articles)?.title ?? null,
@@ -280,7 +302,7 @@ export async function listEditorialCases(): Promise<EditorialCase[]> {
   const result = await supabase
     .from("editorial_cases")
     .select(
-      "id,vertical_id,article_id,campaign_id,raised_by_role,raised_by_email,reason,notes,severity,status,action_taken,created_at,resolved_at,verticals(name),articles(title),campaigns(title)",
+      "id,vertical_id,article_id,campaign_id,raised_by_role,raised_by_email,reason,notes,severity,status,action_taken,created_at,resolved_at,verticals(name),articles(title),campaigns(title),editorial_actions(action_type,actor_role,created_at)",
     )
     .order("created_at", { ascending: false })
     .limit(100);

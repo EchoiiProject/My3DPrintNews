@@ -38,12 +38,17 @@ export function EditorialActionButtons({
     });
     const result = (await response.json()) as { message?: string };
 
-    setStatus(
+    const message =
       response.ok
         ? result.message ?? "Editorial action recorded."
-        : result.message ?? "Editorial action failed.",
-    );
-    window.setTimeout(() => window.location.reload(), 600);
+        : result.message ?? "Editorial action failed.";
+
+    setStatus(message);
+    window.setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("message", message);
+      window.location.href = url.toString();
+    }, 600);
   }
 
   return (

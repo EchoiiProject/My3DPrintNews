@@ -11,6 +11,7 @@ import { GlobalNav } from "@/app/global-nav";
 import {
   EditionItemShareActions,
   EditionShareActions,
+  ReaderHiddenItem,
 } from "./edition-share-actions";
 
 export const dynamic = "force-dynamic";
@@ -256,13 +257,14 @@ function EditionCard({
   ].join(" ");
 
   return (
-    <article
-      className={[
-        "rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8",
-        isCompact ? "p-3 sm:p-4" : "p-4 sm:p-5",
-      ].join(" ")}
-    >
-      <div className={cardGrid}>
+    <ReaderHiddenItem articleId={article.id} url={article.url}>
+      <article
+        className={[
+          "rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8",
+          isCompact ? "p-3 sm:p-4" : "p-4 sm:p-5",
+        ].join(" ")}
+      >
+        <div className={cardGrid}>
         {article.imageUrl ? (
           <div className={imageClass}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -318,8 +320,10 @@ function EditionCard({
                 Read Original
               </a>
               <EditionItemShareActions
+                articleId={article.id}
                 title={article.title}
                 url={article.url}
+                verticalId={article.verticalId}
               />
               <EditorialReportButton
                 articleId={article.id}
@@ -328,8 +332,9 @@ function EditionCard({
             </div>
           </div>
         </div>
-      </div>
-    </article>
+        </div>
+      </article>
+    </ReaderHiddenItem>
   );
 }
 
