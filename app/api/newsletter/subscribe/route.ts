@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { isValidEmail, subscriberToken } from "@/lib/newsletter";
+import { saveReaderPublicationPreference } from "@/lib/readers";
 import {
   defaultFavourites,
   defaultPreferences,
@@ -134,6 +135,13 @@ export async function POST(request: Request) {
   }
 
   if (publicationId && upsert.data?.id) {
+    await saveReaderPublicationPreference({
+      email,
+      verticalId: publicationId,
+      frequency: requestedFrequency ?? preferences.delivery.frequency,
+      maxItems: Number(preferences.storiesPerUpdate),
+    });
+
     const publicationPreference = await supabase
       .from("subscriber_publication_preferences")
       .upsert(

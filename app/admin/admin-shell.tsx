@@ -12,6 +12,8 @@ const adminLinks = [
   { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/sources", label: "Sources" },
   { href: "/admin/articles", label: "Articles" },
+  { href: "/admin/editions", label: "Editions" },
+  { href: "/admin/campaigns", label: "Campaigns" },
   { href: "/admin/feedback", label: "Feedback" },
   { href: "/admin/referrals", label: "Referrals" },
 ];

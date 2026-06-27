@@ -344,6 +344,27 @@ export function FeedStoryCards({
     }));
   }
 
+  async function syncSavedArticle(article: Article, action: "save" | "unsave") {
+    const email = localStorage.getItem(READER_EMAIL_KEY);
+
+    if (!email || !article.id) return;
+
+    try {
+      await fetch("/api/reader-actions/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          articleId: article.id,
+          verticalId: publicationId,
+          action,
+        }),
+      });
+    } catch {
+      // Local save remains the reader-facing source until account sync exists.
+    }
+  }
+
   function saveArticle(article: Article) {
     const current = savedArticles();
     const exists = current.some((item) => item.url === article.link);
@@ -367,6 +388,7 @@ export function FeedStoryCards({
     localStorage.setItem(SAVED_ITEMS_KEY, JSON.stringify(next));
     setSavedKeys(next.map((item) => item.url));
     setStatus(article, exists ? "Removed from saved items." : "Saved.");
+    void syncSavedArticle(article, exists ? "unsave" : "save");
   }
 
   async function shareArticle(article: Article) {

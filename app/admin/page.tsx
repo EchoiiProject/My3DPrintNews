@@ -42,6 +42,18 @@ const adminTools = [
     roles: ["platform_owner", "vertical_owner"],
   },
   {
+    title: "Newsletter Editions",
+    description: "Saved editions that will power browser and email delivery.",
+    href: "/admin/editions",
+    roles: ["platform_owner"],
+  },
+  {
+    title: "Campaign Placements",
+    description: "Future platform and licence-holder campaign inventory.",
+    href: "/admin/campaigns",
+    roles: ["platform_owner"],
+  },
+  {
     title: "Licence Holder Management",
     description: "Organisations, licence holders, and publication onboarding.",
     href: "/admin/organisations",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isValidEmail } from "@/lib/newsletter";
+import { getOrCreateReaderProfile } from "@/lib/readers";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
 type EmailQueuePayload = {
@@ -86,6 +87,8 @@ export async function POST(request: Request) {
       message: "Email request queued for later sending.",
     });
   }
+
+  await getOrCreateReaderProfile(email, supabase);
 
   const insert = await supabase.from("reader_email_queue").insert({
     vertical_id: text(body.verticalId),
