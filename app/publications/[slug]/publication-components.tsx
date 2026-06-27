@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ArticleArchiveItem } from "@/lib/articles";
+import { articleCollection, type ArticleArchiveItem } from "@/lib/articles";
 import type { ManagedSource } from "@/lib/sources";
 import type { PublicationProfile } from "@/lib/publications";
 import { FeedbackPanel } from "@/app/feedback-panel";
@@ -238,6 +238,200 @@ export function PublicationStats({
           <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
         </div>
       ))}
+    </section>
+  );
+}
+
+function publicationFeedHref(
+  publicationSlug: string,
+  values: {
+    collection?: string;
+    range?: string;
+    source?: string;
+  },
+) {
+  const params = new URLSearchParams();
+
+  if (values.collection) params.set("collection", values.collection);
+  if (values.range) params.set("range", values.range);
+  if (values.source) params.set("source", values.source);
+
+  const query = params.toString();
+
+  return `/publications/${publicationSlug}/feed${query ? `?${query}` : ""}`;
+}
+
+export function PublicationFeedControls({
+  articles,
+  currentCollection = "all",
+  currentRange = "7d",
+  currentSourceId,
+  publicationSlug,
+  sources,
+}: {
+  articles: ArticleArchiveItem[];
+  currentCollection?: string;
+  currentRange?: string;
+  currentSourceId?: string;
+  publicationSlug: string;
+  sources: ManagedSource[];
+}) {
+  const collectionCounts = Array.from(
+    articles.reduce((counts, article) => {
+      const collection = articleCollection(article);
+
+      counts.set(collection, (counts.get(collection) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>()),
+  )
+    .sort(([, countA], [, countB]) => countB - countA)
+    .map(([label, count]) => ({
+      count,
+      label,
+      value: label.toLowerCase(),
+    }));
+  const sourceCountMap = articles
+    .filter(
+      (article) =>
+        currentCollection === "all" ||
+        articleCollection(article).toLowerCase() === currentCollection,
+    )
+    .reduce((counts, article) => {
+      const key = article.sourceId ?? article.sourceName ?? "unknown";
+
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>());
+  const sourceCounts = sources
+    .map((source) => ({
+      count: sourceCountMap.get(source.id) ?? sourceCountMap.get(source.name) ?? 0,
+      source,
+    }))
+    .filter((item) => item.count > 0);
+  const sourceCountTotal = sourceCounts.reduce(
+    (total, item) => total + item.count,
+    0,
+  );
+  const timeRanges = [
+    ["Today", "today"],
+    ["7 days", "7d"],
+    ["14 days", "14d"],
+    ["Month", "month"],
+    ["All", "all"],
+  ];
+
+  return (
+    <section className="mt-5 rounded-lg border border-slate-200 bg-white/88 p-3 shadow-xl shadow-blue-950/8 backdrop-blur">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+          <span className="px-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Time
+          </span>
+          {timeRanges.map(([label, value]) => (
+            <Link
+              className={[
+                "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                currentRange === value
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+              ].join(" ")}
+              href={publicationFeedHref(publicationSlug, {
+                collection: currentCollection,
+                range: value,
+                source: currentSourceId,
+              })}
+              key={value}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+          <span className="px-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Collections
+          </span>
+          <Link
+            className={[
+              "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+              currentCollection === "all"
+                ? "bg-slate-950 text-white"
+                : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+            ].join(" ")}
+            href={publicationFeedHref(publicationSlug, {
+              collection: "all",
+              range: currentRange,
+              source: currentSourceId,
+            })}
+          >
+            All ({articles.length})
+          </Link>
+          {collectionCounts.slice(0, 7).map((collection) => (
+            <Link
+              className={[
+                "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                currentCollection === collection.value
+                  ? "bg-slate-950 text-white"
+                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+              ].join(" ")}
+              href={publicationFeedHref(publicationSlug, {
+                collection: collection.value,
+                range: currentRange,
+                source: currentSourceId,
+              })}
+              key={collection.label}
+            >
+              {collection.label} ({collection.count})
+            </Link>
+          ))}
+        </div>
+        <details className="relative">
+          <summary className="inline-flex min-h-10 cursor-pointer list-none items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700">
+            More
+          </summary>
+          <div className="absolute right-0 z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 shadow-xl shadow-blue-950/12">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Sources
+            </p>
+            <div className="mt-2 flex max-h-44 flex-wrap gap-2 overflow-auto">
+              <Link
+                className={[
+                  "rounded-md border px-2.5 py-2 text-xs font-bold",
+                  !currentSourceId
+                    ? "border-blue-500 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
+                ].join(" ")}
+                href={publicationFeedHref(publicationSlug, {
+                  collection: currentCollection,
+                  range: currentRange,
+                })}
+              >
+                All sources ({sourceCountTotal})
+              </Link>
+              {sourceCounts.map(({ count, source }) => (
+                <Link
+                  className={[
+                    "rounded-md border px-2.5 py-2 text-xs font-bold",
+                    currentSourceId === source.id
+                      ? "border-blue-500 bg-blue-600 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
+                  ].join(" ")}
+                  href={publicationFeedHref(publicationSlug, {
+                    collection: currentCollection,
+                    range: currentRange,
+                    source: source.id,
+                  })}
+                  key={source.id}
+                >
+                  {source.name} ({count})
+                </Link>
+              ))}
+            </div>
+            <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">
+              View density is available on the story list below.
+            </p>
+          </div>
+        </details>
+      </div>
     </section>
   );
 }

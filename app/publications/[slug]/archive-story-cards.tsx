@@ -143,6 +143,7 @@ export function ArchiveStoryCards({
   publicationId,
   publicationName = "this publication",
   publicationSlug,
+  showFeedControls = true,
   sources = [],
 }: {
   articles: ArticleArchiveItem[];
@@ -155,6 +156,7 @@ export function ArchiveStoryCards({
   publicationId?: string;
   publicationName?: string;
   publicationSlug?: string;
+  showFeedControls?: boolean;
   sources?: ManagedSource[];
 }) {
   const [favourites, setFavourites] =
@@ -410,41 +412,43 @@ export function ArchiveStoryCards({
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-slate-950">{heading}</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
-            <a
-              className={[
-                "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                currentCollection === "all"
-                  ? "bg-slate-950 text-white"
-                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
-              ].join(" ")}
-              href={queryHref(publicationSlug, {
-                collection: "all",
-                range: currentRange,
-                source: currentSourceId,
-              })}
-            >
-              All ({countBaseArticles.length})
-            </a>
-            {collectionCounts.slice(0, 6).map((collection) => (
+          {showFeedControls ? (
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
               <a
                 className={[
                   "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                  currentCollection === collection.label.toLowerCase()
+                  currentCollection === "all"
                     ? "bg-slate-950 text-white"
                     : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
                 ].join(" ")}
                 href={queryHref(publicationSlug, {
-                  collection: collection.label.toLowerCase(),
+                  collection: "all",
                   range: currentRange,
                   source: currentSourceId,
                 })}
-                key={collection.label}
               >
-                {collection.label} ({collection.count})
+                All ({countBaseArticles.length})
               </a>
-            ))}
-          </div>
+              {collectionCounts.slice(0, 6).map((collection) => (
+                <a
+                  className={[
+                    "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                    currentCollection === collection.label.toLowerCase()
+                      ? "bg-slate-950 text-white"
+                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                  ].join(" ")}
+                  href={queryHref(publicationSlug, {
+                    collection: collection.label.toLowerCase(),
+                    range: currentRange,
+                    source: currentSourceId,
+                  })}
+                  key={collection.label}
+                >
+                  {collection.label} ({collection.count})
+                </a>
+              ))}
+            </div>
+          ) : null}
           <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
             <span className="px-2 text-xs font-bold uppercase tracking-wide text-slate-500">
               View
@@ -465,19 +469,21 @@ export function ArchiveStoryCards({
               </button>
             ))}
           </div>
-          <button
-            className="min-h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
-            onClick={() => setShowMore((value) => !value)}
-            type="button"
-          >
-            More
-          </button>
+          {showFeedControls ? (
+            <button
+              className="min-h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+              onClick={() => setShowMore((value) => !value)}
+              type="button"
+            >
+              More
+            </button>
+          ) : null}
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             {stories.length} stories
           </span>
         </div>
       </div>
-      {showMore ? (
+      {showFeedControls && showMore ? (
         <section className="mb-4 grid gap-4 rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 md:grid-cols-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">

@@ -10,6 +10,7 @@ import {
 } from "@/lib/publications";
 import { getManagedSources } from "@/lib/sources";
 import {
+  PublicationFeedControls,
   PublicationLinks,
   PublicationShell,
 } from "../publication-components";
@@ -113,6 +114,14 @@ export default async function PublicationFeedPage({
         publications={publications}
         profile={profile}
       />
+      <PublicationFeedControls
+        articles={countArticles}
+        currentCollection={selectedCollection}
+        currentRange={selectedRange}
+        currentSourceId={query?.source}
+        publicationSlug={profile.slug}
+        sources={sources}
+      />
       <ArchiveStoryCards
         articles={balanceLatestArticles(collectionArticles, {
           maxAgeDays: showAllDates ? null : (rangeDays ?? 30),
@@ -125,6 +134,7 @@ export default async function PublicationFeedPage({
         publicationId={profile.vertical.databaseId}
         publicationName={profile.publicationName}
         publicationSlug={profile.slug}
+        showFeedControls={false}
         sources={sources}
       />
     </PublicationShell>
