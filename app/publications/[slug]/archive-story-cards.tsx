@@ -9,11 +9,6 @@ import type { Article } from "@/lib/rss";
 import type { ManagedSource } from "@/lib/sources";
 import type { ScoredArticle } from "@/lib/matching";
 import { generateArticleTags } from "@/lib/matching";
-import {
-  displayMediaType,
-  mediaFilterOptions,
-  type DisplayMediaType,
-} from "@/lib/media-types";
 import { getPublishedTimestamp } from "@/lib/ranking";
 import { FeedStoryCards } from "@/app/feed/feed-client";
 import {
@@ -25,10 +20,8 @@ import {
 } from "@/app/preferences";
 
 type DisplayMode = "compact" | "standard" | "visual";
-type MediaFilter = "all" | DisplayMediaType;
 
 const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
-const MEDIA_FILTER_KEY = "mynewsnetwork-publication-feed-media-filter";
 const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
 const HIDDEN_SOURCES_KEY = "mynewsnetwork-hidden-sources";
 const displayModes: DisplayMode[] = ["compact", "standard", "visual"];
@@ -44,13 +37,6 @@ function normaliseDisplayMode(value: string | null): DisplayMode {
   return displayModes.includes(value as DisplayMode)
     ? (value as DisplayMode)
     : "standard";
-}
-
-function normaliseMediaFilter(value: string | null): MediaFilter {
-  return value === "all" ||
-    mediaFilterOptions.some((option) => option.value === value)
-    ? (value as MediaFilter)
-    : "all";
 }
 
 function hiddenSources(): HiddenSourcePreference[] {
@@ -173,7 +159,6 @@ export function ArchiveStoryCards({
   const [favourites, setFavourites] =
     useState<Favourites>(defaultFavourites);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
-  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [feedActionStatus, setFeedActionStatus] = useState("");
   const [hiddenSourcePreferences, setHiddenSourcePreferences] = useState<
     HiddenSourcePreference[]
@@ -185,9 +170,6 @@ export function ArchiveStoryCards({
     const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
     setDisplayMode(
       normaliseDisplayMode(localStorage.getItem(DISPLAY_MODE_KEY)),
-    );
-    setMediaFilter(
-      normaliseMediaFilter(localStorage.getItem(MEDIA_FILTER_KEY)),
     );
     setHiddenSourcePreferences(activeHiddenSources());
 
@@ -217,23 +199,12 @@ export function ArchiveStoryCards({
   }, []);
 
   const stories = useMemo(() => {
-    const filteredArticles =
-      mediaFilter === "all"
-        ? articles
-        : articles.filter(
-            (article) =>
-              displayMediaType({
-                sourceType: article.sourceType,
-                tags: article.tags,
-                source: article.sourceName,
-              }) === mediaFilter,
-          );
-    return filteredArticles
+    return articles
       .map((article, index) =>
         archiveArticleToScoredArticle(article, index, publicationName),
       )
       .sort(sortArchiveStories);
-  }, [articles, mediaFilter, publicationName]);
+  }, [articles, publicationName]);
 
   const collectionCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -258,8 +229,8 @@ export function ArchiveStoryCards({
           archiveArticleCollection(article).toLowerCase() === currentCollection,
       )
       .forEach((article) => {
-      const key = article.sourceId ?? article.sourceName ?? "unknown";
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+        const key = article.sourceId ?? article.sourceName ?? "unknown";
+        counts.set(key, (counts.get(key) ?? 0) + 1);
       });
 
     return sources.map((source) => ({
@@ -271,28 +242,6 @@ export function ArchiveStoryCards({
     (total, item) => total + item.count,
     0,
   );
-
-  const mediaCounts = useMemo(() => {
-    const counts: Record<MediaFilter, number> = {
-      all: articles.length,
-      news: 0,
-      video: 0,
-      podcast: 0,
-      review: 0,
-    };
-
-    articles.forEach((article) => {
-      const type = displayMediaType({
-        sourceType: article.sourceType,
-        tags: article.tags,
-        source: article.sourceName,
-      });
-
-      counts[type] += 1;
-    });
-
-    return counts;
-  }, [articles]);
 
   function toggleSourceFavourite(source: string) {
     setFavourites((current) => {
@@ -306,11 +255,6 @@ export function ArchiveStoryCards({
   function chooseDisplayMode(mode: DisplayMode) {
     setDisplayMode(mode);
     localStorage.setItem(DISPLAY_MODE_KEY, mode);
-  }
-
-  function chooseMediaFilter(filter: MediaFilter) {
-    setMediaFilter(filter);
-    localStorage.setItem(MEDIA_FILTER_KEY, filter);
   }
 
   async function copyFeedLink() {
@@ -328,11 +272,11 @@ export function ArchiveStoryCards({
       }
 
       await navigator.clipboard.writeText(url);
-      setFeedActionStatus("Feed link copied.");
+      setFeedActionStatus("Latest News link copied.");
     } catch {
       try {
         await navigator.clipboard.writeText(url);
-        setFeedActionStatus("Feed link copied.");
+        setFeedActionStatus("Latest News link copied.");
       } catch {
         setFeedActionStatus("Share unavailable.");
       }
@@ -341,7 +285,7 @@ export function ArchiveStoryCards({
 
   async function emailTodaysFeed() {
     const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
-    const email = window.prompt("Email today's feed to:", existingEmail);
+    const email = window.prompt("Email today's Latest News to:", existingEmail);
 
     if (!email) return;
 
@@ -357,7 +301,6 @@ export function ArchiveStoryCards({
         publicationUrl: window.location.href,
         filterContext: {
           displayMode,
-          mediaFilter,
           path: window.location.pathname,
           search: window.location.search,
           storyCount: stories.length,
@@ -375,8 +318,8 @@ export function ArchiveStoryCards({
 
     setFeedActionStatus(
       response.ok
-        ? result.message ?? "Feed email request queued."
-        : result.message ?? "Feed email request failed.",
+        ? result.message ?? "Latest News email request queued."
+        : result.message ?? "Latest News email request failed.",
     );
   }
 
@@ -481,37 +424,6 @@ export function ArchiveStoryCards({
                 {collection.label} ({collection.count})
               </a>
             ))}
-          </div>
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
-            <button
-              className={[
-                "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                mediaFilter === "all"
-                  ? "bg-slate-950 text-white"
-                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
-              ].join(" ")}
-              onClick={() => chooseMediaFilter("all")}
-              type="button"
-            >
-              All ({mediaCounts.all})
-            </button>
-            {mediaFilterOptions
-              .filter((option) => mediaCounts[option.value] > 0)
-              .map((option) => (
-                <button
-                  className={[
-                    "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                    mediaFilter === option.value
-                      ? "bg-slate-950 text-white"
-                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
-                  ].join(" ")}
-                  key={option.value}
-                  onClick={() => chooseMediaFilter(option.value)}
-                  type="button"
-                >
-                  {option.pluralLabel} ({mediaCounts[option.value]})
-                </button>
-              ))}
           </div>
           <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
             <span className="px-2 text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -673,14 +585,14 @@ export function ArchiveStoryCards({
           onClick={copyFeedLink}
           type="button"
         >
-          Share this feed
+          Share Latest News
         </button>
         <button
           className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
           onClick={emailTodaysFeed}
           type="button"
         >
-          Email me today&apos;s feed
+          Email me today&apos;s Latest News
         </button>
         <button
           className="rounded-md bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700"
