@@ -90,6 +90,15 @@ function groupItems(items: NewsletterEditionItem[]) {
   );
 }
 
+function itemMediaType(item: NewsletterEditionItem) {
+  if (!item.article) return "news";
+
+  return displayMediaType({
+    tags: item.article.tags,
+    source: item.article.sourceName,
+  });
+}
+
 function CampaignSlot({
   campaign,
   fallback = false,
@@ -330,13 +339,12 @@ export default async function EditionPage({
     : "/feed";
   const validItems = edition?.items.filter((item) => item.article) ?? [];
   const videoCount = validItems.filter(
-    (item) =>
-      item.article &&
-      displayMediaType({
-        tags: item.article.tags,
-        source: item.article.sourceName,
-      }) === "video",
+    (item) => itemMediaType(item) === "video",
   ).length;
+  const podcastCount = validItems.filter(
+    (item) => itemMediaType(item) === "podcast",
+  ).length;
+  const storyCount = validItems.length - videoCount - podcastCount;
   const sectionedItems = groupItems(validItems);
 
   return (
@@ -378,10 +386,16 @@ export default async function EditionPage({
                     </p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {validItems.length} Stories
+                        {validItems.length} items total
                       </span>
                       <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
-                        {videoCount} Videos
+                        {storyCount} stories
+                      </span>
+                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                        {videoCount} videos
+                      </span>
+                      <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
+                        {podcastCount} podcasts
                       </span>
                       <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-slate-800">
                         {readingMinutes(validItems)} min read
