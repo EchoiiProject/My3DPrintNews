@@ -7,6 +7,10 @@ import {
 import { displayMediaType } from "@/lib/media-types";
 import { FooterLinks } from "@/app/footer-links";
 import { GlobalNav } from "@/app/global-nav";
+import {
+  EditionItemShareActions,
+  EditionShareActions,
+} from "./edition-share-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +101,15 @@ function itemMediaType(item: NewsletterEditionItem) {
     tags: item.article.tags,
     source: item.article.sourceName,
   });
+}
+
+function itemBadge(item: NewsletterEditionItem): string {
+  const mediaType = itemMediaType(item);
+
+  if (mediaType === "video") return "VIDEO";
+  if (mediaType === "podcast") return "PODCAST";
+  if (mediaType === "review") return "REVIEW";
+  return "NEWS";
 }
 
 function CampaignSlot({
@@ -262,8 +275,7 @@ function EditionCard({
         ) : null}
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-            {item.position ? `#${item.position}` : "Edition item"} ·{" "}
-            {item.section ?? "Story"}
+            {itemBadge(item)}
           </p>
           <h3
             className={[
@@ -295,14 +307,20 @@ function EditionCard({
                 {formatDate(article.publishedAt ?? article.createdAt)}
               </span>
             </div>
-            <a
-              className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 hover:bg-blue-50"
-              href={article.url}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Read Original
-            </a>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 hover:bg-blue-50"
+                href={article.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Read Original
+              </a>
+              <EditionItemShareActions
+                title={article.title}
+                url={article.url}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -429,9 +447,7 @@ export default async function EditionPage({
                         <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500">
                           Reading List coming soon
                         </span>
-                        <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500">
-                          Share Edition coming soon
-                        </span>
+                        <EditionShareActions title={edition.title} />
                       </div>
                     </div>
                     <DisplayModeSelector mode={displayMode} token={token} />
@@ -514,3 +530,4 @@ export default async function EditionPage({
     </main>
   );
 }
+
