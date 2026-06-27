@@ -32,7 +32,7 @@ export function CatchUpClient({
           <div className="mt-4">
             <ActionLinks
               links={[
-                { href: "/feed", label: "Live Feed" },
+                { href: "/feed", label: "Latest News" },
                 { href: "/sources", label: "Sources" },
                 { href: "/updates", label: "Updates" },
               ]}

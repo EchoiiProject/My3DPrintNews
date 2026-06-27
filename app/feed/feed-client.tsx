@@ -37,6 +37,7 @@ import {
   weeklyDayOptions,
 } from "../preferences";
 import { AdPlacement } from "../ad-placement";
+import { MyNewsNetworkEmailDialog } from "../components/my-news-network-dialog";
 
 const appConfig = currentSite.metadata;
 const SAVED_ITEMS_KEY = "mynewsnetwork-saved-items";
@@ -384,11 +385,15 @@ export function FeedStoryCards({
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
   const [hiddenSourceIds, setHiddenSourceIds] = useState<string[]>([]);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+  const [emailArticleRequest, setEmailArticleRequest] =
+    useState<Article | null>(null);
+  const [readerEmail, setReaderEmail] = useState("");
   const [sourceMenuArticleKey, setSourceMenuArticleKey] = useState<string | null>(
     null,
   );
 
   useEffect(() => {
+    setReaderEmail(localStorage.getItem(READER_EMAIL_KEY) ?? "");
     setSavedKeys(savedArticles().map((article) => article.url));
     setHiddenKeys(hiddenArticleKeys());
     setHiddenSourceIds(activeHiddenSourceIds());
@@ -627,13 +632,9 @@ export function FeedStoryCards({
     }
   }
 
-  async function emailArticle(article: Article) {
-    const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
-    const email = window.prompt("Email this article to:", existingEmail);
-
-    if (!email) return;
-
+  async function emailArticle(article: Article, email: string) {
     localStorage.setItem(READER_EMAIL_KEY, email);
+    setReaderEmail(email);
     const response = await fetch("/api/reader-actions/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -667,6 +668,26 @@ export function FeedStoryCards({
 
   return (
     <div className="space-y-4">
+      <MyNewsNetworkEmailDialog
+        body={
+          emailArticleRequest
+            ? `Send "${emailArticleRequest.title}" to your email.`
+            : undefined
+        }
+        confirmLabel="Send to me"
+        defaultEmail={readerEmail}
+        heading="Send Article"
+        onCancel={() => setEmailArticleRequest(null)}
+        onSubmit={(email) => {
+          if (!emailArticleRequest) return;
+
+          const article = emailArticleRequest;
+
+          setEmailArticleRequest(null);
+          void emailArticle(article, email);
+        }}
+        open={Boolean(emailArticleRequest)}
+      />
       {stories
         .filter(
           (story) =>
@@ -887,7 +908,7 @@ export function FeedStoryCards({
                     </button>
                     <button
                       className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                      onClick={() => emailArticle(scoredArticle.article)}
+                      onClick={() => setEmailArticleRequest(scoredArticle.article)}
                       type="button"
                     >
                       Send to me

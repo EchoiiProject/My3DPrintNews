@@ -1,6 +1,6 @@
 import Link from "next/link";
 const primaryLinks = [
-  { href: "/feed", label: "Feed" },
+  { href: "/feed", label: "Latest News" },
   { href: "/catch-up", label: "Catch Up" },
   { href: "/sources", label: "Sources" },
   { href: "/updates", label: "Updates" },

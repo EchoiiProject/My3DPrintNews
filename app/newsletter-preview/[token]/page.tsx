@@ -113,7 +113,7 @@ export default async function NewsletterPreviewPage({
     return (
       <PreviewShell title="Newsletter preview not found">
         <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-          This preview link could not be found. You can open your live feed or
+          This preview link could not be found. You can open Latest News or
           create a fresh set of preferences.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
@@ -121,7 +121,7 @@ export default async function NewsletterPreviewPage({
             className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700"
             href="/feed"
           >
-            Go to live feed
+            Go to Latest News
           </Link>
           <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
@@ -164,7 +164,7 @@ export default async function NewsletterPreviewPage({
         <ActionLinks
           links={[
             { href: `/saved-feed/${token}`, label: "Saved Feed" },
-            { href: "/feed", label: "Live Feed" },
+            { href: "/feed", label: "Latest News" },
             { href: "/catch-up", label: "Catch Up" },
           ]}
         />

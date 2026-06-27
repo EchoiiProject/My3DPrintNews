@@ -144,7 +144,7 @@ export default async function Home() {
                         className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
                         href={`/publications/${publicSlug}/feed`}
                       >
-                        Feed
+                        Latest News
                       </Link>
                     </div>
                   </article>

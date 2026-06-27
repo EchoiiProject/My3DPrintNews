@@ -74,7 +74,7 @@ function optionLabels(options: SelectorOption[]): string[] {
 function statusIndicator(status?: RegistryItem["status"]) {
   if (status === "active") {
     return {
-      label: "Active Feed",
+      label: "Active Source",
       className: "border-emerald-100 bg-emerald-50 text-emerald-700",
     };
   }
@@ -208,13 +208,13 @@ export default function SourcesPage() {
 
         <header className="py-9 sm:py-12">
           <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-            Expanded feed builder
+            Expanded Latest News builder
           </p>
           <h1 className="text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
             Select from all
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            Build a broader 3D printing signal by choosing from all available
+            Build a broader MyNewsNetwork signal by choosing from available
             brands, creators, sources, model platforms, topics and technologies.
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -223,7 +223,7 @@ export default function SourcesPage() {
               onClick={buildFeed}
               type="button"
             >
-              Build My Feed
+              Build My Latest News
             </button>
             <span className="text-sm font-semibold text-slate-500">
               Selections save automatically on this device.
@@ -232,7 +232,7 @@ export default function SourcesPage() {
           <div className="mt-4">
             <ActionLinks
               links={[
-                { href: "/feed", label: "Feed" },
+                { href: "/feed", label: "Latest News" },
                 { href: "/catch-up", label: "Catch Up" },
                 { href: "/updates", label: "Updates" },
               ]}

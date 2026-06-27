@@ -37,7 +37,7 @@ const managementCentres: ManagementCentre[] = [
     actions: [
       { label: "Review Sources", href: null },
       { label: "View Updates", href: "/updates" },
-      { label: "Open Feed", href: "/feed" },
+      { label: "Open Latest News", href: "/feed" },
       { label: "Article Archive", href: null },
     ],
     items: [
@@ -418,7 +418,7 @@ export default async function VerticalAdminPage({
             <div className="mt-4 flex flex-wrap gap-2">
               {[
                 ["View public site", `/publications/${publicSlug}`],
-                ["View public feed", `/publications/${publicSlug}/feed`],
+                ["View public Latest News", `/publications/${publicSlug}/feed`],
                 ["View catch up", `/publications/${publicSlug}/catch-up`],
                 ["Editions", `/admin/${vertical.slug}/editions`],
                 ["Article archive", `/admin/${vertical.slug}/articles`],

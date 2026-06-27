@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState } from "react";
+import { MyNewsNetworkConfirmDialog } from "@/app/components/my-news-network-dialog";
 import type { ManagedSource, SourceDiagnostics, SourceType } from "@/lib/sources";
 import {
   publicationSlugForVertical,
@@ -63,6 +64,11 @@ type BulkSourceRow = {
   sourceType: SourceType;
   enabled: boolean;
   lineNumber: number;
+};
+
+type PendingBulkImport = {
+  publicationName: string;
+  rows: BulkSourceRow[];
 };
 
 const sourceTypes: SourceType[] = [
@@ -360,6 +366,10 @@ export function SourceManagementClient({
   const [bulkErrors, setBulkErrors] = useState<string[]>([]);
   const [bulkImported, setBulkImported] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
+  const [pendingBulkImport, setPendingBulkImport] =
+    useState<PendingBulkImport | null>(null);
+  const [pendingDeleteSource, setPendingDeleteSource] =
+    useState<ManagedSource | null>(null);
   const [fetchSummary, setFetchSummary] = useState<SourceActionResponse | null>(
     null,
   );
@@ -407,7 +417,7 @@ export function SourceManagementClient({
     setEnabled(true);
   }
 
-  async function bulkAddSources() {
+  function bulkAddSources() {
     const parsed = parseBulkSourceRows(bulkSources);
     setBulkErrors(parsed.errors);
     setBulkImported(false);
@@ -426,22 +436,25 @@ export function SourceManagementClient({
       return;
     }
 
-    if (
-      !window.confirm(
-        `You are about to import ${parsed.rows.length} sources into ${
-          importTarget.publicationName ?? importTarget.name
-        }.`,
-      )
-    ) {
-      return;
-    }
+    setPendingBulkImport({
+      publicationName: importTarget.publicationName ?? importTarget.name,
+      rows: parsed.rows,
+    });
+  }
+
+  async function confirmBulkAddSources() {
+    if (!pendingBulkImport) return;
+
+    const rows = pendingBulkImport.rows;
+
+    setPendingBulkImport(null);
 
     setBulkSaving(true);
     setMessage("Saving sources...");
 
     const apiErrors: string[] = [];
 
-    for (const row of parsed.rows) {
+    for (const row of rows) {
       const response = await fetch("/api/admin/sources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -471,7 +484,7 @@ export function SourceManagementClient({
 
     setBulkImported(true);
     setBulkSources("");
-    setMessage(`${parsed.rows.length} sources added.`);
+    setMessage(`${rows.length} sources added.`);
     router.refresh();
   }
 
@@ -520,8 +533,16 @@ export function SourceManagementClient({
     setEditingSourceId(null);
   }
 
-  async function deleteSource(source: ManagedSource) {
-    if (!window.confirm(`Delete ${source.name}?`)) return;
+  function deleteSource(source: ManagedSource) {
+    setPendingDeleteSource(source);
+  }
+
+  async function confirmDeleteSource() {
+    if (!pendingDeleteSource) return;
+
+    const source = pendingDeleteSource;
+
+    setPendingDeleteSource(null);
 
     await sourceRequest(
       `/api/admin/sources/${source.id}`,
@@ -1446,7 +1467,7 @@ export function SourceManagementClient({
             {[
               ["View Article Archive", `/admin/${selectedAdminSlug}/articles`],
               ["View Public Publication", `/publications/${selectedPublicSlug}`],
-              ["View Feed", `/publications/${selectedPublicSlug}/feed`],
+              ["View Latest News", `/publications/${selectedPublicSlug}/feed`],
               ["Source Management", `/admin/${selectedAdminSlug}/sources`],
             ].map(([label, href]) => (
               <a
@@ -1872,6 +1893,32 @@ export function SourceManagementClient({
           </div>
         </div>
       </section>
+
+      <MyNewsNetworkConfirmDialog
+        body={
+          pendingBulkImport
+            ? `You are about to import ${pendingBulkImport.rows.length} sources into ${pendingBulkImport.publicationName}.`
+            : undefined
+        }
+        confirmLabel="Import Sources"
+        heading="Import Sources"
+        onCancel={() => setPendingBulkImport(null)}
+        onConfirm={confirmBulkAddSources}
+        open={Boolean(pendingBulkImport)}
+      />
+
+      <MyNewsNetworkConfirmDialog
+        body={
+          pendingDeleteSource
+            ? `Archive ${pendingDeleteSource.name}? It will be removed from active source management but existing article history will remain.`
+            : undefined
+        }
+        confirmLabel="Archive Source"
+        heading="Archive Source"
+        onCancel={() => setPendingDeleteSource(null)}
+        onConfirm={confirmDeleteSource}
+        open={Boolean(pendingDeleteSource)}
+      />
     </div>
   );
 }

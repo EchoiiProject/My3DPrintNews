@@ -192,7 +192,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Choose the brands, model platforms, technologies, and story types
               you care about,
-              then generate a focused specialist news feed.
+              then generate focused specialist Latest News.
             </p>
 
             <div
@@ -297,7 +297,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
                 onClick={buildFeed}
                 type="button"
               >
-                Build My Feed
+                Build My Latest News
               </button>
               <span className="text-sm font-medium text-slate-500">
                 Saved locally on this device.
@@ -314,10 +314,10 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-blue-700">
-                    Feed Builder
+                    Latest News Builder
                   </p>
                   <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                    Customise Your Feed
+                    Customise Your Latest News
                   </h2>
                   {preferences.sources.length ? (
                     <p className="mt-1 text-sm font-semibold text-slate-500">

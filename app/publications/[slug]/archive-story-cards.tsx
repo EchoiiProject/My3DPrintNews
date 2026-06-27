@@ -11,6 +11,7 @@ import type { ScoredArticle } from "@/lib/matching";
 import { generateArticleTags } from "@/lib/matching";
 import { getPublishedTimestamp } from "@/lib/ranking";
 import { FeedStoryCards } from "@/app/feed/feed-client";
+import { MyNewsNetworkEmailDialog } from "@/app/components/my-news-network-dialog";
 import {
   defaultFavourites,
   FAVOURITES_KEY,
@@ -160,6 +161,10 @@ export function ArchiveStoryCards({
     useState<Favourites>(defaultFavourites);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
   const [feedActionStatus, setFeedActionStatus] = useState("");
+  const [emailDialog, setEmailDialog] = useState<
+    "latest-news" | "newsletter" | null
+  >(null);
+  const [readerEmail, setReaderEmail] = useState("");
   const [hiddenSourcePreferences, setHiddenSourcePreferences] = useState<
     HiddenSourcePreference[]
   >([]);
@@ -171,6 +176,7 @@ export function ArchiveStoryCards({
     setDisplayMode(
       normaliseDisplayMode(localStorage.getItem(DISPLAY_MODE_KEY)),
     );
+    setReaderEmail(localStorage.getItem(READER_EMAIL_KEY) ?? "");
     setHiddenSourcePreferences(activeHiddenSources());
 
     function handleSourcePreferencesChanged() {
@@ -283,13 +289,9 @@ export function ArchiveStoryCards({
     }
   }
 
-  async function emailTodaysFeed() {
-    const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
-    const email = window.prompt("Email today's Latest News to:", existingEmail);
-
-    if (!email) return;
-
+  async function emailTodaysFeed(email: string) {
     localStorage.setItem(READER_EMAIL_KEY, email);
+    setReaderEmail(email);
     const response = await fetch("/api/reader-actions/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -323,13 +325,9 @@ export function ArchiveStoryCards({
     );
   }
 
-  async function subscribeDaily() {
-    const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
-    const email = window.prompt("Subscribe to daily newsletter:", existingEmail);
-
-    if (!email) return;
-
+  async function subscribeDaily(email: string) {
     localStorage.setItem(READER_EMAIL_KEY, email);
+    setReaderEmail(email);
     const response = await fetch("/api/newsletter/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -387,6 +385,28 @@ export function ArchiveStoryCards({
 
   return (
     <section className="mt-8">
+      <MyNewsNetworkEmailDialog
+        body={
+          emailDialog === "latest-news"
+            ? `Send today's Latest News from ${publicationName} to your email.`
+            : `Subscribe to the daily ${publicationName} newsletter.`
+        }
+        confirmLabel={
+          emailDialog === "latest-news" ? "Send Latest News" : "Subscribe"
+        }
+        defaultEmail={readerEmail}
+        heading={emailDialog === "latest-news" ? "Email Latest News" : "Subscribe"}
+        onCancel={() => setEmailDialog(null)}
+        onSubmit={(email) => {
+          const action = emailDialog;
+
+          setEmailDialog(null);
+
+          if (action === "latest-news") void emailTodaysFeed(email);
+          if (action === "newsletter") void subscribeDaily(email);
+        }}
+        open={Boolean(emailDialog)}
+      />
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-slate-950">{heading}</h2>
         <div className="flex flex-wrap items-center gap-3">
@@ -589,14 +609,14 @@ export function ArchiveStoryCards({
         </button>
         <button
           className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
-          onClick={emailTodaysFeed}
+          onClick={() => setEmailDialog("latest-news")}
           type="button"
         >
           Email me today&apos;s Latest News
         </button>
         <button
           className="rounded-md bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700"
-          onClick={subscribeDaily}
+          onClick={() => setEmailDialog("newsletter")}
           type="button"
         >
           Subscribe to daily newsletter
