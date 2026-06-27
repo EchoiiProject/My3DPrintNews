@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
-import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
+import {
+  articleCollection,
+  balanceLatestArticles,
+  getArticleArchive,
+} from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
   getPublicationProfiles,
@@ -42,7 +46,12 @@ export default async function PublicationFeedPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ recent?: string; source?: string }>;
+  searchParams?: Promise<{
+    collection?: string;
+    range?: string;
+    recent?: string;
+    source?: string;
+  }>;
 }) {
   const { slug } = await params;
   const query = await searchParams;
@@ -52,24 +61,46 @@ export default async function PublicationFeedPage({
     notFound();
   }
 
-  const selectedRecent = query?.recent ?? "30";
-  const showAllDates = selectedRecent === "all";
-  const recentDays = showAllDates ? undefined : Number(selectedRecent);
-  const archiveRecentDays =
-    !showAllDates && Number.isFinite(recentDays) ? recentDays : undefined;
   const sources = await getManagedSources(profile.adminSlug);
   const publications = await getPublicationProfiles();
+  const todayArticles = await getArticleArchive({
+    publicOnly: true,
+    verticalSlug: profile.adminSlug,
+    recentDays: 1,
+  });
+  const selectedRange = query?.range ?? query?.recent ?? (todayArticles.length ? "today" : "7d");
+  const rangeDays =
+    selectedRange === "today"
+      ? 1
+      : selectedRange === "7d"
+        ? 7
+        : selectedRange === "14d"
+          ? 14
+          : selectedRange === "month"
+            ? 30
+            : selectedRange === "all"
+              ? undefined
+              : 7;
+  const selectedCollection = query?.collection ?? "all";
+  const showAllDates = selectedRange === "all";
   const articles = await getArticleArchive({
     publicOnly: true,
     verticalSlug: profile.adminSlug,
     sourceId: query?.source || undefined,
-    recentDays: archiveRecentDays,
+    recentDays: rangeDays,
   });
   const countArticles = await getArticleArchive({
     publicOnly: true,
     verticalSlug: profile.adminSlug,
-    recentDays: archiveRecentDays,
+    recentDays: rangeDays,
   });
+  const collectionArticles =
+    selectedCollection === "all"
+      ? articles
+      : articles.filter(
+          (article) =>
+            articleCollection(article).toLowerCase() === selectedCollection,
+        );
 
   return (
     <PublicationShell
@@ -83,11 +114,12 @@ export default async function PublicationFeedPage({
         profile={profile}
       />
       <ArchiveStoryCards
-        articles={balanceLatestArticles(articles, {
-          maxAgeDays: showAllDates ? null : 30,
+        articles={balanceLatestArticles(collectionArticles, {
+          maxAgeDays: showAllDates ? null : (rangeDays ?? 30),
         })}
+        currentCollection={selectedCollection}
         countArticles={countArticles}
-        currentRecent={selectedRecent}
+        currentRange={selectedRange}
         currentSourceId={query?.source}
         heading="Latest News"
         publicationId={profile.vertical.databaseId}

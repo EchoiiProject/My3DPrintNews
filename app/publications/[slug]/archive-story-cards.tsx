@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ArticleArchiveItem } from "@/lib/articles";
+import {
+  articleCollection as archiveArticleCollection,
+  type ArticleArchiveItem,
+} from "@/lib/articles";
 import type { Article } from "@/lib/rss";
 import type { ManagedSource } from "@/lib/sources";
 import type { ScoredArticle } from "@/lib/matching";
@@ -23,7 +26,6 @@ import {
 
 type DisplayMode = "compact" | "standard" | "visual";
 type MediaFilter = "all" | DisplayMediaType;
-type CollectionFilter = "all" | string;
 
 const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
 const MEDIA_FILTER_KEY = "mynewsnetwork-publication-feed-media-filter";
@@ -85,21 +87,8 @@ function archiveArticleToFeedArticle(article: ArticleArchiveItem): Article {
     summary: article.summary ?? "",
     tags: article.tags,
     imageUrl: article.imageUrl ?? undefined,
-    type: "article",
+    type: article.sourceType === "youtube" ? "video" : "article",
   };
-}
-
-function articleCollection(article: ArticleArchiveItem): string {
-  const mediaType = displayMediaType({
-    tags: article.tags,
-    source: article.sourceName,
-  });
-
-  if (mediaType === "video") return "Videos";
-  if (mediaType === "podcast") return "Podcasts";
-  if (mediaType === "review") return "Reviews";
-
-  return article.tags[0] ?? "News";
 }
 
 function queryHref(
@@ -160,7 +149,8 @@ function sortArchiveStories(a: ScoredArticle, b: ScoredArticle): number {
 export function ArchiveStoryCards({
   articles,
   countArticles,
-  currentRecent,
+  currentCollection = "all",
+  currentRange = "7d",
   currentSourceId,
   heading = "Latest stories",
   publicationId,
@@ -170,7 +160,8 @@ export function ArchiveStoryCards({
 }: {
   articles: ArticleArchiveItem[];
   countArticles?: ArticleArchiveItem[];
-  currentRecent?: string;
+  currentCollection?: string;
+  currentRange?: string;
   currentSourceId?: string;
   heading?: string;
   periodDays?: number;
@@ -183,8 +174,6 @@ export function ArchiveStoryCards({
     useState<Favourites>(defaultFavourites);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
-  const [collectionFilter, setCollectionFilter] =
-    useState<CollectionFilter>("all");
   const [feedActionStatus, setFeedActionStatus] = useState("");
   const [hiddenSourcePreferences, setHiddenSourcePreferences] = useState<
     HiddenSourcePreference[]
@@ -234,29 +223,23 @@ export function ArchiveStoryCards({
         : articles.filter(
             (article) =>
               displayMediaType({
+                sourceType: article.sourceType,
                 tags: article.tags,
                 source: article.sourceName,
               }) === mediaFilter,
           );
-    const collectionArticles =
-      collectionFilter === "all"
-        ? filteredArticles
-        : filteredArticles.filter(
-            (article) => articleCollection(article) === collectionFilter,
-          );
-
-    return collectionArticles
+    return filteredArticles
       .map((article, index) =>
         archiveArticleToScoredArticle(article, index, publicationName),
       )
       .sort(sortArchiveStories);
-  }, [articles, collectionFilter, mediaFilter, publicationName]);
+  }, [articles, mediaFilter, publicationName]);
 
   const collectionCounts = useMemo(() => {
     const counts = new Map<string, number>();
 
     countBaseArticles.forEach((article) => {
-      const collection = articleCollection(article);
+      const collection = archiveArticleCollection(article);
       counts.set(collection, (counts.get(collection) ?? 0) + 1);
     });
 
@@ -268,16 +251,26 @@ export function ArchiveStoryCards({
   const sourceCounts = useMemo(() => {
     const counts = new Map<string, number>();
 
-    countBaseArticles.forEach((article) => {
+    countBaseArticles
+      .filter(
+        (article) =>
+          currentCollection === "all" ||
+          archiveArticleCollection(article).toLowerCase() === currentCollection,
+      )
+      .forEach((article) => {
       const key = article.sourceId ?? article.sourceName ?? "unknown";
       counts.set(key, (counts.get(key) ?? 0) + 1);
-    });
+      });
 
     return sources.map((source) => ({
       count: counts.get(source.id) ?? counts.get(source.name) ?? 0,
       source,
     }));
-  }, [countBaseArticles, sources]);
+  }, [countBaseArticles, currentCollection, sources]);
+  const sourceCountTotal = sourceCounts.reduce(
+    (total, item) => total + item.count,
+    0,
+  );
 
   const mediaCounts = useMemo(() => {
     const counts: Record<MediaFilter, number> = {
@@ -290,6 +283,7 @@ export function ArchiveStoryCards({
 
     articles.forEach((article) => {
       const type = displayMediaType({
+        sourceType: article.sourceType,
         tags: article.tags,
         source: article.sourceName,
       });
@@ -317,10 +311,6 @@ export function ArchiveStoryCards({
   function chooseMediaFilter(filter: MediaFilter) {
     setMediaFilter(filter);
     localStorage.setItem(MEDIA_FILTER_KEY, filter);
-  }
-
-  function chooseCollection(filter: CollectionFilter) {
-    setCollectionFilter(filter);
   }
 
   async function copyFeedLink() {
@@ -458,32 +448,38 @@ export function ArchiveStoryCards({
         <h2 className="text-xl font-bold text-slate-950">{heading}</h2>
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
-            <button
+            <a
               className={[
                 "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                collectionFilter === "all"
+                currentCollection === "all"
                   ? "bg-slate-950 text-white"
                   : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
               ].join(" ")}
-              onClick={() => chooseCollection("all")}
-              type="button"
+              href={queryHref(publicationSlug, {
+                collection: "all",
+                range: currentRange,
+                source: currentSourceId,
+              })}
             >
               All ({countBaseArticles.length})
-            </button>
+            </a>
             {collectionCounts.slice(0, 6).map((collection) => (
-              <button
+              <a
                 className={[
                   "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
-                  collectionFilter === collection.label
+                  currentCollection === collection.label.toLowerCase()
                     ? "bg-slate-950 text-white"
                     : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
                 ].join(" ")}
+                href={queryHref(publicationSlug, {
+                  collection: collection.label.toLowerCase(),
+                  range: currentRange,
+                  source: currentSourceId,
+                })}
                 key={collection.label}
-                onClick={() => chooseCollection(collection.label)}
-                type="button"
               >
                 {collection.label} ({collection.count})
-              </button>
+              </a>
             ))}
           </div>
           <div className="inline-flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
@@ -557,21 +553,22 @@ export function ArchiveStoryCards({
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {[
-                ["Today", "1"],
-                ["7 days", "7"],
-                ["14 days", "14"],
-                ["Month", "30"],
+                ["Today", "today"],
+                ["7 days", "7d"],
+                ["14 days", "14d"],
+                ["Month", "month"],
                 ["All", "all"],
               ].map(([label, value]) => (
                 <a
                   className={[
                     "rounded-md border px-2.5 py-2 text-xs font-bold",
-                    currentRecent === value
+                    currentRange === value
                       ? "border-blue-500 bg-blue-600 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
                   ].join(" ")}
                   href={queryHref(publicationSlug, {
-                    recent: value,
+                    collection: currentCollection,
+                    range: value,
                     source: currentSourceId,
                   })}
                   key={label}
@@ -593,9 +590,12 @@ export function ArchiveStoryCards({
                     ? "border-blue-500 bg-blue-600 text-white"
                     : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
                 ].join(" ")}
-                href={queryHref(publicationSlug, { recent: currentRecent })}
+                href={queryHref(publicationSlug, {
+                  collection: currentCollection,
+                  range: currentRange,
+                })}
               >
-                All sources ({countBaseArticles.length})
+                All sources ({sourceCountTotal})
               </a>
               {sourceCounts
                 .filter((item) => item.count > 0)
@@ -608,7 +608,8 @@ export function ArchiveStoryCards({
                         : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
                     ].join(" ")}
                     href={queryHref(publicationSlug, {
-                      recent: currentRecent,
+                      collection: currentCollection,
+                      range: currentRange,
                       source: source.id,
                     })}
                     key={source.id}

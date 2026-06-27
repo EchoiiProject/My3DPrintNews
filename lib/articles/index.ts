@@ -3,6 +3,7 @@ import { adminSlugForPublicationSlug } from "@/config/verticals";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import {
   getManagedSources,
+  normaliseSourceType,
   type ManagedSource,
   type SourceType,
 } from "@/lib/sources";
@@ -19,6 +20,8 @@ export type ArticleArchiveItem = {
   author: string | null;
   publishedAt: string | null;
   sourceName: string | null;
+  sourceCategory: string | null;
+  sourceType: SourceType | null;
   tags: string[];
   createdAt: string | null;
   verticalName: string;
@@ -72,6 +75,14 @@ function isWithinDays(article: ArticleArchiveItem, days: number): boolean {
 }
 
 function primaryArticleCollection(article: ArticleArchiveItem): string {
+  return articleCollection(article);
+}
+
+export function articleCollection(article: ArticleArchiveItem): string {
+  if (article.sourceCategory) return article.sourceCategory;
+  if (article.sourceType === "youtube") return "Videos";
+  if (article.sourceType === "podcast") return "Podcasts";
+
   return article.tags[0] ?? "News";
 }
 
@@ -188,6 +199,10 @@ type ArticleRecord = {
   author: string | null;
   published_at: string | null;
   source_name: string | null;
+  vertical_sources?:
+    | { category: string | null; source_type: string | null }
+    | { category: string | null; source_type: string | null }[]
+    | null;
   tags: unknown;
   created_at: string | null;
   editorial_status?: string | null;
@@ -407,6 +422,9 @@ function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
   const vertical = Array.isArray(record.verticals)
     ? record.verticals[0]
     : record.verticals;
+  const source = Array.isArray(record.vertical_sources)
+    ? record.vertical_sources[0]
+    : record.vertical_sources;
 
   return {
     id: record.id,
@@ -419,6 +437,8 @@ function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
     author: record.author,
     publishedAt: record.published_at,
     sourceName: record.source_name,
+    sourceCategory: source?.category ?? null,
+    sourceType: normaliseSourceType(source?.source_type),
     tags: Array.isArray(record.tags) ? record.tags.map(String) : [],
     createdAt: record.created_at,
     verticalName: vertical?.name ?? "Unknown publication",
@@ -866,7 +886,7 @@ export async function getArticleArchive(filters: {
   let query = supabase
     .from("articles")
     .select(
-      "id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,editorial_status,editorial_status_reason,editorial_status_updated_at,verticals(name,slug)",
+      "id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,editorial_status,editorial_status_reason,editorial_status_updated_at,verticals(name,slug),vertical_sources(category,source_type)",
     )
     .order("created_at", { ascending: false })
     .limit(100);

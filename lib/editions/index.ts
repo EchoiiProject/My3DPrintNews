@@ -191,6 +191,8 @@ function articleFromRelation(
     author: article.author,
     publishedAt: article.published_at,
     sourceName: article.source_name,
+    sourceCategory: null,
+    sourceType: null,
     tags: tags(article.tags),
     createdAt: article.created_at,
     verticalName: vertical?.name ?? "Publication",
