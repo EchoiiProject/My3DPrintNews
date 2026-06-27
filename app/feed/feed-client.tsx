@@ -403,6 +403,28 @@ export function FeedStoryCards({
     }
   }
 
+  async function syncUnhiddenArticle(article: Article): Promise<boolean> {
+    const email = localStorage.getItem(READER_EMAIL_KEY);
+
+    if (!email || !article.id) return true;
+
+    try {
+      const response = await fetch("/api/reader-actions/hide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "unhide",
+          articleId: article.id,
+          email,
+        }),
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   function hideArticle(article: Article) {
     const key = hiddenArticleKey(article);
     const next = Array.from(new Set([...hiddenArticleKeys(), key]));
@@ -411,6 +433,23 @@ export function FeedStoryCards({
     setHiddenKeys(next);
     setStatus(article, "Hidden from your feed.");
     void syncHiddenArticle(article);
+  }
+
+  function undoHideArticle(article: Article) {
+    const key = hiddenArticleKey(article);
+    const next = hiddenArticleKeys().filter((item) => item !== key);
+
+    localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(next));
+    setHiddenKeys(next);
+    setStatus(article, "Restored to your feed.");
+    void syncUnhiddenArticle(article).then((ok) => {
+      if (!ok) {
+        setStatus(
+          article,
+          "Restored here. We could not update your saved preference yet.",
+        );
+      }
+    });
   }
 
   function saveArticle(article: Article) {
@@ -505,12 +544,7 @@ export function FeedStoryCards({
 
   return (
     <div className="space-y-4">
-      {stories
-        .filter(
-          (scoredArticle) =>
-            !hiddenKeys.includes(hiddenArticleKey(scoredArticle.article)),
-        )
-        .map((scoredArticle, index) => {
+      {stories.map((scoredArticle, index) => {
         const hasImage = Boolean(scoredArticle.article.imageUrl);
         const articleGridClass =
           hasImage && isCompact
@@ -528,6 +562,8 @@ export function FeedStoryCards({
         ].join(" ");
         const badge = storyBadge(scoredArticle.article);
         const articleKey = savedArticleKey(scoredArticle.article);
+        const hiddenKey = hiddenArticleKey(scoredArticle.article);
+        const isHidden = hiddenKeys.includes(hiddenKey);
         const isSaved = savedKeys.includes(scoredArticle.article.link);
 
         return (
@@ -535,7 +571,33 @@ export function FeedStoryCards({
             className="space-y-4"
             key={`${scoredArticle.article.source}-${scoredArticle.article.link}`}
           >
-            <article
+            {isHidden ? (
+              <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8">
+                <p className="text-sm font-bold text-slate-950">
+                  Article hidden from your feed.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                    onClick={() => undoHideArticle(scoredArticle.article)}
+                    type="button"
+                  >
+                    Undo
+                  </button>
+                  <EditorialReportButton
+                    articleId={scoredArticle.article.id}
+                    onHide={() => hideArticle(scoredArticle.article)}
+                    verticalId={publicationId}
+                  />
+                  {actionStatus[articleKey] ? (
+                    <span className="text-sm font-semibold text-blue-700">
+                      {actionStatus[articleKey]}
+                    </span>
+                  ) : null}
+                </div>
+              </section>
+            ) : (
+              <article
               className={[
                 "rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8 backdrop-blur transition hover:border-blue-200 hover:bg-blue-50/40",
                 isCompact ? "p-3 sm:p-4" : "p-4 sm:p-5",
@@ -720,7 +782,8 @@ export function FeedStoryCards({
                   </div>
                 </div>
               </div>
-            </article>
+              </article>
+            )}
             {showFeedAds && index === 2 ? (
               <AdPlacement placementId="feed-inline-1" />
             ) : null}

@@ -221,3 +221,37 @@ export async function getHiddenArticleIdsForEmail(
     .map((row) => row.article_id)
     .filter((value): value is string => typeof value === "string");
 }
+
+export async function unhideReaderItem({
+  articleId,
+  email,
+}: {
+  articleId: string | null;
+  email?: string | null;
+}): Promise<boolean> {
+  const supabase = createServiceSupabaseClient();
+  const normalisedEmail = email?.trim().toLowerCase();
+
+  if (!supabase || !articleId || !normalisedEmail) return false;
+
+  const reader = await getOrCreateReaderProfile(normalisedEmail, supabase);
+  let query = supabase
+    .from("reader_hidden_items")
+    .delete()
+    .eq("article_id", articleId);
+
+  if (reader) {
+    query = query.or(`reader_id.eq.${reader.id},email.eq.${normalisedEmail}`);
+  } else {
+    query = query.eq("email", normalisedEmail);
+  }
+
+  const result = await query;
+
+  if (result.error) {
+    console.error("Reader hidden item delete error", result.error);
+    return false;
+  }
+
+  return true;
+}

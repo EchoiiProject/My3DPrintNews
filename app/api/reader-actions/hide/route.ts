@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { hideReaderItem } from "@/lib/readers";
+import { hideReaderItem, unhideReaderItem } from "@/lib/readers";
 
 type HidePayload = {
+  action?: unknown;
   articleId?: unknown;
   email?: unknown;
   reason?: unknown;
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   }
 
   const articleId = text(body.articleId);
+  const action = text(body.action) ?? "hide";
 
   if (!articleId) {
     return NextResponse.json(
@@ -33,15 +35,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const ok = await hideReaderItem({
-    articleId,
-    email: text(body.email),
-    reason: text(body.reason),
-    verticalId: text(body.verticalId),
-  });
+  const ok =
+    action === "unhide"
+      ? await unhideReaderItem({
+          articleId,
+          email: text(body.email),
+        })
+      : await hideReaderItem({
+          articleId,
+          email: text(body.email),
+          reason: text(body.reason),
+          verticalId: text(body.verticalId),
+        });
 
   return NextResponse.json({
     ok,
-    message: "Hidden from your feed.",
+    message:
+      action === "unhide" ? "Restored to your feed." : "Hidden from your feed.",
   });
 }

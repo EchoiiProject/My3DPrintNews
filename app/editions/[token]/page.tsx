@@ -257,7 +257,11 @@ function EditionCard({
   ].join(" ");
 
   return (
-    <ReaderHiddenItem articleId={article.id} url={article.url}>
+    <ReaderHiddenItem
+      articleId={article.id}
+      url={article.url}
+      verticalId={article.verticalId}
+    >
       <article
         className={[
           "rounded-lg border border-slate-200 bg-white/88 shadow-xl shadow-blue-950/8",
