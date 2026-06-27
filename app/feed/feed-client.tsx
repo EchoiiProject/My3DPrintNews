@@ -38,6 +38,40 @@ import {
 import { AdPlacement } from "../ad-placement";
 
 const appConfig = currentSite.metadata;
+const SAVED_ITEMS_KEY = "mynewsnetwork-saved-items";
+const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
+
+type SavedArticle = {
+  articleId?: string;
+  publicationId?: string;
+  publicationName?: string;
+  title: string;
+  source: string;
+  url: string;
+  summary?: string;
+  imageUrl?: string;
+  savedAt: string;
+};
+
+function savedArticleKey(article: Article) {
+  return `${article.source}:${article.link}`;
+}
+
+function savedArticles(): SavedArticle[] {
+  try {
+    const value = localStorage.getItem(SAVED_ITEMS_KEY);
+
+    return value ? (JSON.parse(value) as SavedArticle[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+  }
+}
 
 function MiniHeartIcon() {
   return (
@@ -277,17 +311,127 @@ export function FeedStoryCards({
   displayMode = "standard",
   favourites,
   onToggleSourceFavourite,
+  publicationId,
+  publicationName = "MyNewsNetwork",
+  publicationSlug,
+  publicationUrl,
   showFeedAds = true,
   stories,
 }: {
   displayMode?: "compact" | "standard" | "visual";
   favourites: Favourites;
   onToggleSourceFavourite: (source: string) => void;
+  publicationId?: string;
+  publicationName?: string;
+  publicationSlug?: string;
+  publicationUrl?: string;
   showFeedAds?: boolean;
   stories: ScoredArticle[];
 }) {
   const isCompact = displayMode === "compact";
   const isVisual = displayMode === "visual";
+  const [savedKeys, setSavedKeys] = useState<string[]>([]);
+  const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setSavedKeys(savedArticles().map((article) => article.url));
+  }, []);
+
+  function setStatus(article: Article, message: string) {
+    setActionStatus((current) => ({
+      ...current,
+      [savedArticleKey(article)]: message,
+    }));
+  }
+
+  function saveArticle(article: Article) {
+    const current = savedArticles();
+    const exists = current.some((item) => item.url === article.link);
+    const next = exists
+      ? current.filter((item) => item.url !== article.link)
+      : [
+          {
+            articleId: article.id,
+            publicationId,
+            publicationName,
+            title: article.title,
+            source: article.source,
+            url: article.link,
+            summary: article.summary,
+            imageUrl: article.imageUrl,
+            savedAt: new Date().toISOString(),
+          },
+          ...current,
+        ];
+
+    localStorage.setItem(SAVED_ITEMS_KEY, JSON.stringify(next));
+    setSavedKeys(next.map((item) => item.url));
+    setStatus(article, exists ? "Removed from saved items." : "Saved.");
+  }
+
+  async function shareArticle(article: Article) {
+    const shareUrl = article.link;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: article.title,
+          text: article.summary,
+          url: shareUrl,
+        });
+        setStatus(article, "Share opened.");
+        return;
+      }
+
+      await copyText(shareUrl);
+      setStatus(article, "Link copied.");
+    } catch {
+      try {
+        await copyText(shareUrl);
+        setStatus(article, "Link copied.");
+      } catch {
+        setStatus(article, "Share unavailable.");
+      }
+    }
+  }
+
+  async function emailArticle(article: Article) {
+    const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
+    const email = window.prompt("Email this article to:", existingEmail);
+
+    if (!email) return;
+
+    localStorage.setItem(READER_EMAIL_KEY, email);
+    const response = await fetch("/api/reader-actions/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        requestType: "article",
+        verticalId: publicationId,
+        articleId: article.id,
+        publicationName,
+        publicationUrl:
+          publicationUrl ?? `${window.location.origin}${window.location.pathname}`,
+        filterContext: {
+          publicationSlug,
+          source: article.source,
+        },
+        articleTitle: article.title,
+        articleSource: article.source,
+        articleSummary: article.summary,
+        articleUrl: article.link,
+      }),
+    });
+    const result = (await response.json()) as { message?: string };
+
+    setStatus(
+      article,
+      response.ok
+        ? result.message ?? "Email request queued."
+        : result.message ?? "Email request failed.",
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -308,6 +452,8 @@ export function FeedStoryCards({
               : "aspect-video max-h-[18rem]",
         ].join(" ");
         const badge = storyBadge(scoredArticle.article);
+        const articleKey = savedArticleKey(scoredArticle.article);
+        const isSaved = savedKeys.includes(scoredArticle.article.link);
 
         return (
           <div
@@ -457,6 +603,34 @@ export function FeedStoryCards({
                     Publisher attribution: {scoredArticle.article.source}.
                     Summary and metadata are attributed to the source above.
                   </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <button
+                      className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                      onClick={() => saveArticle(scoredArticle.article)}
+                      type="button"
+                    >
+                      {isSaved ? "Saved" : "Save"}
+                    </button>
+                    <button
+                      className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                      onClick={() => shareArticle(scoredArticle.article)}
+                      type="button"
+                    >
+                      Share
+                    </button>
+                    <button
+                      className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                      onClick={() => emailArticle(scoredArticle.article)}
+                      type="button"
+                    >
+                      Send to me
+                    </button>
+                    {actionStatus[articleKey] ? (
+                      <span className="text-sm font-semibold text-blue-700">
+                        {actionStatus[articleKey]}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </article>
@@ -840,6 +1014,7 @@ export function FeedClient({
                   name="newsletter-email"
                   onChange={(event) => {
                     setNewsletterEmail(event.target.value);
+                    localStorage.setItem(READER_EMAIL_KEY, event.target.value);
                     setShowNewsletterReview(false);
                     setSavedFeedPath(null);
                     setNewsletterStatus(null);

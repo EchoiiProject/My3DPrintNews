@@ -80,7 +80,9 @@ export default async function PublicationFeedPage({
       <ArchiveStoryCards
         articles={articles}
         heading="Archived feed stories"
+        publicationId={profile.vertical.databaseId}
         publicationName={profile.publicationName}
+        publicationSlug={profile.slug}
       />
     </PublicationShell>
   );

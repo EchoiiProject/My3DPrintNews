@@ -12,6 +12,8 @@ import {
 
 type NewsletterPayload = {
   email?: unknown;
+  publicationId?: unknown;
+  frequency?: unknown;
   preferences?: Partial<Preferences>;
   favourites?: Partial<Favourites>;
 };
@@ -42,6 +44,14 @@ export async function POST(request: Request) {
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
+  const publicationId =
+    typeof body.publicationId === "string" && body.publicationId.trim()
+      ? body.publicationId.trim()
+      : null;
+  const requestedFrequency =
+    typeof body.frequency === "string" && body.frequency.trim()
+      ? body.frequency.trim()
+      : null;
 
   if (!isValidEmail(email)) {
     return NextResponse.json(
@@ -54,6 +64,10 @@ export async function POST(request: Request) {
   }
 
   const preferences = normalisePreferences(body.preferences ?? defaultPreferences);
+  if (requestedFrequency === "daily") {
+    preferences.delivery.frequency = "daily";
+    preferences.frequency = "Daily";
+  }
   const favourites = normaliseFavourites(body.favourites ?? defaultFavourites);
   const supabase = createServiceSupabaseClient();
 
@@ -104,7 +118,7 @@ export async function POST(request: Request) {
       favourites,
     },
     { onConflict: "email" },
-  );
+  ).select("id,token").single();
 
   if (upsert.error) {
     console.error("Supabase subscriber upsert error", upsert.error);
@@ -119,9 +133,40 @@ export async function POST(request: Request) {
     );
   }
 
+  if (publicationId && upsert.data?.id) {
+    const publicationPreference = await supabase
+      .from("subscriber_publication_preferences")
+      .upsert(
+        {
+          subscriber_id: upsert.data.id,
+          vertical_id: publicationId,
+          frequency: requestedFrequency ?? preferences.delivery.frequency,
+          enabled: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "subscriber_id,vertical_id" },
+      );
+
+    if (publicationPreference.error) {
+      console.error(
+        "Supabase subscriber publication preference upsert error",
+        publicationPreference.error,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "Newsletter signup was saved, but publication preferences could not be saved right now.",
+        },
+        { status: 502 },
+      );
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     message: "Your newsletter preferences have been saved.",
-    savedFeedPath: `/saved-feed/${token}`,
+    savedFeedPath: `/saved-feed/${upsert.data?.token ?? token}`,
   });
 }

@@ -5,6 +5,8 @@ import { currentSite } from "@/config/current-site";
 import { FeedbackCategory } from "@/config/feedback";
 import { verticalBySlug, verticals } from "@/config/verticals";
 
+const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
+
 const feedbackOptions: {
   label: string;
   category: FeedbackCategory;
@@ -138,7 +140,10 @@ export function FeedbackPanel({
               </span>
               <input
                 className="mt-1 min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  localStorage.setItem(READER_EMAIL_KEY, event.target.value);
+                }}
                 placeholder="you@example.com"
                 type="email"
                 value={email}

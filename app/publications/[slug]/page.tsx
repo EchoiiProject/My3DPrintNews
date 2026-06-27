@@ -71,7 +71,9 @@ export default async function PublicationHomePage({
       <ArchiveStoryCards
         articles={articles.slice(0, 10)}
         heading="Latest stories"
+        publicationId={profile.vertical.databaseId}
         publicationName={profile.publicationName}
+        publicationSlug={profile.slug}
       />
       <PublicationFeedback profile={profile} />
     </PublicationShell>

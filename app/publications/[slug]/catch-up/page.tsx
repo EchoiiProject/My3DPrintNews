@@ -92,7 +92,9 @@ export default async function PublicationCatchUpPage({
         articles={articles}
         heading={`Stories from the last ${days} days`}
         periodDays={days}
+        publicationId={profile.vertical.databaseId}
         publicationName={profile.publicationName}
+        publicationSlug={profile.slug}
       />
     </PublicationShell>
   );

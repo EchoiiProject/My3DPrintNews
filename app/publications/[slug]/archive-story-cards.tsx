@@ -25,6 +25,7 @@ type MediaFilter = "all" | DisplayMediaType;
 
 const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
 const MEDIA_FILTER_KEY = "mynewsnetwork-publication-feed-media-filter";
+const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
 const displayModes: DisplayMode[] = ["compact", "standard", "visual"];
 
 function normaliseDisplayMode(value: string | null): DisplayMode {
@@ -42,6 +43,7 @@ function normaliseMediaFilter(value: string | null): MediaFilter {
 
 function archiveArticleToFeedArticle(article: ArticleArchiveItem): Article {
   return {
+    id: article.id,
     title: article.title,
     link: article.url,
     source: article.sourceName ?? "Unknown source",
@@ -93,17 +95,22 @@ function sortArchiveStories(a: ScoredArticle, b: ScoredArticle): number {
 export function ArchiveStoryCards({
   articles,
   heading = "Latest stories",
+  publicationId,
   publicationName = "this publication",
+  publicationSlug,
 }: {
   articles: ArticleArchiveItem[];
   heading?: string;
   periodDays?: number;
+  publicationId?: string;
   publicationName?: string;
+  publicationSlug?: string;
 }) {
   const [favourites, setFavourites] =
     useState<Favourites>(defaultFavourites);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
+  const [feedActionStatus, setFeedActionStatus] = useState("");
 
   useEffect(() => {
     const savedFavourites = localStorage.getItem(FAVOURITES_KEY);
@@ -182,6 +189,98 @@ export function ArchiveStoryCards({
     localStorage.setItem(MEDIA_FILTER_KEY, filter);
   }
 
+  async function copyFeedLink() {
+    const url = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: publicationName,
+          text: `Latest stories from ${publicationName}`,
+          url,
+        });
+        setFeedActionStatus("Share opened.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(url);
+      setFeedActionStatus("Feed link copied.");
+    } catch {
+      try {
+        await navigator.clipboard.writeText(url);
+        setFeedActionStatus("Feed link copied.");
+      } catch {
+        setFeedActionStatus("Share unavailable.");
+      }
+    }
+  }
+
+  async function emailTodaysFeed() {
+    const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
+    const email = window.prompt("Email today's feed to:", existingEmail);
+
+    if (!email) return;
+
+    localStorage.setItem(READER_EMAIL_KEY, email);
+    const response = await fetch("/api/reader-actions/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        requestType: "feed",
+        verticalId: publicationId,
+        publicationName,
+        publicationUrl: window.location.href,
+        filterContext: {
+          displayMode,
+          mediaFilter,
+          path: window.location.pathname,
+          search: window.location.search,
+          storyCount: stories.length,
+        },
+        feedItems: stories.slice(0, 10).map((story) => ({
+          id: story.article.id,
+          title: story.article.title,
+          source: story.article.source,
+          summary: story.article.summary,
+          url: story.article.link,
+        })),
+      }),
+    });
+    const result = (await response.json()) as { message?: string };
+
+    setFeedActionStatus(
+      response.ok
+        ? result.message ?? "Feed email request queued."
+        : result.message ?? "Feed email request failed.",
+    );
+  }
+
+  async function subscribeDaily() {
+    const existingEmail = localStorage.getItem(READER_EMAIL_KEY) ?? "";
+    const email = window.prompt("Subscribe to daily newsletter:", existingEmail);
+
+    if (!email) return;
+
+    localStorage.setItem(READER_EMAIL_KEY, email);
+    const response = await fetch("/api/newsletter/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        publicationId,
+        frequency: "daily",
+      }),
+    });
+    const result = (await response.json()) as { message?: string };
+
+    setFeedActionStatus(
+      response.ok
+        ? result.message ?? "Newsletter preferences saved."
+        : result.message ?? "Newsletter signup failed.",
+    );
+  }
+
   return (
     <section className="mt-8">
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -243,11 +342,42 @@ export function ArchiveStoryCards({
           </span>
         </div>
       </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white/88 p-3">
+        <button
+          className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+          onClick={copyFeedLink}
+          type="button"
+        >
+          Share this feed
+        </button>
+        <button
+          className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-200 hover:text-blue-700"
+          onClick={emailTodaysFeed}
+          type="button"
+        >
+          Email me today&apos;s feed
+        </button>
+        <button
+          className="rounded-md bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700"
+          onClick={subscribeDaily}
+          type="button"
+        >
+          Subscribe to daily newsletter
+        </button>
+        {feedActionStatus ? (
+          <span className="text-sm font-semibold text-blue-700">
+            {feedActionStatus}
+          </span>
+        ) : null}
+      </div>
       {stories.length ? (
         <FeedStoryCards
           displayMode={displayMode}
           favourites={favourites}
           onToggleSourceFavourite={toggleSourceFavourite}
+          publicationId={publicationId}
+          publicationName={publicationName}
+          publicationSlug={publicationSlug}
           showFeedAds={false}
           stories={stories}
         />

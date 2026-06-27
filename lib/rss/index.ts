@@ -11,6 +11,7 @@ export type FeedSource = {
 };
 
 export type Article = {
+  id?: string;
   title: string;
   link: string;
   source: string;
