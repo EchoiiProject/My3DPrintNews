@@ -349,8 +349,12 @@ export async function sourceDiagnostics(
     diagnosticBySourceId.get(source.id)?.itemCount ?? source.articlesFetched;
   const sourceHealth = (source: ManagedSource): SourceHealth | "placeholder" => {
     const diagnostic = diagnosticBySourceId.get(source.id);
+    const articleDate = sourceArticleDate(source);
+    const isStale =
+      !articleDate || new Date(articleDate).getTime() < thirtyDaysAgo;
 
     if (!source.enabled) return "placeholder";
+    if (isStale) return "warning";
 
     if (!diagnostic) {
       return source.healthStatus;
@@ -369,6 +373,7 @@ export async function sourceDiagnostics(
     .filter((value): value is string => Boolean(value))
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const enabledSources = sources.filter((source) => source.enabled);
   const healthySources = sources.filter(
     (source) => sourceHealth(source) === "healthy",

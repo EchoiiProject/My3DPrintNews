@@ -52,19 +52,23 @@ export default async function PublicationFeedPage({
     notFound();
   }
 
-  const recentDays = query?.recent ? Number(query.recent) : undefined;
+  const selectedRecent = query?.recent ?? "30";
+  const showAllDates = selectedRecent === "all";
+  const recentDays = showAllDates ? undefined : Number(selectedRecent);
+  const archiveRecentDays =
+    !showAllDates && Number.isFinite(recentDays) ? recentDays : undefined;
   const sources = await getManagedSources(profile.adminSlug);
   const publications = await getPublicationProfiles();
   const articles = await getArticleArchive({
     publicOnly: true,
     verticalSlug: profile.adminSlug,
     sourceId: query?.source || undefined,
-    recentDays: Number.isFinite(recentDays) ? recentDays : undefined,
+    recentDays: archiveRecentDays,
   });
   const countArticles = await getArticleArchive({
     publicOnly: true,
     verticalSlug: profile.adminSlug,
-    recentDays: Number.isFinite(recentDays) ? recentDays : undefined,
+    recentDays: archiveRecentDays,
   });
 
   return (
@@ -79,9 +83,11 @@ export default async function PublicationFeedPage({
         profile={profile}
       />
       <ArchiveStoryCards
-        articles={balanceLatestArticles(articles)}
+        articles={balanceLatestArticles(articles, {
+          maxAgeDays: showAllDates ? null : 30,
+        })}
         countArticles={countArticles}
-        currentRecent={query?.recent}
+        currentRecent={selectedRecent}
         currentSourceId={query?.source}
         heading="Latest News"
         publicationId={profile.vertical.databaseId}

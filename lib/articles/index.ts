@@ -60,14 +60,34 @@ function archiveTimestamp(article: ArticleArchiveItem): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+const defaultLatestNewsWindowDays = 30;
+const tenYearsInDays = 3650;
+
+function isWithinDays(article: ArticleArchiveItem, days: number): boolean {
+  const timestamp = archiveTimestamp(article);
+
+  if (!timestamp) return false;
+
+  return timestamp >= Date.now() - days * 24 * 60 * 60 * 1000;
+}
+
 function primaryArticleCollection(article: ArticleArchiveItem): string {
   return article.tags[0] ?? "News";
 }
 
 export function balanceLatestArticles(
   articles: ArticleArchiveItem[],
+  options: { maxAgeDays?: number | null } = {},
 ): ArticleArchiveItem[] {
-  const pending = [...articles].sort(
+  const maxAgeDays = options.maxAgeDays ?? defaultLatestNewsWindowDays;
+  const eligibleArticles = articles.filter((article) => {
+    if (!isWithinDays(article, tenYearsInDays)) {
+      return false;
+    }
+
+    return maxAgeDays === null || isWithinDays(article, maxAgeDays);
+  });
+  const pending = [...eligibleArticles].sort(
     (articleA, articleB) => archiveTimestamp(articleB) - archiveTimestamp(articleA),
   );
   const balanced: ArticleArchiveItem[] = [];

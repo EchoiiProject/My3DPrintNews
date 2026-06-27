@@ -473,12 +473,12 @@ export function ArchiveStoryCards({
                 ["7 days", "7"],
                 ["14 days", "14"],
                 ["Month", "30"],
-                ["All", undefined],
+                ["All", "all"],
               ].map(([label, value]) => (
                 <a
                   className={[
                     "rounded-md border px-2.5 py-2 text-xs font-bold",
-                    currentRecent === value || (!currentRecent && !value)
+                    currentRecent === value
                       ? "border-blue-500 bg-blue-600 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-blue-700",
                   ].join(" ")}

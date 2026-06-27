@@ -1,6 +1,5 @@
-import type { ArticleArchiveItem } from "@/lib/articles";
 import { adminSlugForPublicationSlug, publicSlugForAdminSlug } from "@/config/verticals";
-import { getArticleArchive } from "@/lib/articles";
+import { getArticleArchive, type ArticleArchiveItem } from "@/lib/articles";
 import { displayMediaType } from "@/lib/media-types";
 import { getOrCreateReaderProfile } from "@/lib/readers";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
@@ -154,8 +153,12 @@ function selectEditionArticles(
   const limit = frequencyItemLimit(frequency);
   const seen = new Set<string>();
   const selected: ArticleArchiveItem[] = [];
+  const tenYearsAgo = Date.now() - 3650 * 24 * 60 * 60 * 1000;
+  const articlePool = recentArticles.length
+    ? recentArticles
+    : fallbackArticles.filter((article) => effectiveArticleTime(article) >= tenYearsAgo);
 
-  for (const article of [...recentArticles, ...fallbackArticles].sort(
+  for (const article of [...articlePool].sort(
     (articleA, articleB) =>
       effectiveArticleTime(articleB) - effectiveArticleTime(articleA),
   )) {

@@ -137,7 +137,10 @@ function sourceHealthDetail(source: ManagedSource, diagnostic: FeedDiagnostic) {
   if (stale) {
     return {
       label: "Stale",
-      detail: "Feed reachable but inactive for 30+ days.",
+      detail:
+        source.sourceType === "youtube"
+          ? "YouTube source is returning old videos and needs review."
+          : "Feed reachable but inactive for 30+ days.",
     };
   }
 
@@ -171,13 +174,26 @@ function sourceWarnings(source: ManagedSource, diagnostic: FeedDiagnostic) {
     warnings.push("Unreachable feed");
   }
   if (diagnostic.itemCount === 0) warnings.push("Zero articles");
-  if (stale) warnings.push("Stale feed");
+  if (stale) {
+    warnings.push(
+      source.sourceType === "youtube"
+        ? "Stale/low-value videos"
+        : "Stale feed",
+    );
+  }
   if (!source.enabled) warnings.push("Disabled source");
 
   return warnings;
 }
 
 function fallbackDiagnostic(source: ManagedSource): FeedDiagnostic {
+  const latestArticleTime = source.lastArticleDate
+    ? new Date(source.lastArticleDate).getTime()
+    : null;
+  const stale =
+    !latestArticleTime ||
+    latestArticleTime < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
   return {
     sourceId: source.id,
     sourceName: source.name,
@@ -190,7 +206,11 @@ function fallbackDiagnostic(source: ManagedSource): FeedDiagnostic {
     oldestArticleDate: null,
     lastCheckedAt: source.lastSuccessfulFetch ?? new Date().toISOString(),
     errorMessage: null,
-    healthStatus: source.enabled ? source.healthStatus : "placeholder",
+    healthStatus: source.enabled
+      ? stale
+        ? "warning"
+        : source.healthStatus
+      : "placeholder",
   };
 }
 
