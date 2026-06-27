@@ -1,5 +1,10 @@
 import type { ArticleArchiveItem } from "@/lib/articles";
+import { adminSlugForPublicationSlug, publicSlugForAdminSlug } from "@/config/verticals";
+import { getArticleArchive } from "@/lib/articles";
+import { displayMediaType } from "@/lib/media-types";
+import { getOrCreateReaderProfile } from "@/lib/readers";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import { getVerticalBySlug } from "@/lib/verticals";
 
 export type NewsletterEdition = {
   id: string;
@@ -11,6 +16,7 @@ export type NewsletterEdition = {
   status: string;
   magicToken: string | null;
   publicationName: string;
+  publicationSlug: string | null;
   items: NewsletterEditionItem[];
   createdAt: string | null;
 };
@@ -31,6 +37,17 @@ export type NewsletterEditionSummary = {
   publicationName: string;
   itemCount: number;
   createdAt: string | null;
+};
+
+export type EditionFrequency = "daily" | "weekly" | "monthly";
+
+export type GeneratedEdition = {
+  id: string;
+  title: string;
+  magicToken: string;
+  itemCount: number;
+  publicationName: string;
+  frequency: EditionFrequency;
 };
 
 type EditionArticleRelation = {
@@ -69,7 +86,10 @@ type EditionRow = {
   status: string;
   magic_token: string | null;
   created_at: string | null;
-  verticals?: { name: string | null } | { name: string | null }[] | null;
+  verticals?:
+    | { name: string | null; slug?: string | null }
+    | { name: string | null; slug?: string | null }[]
+    | null;
   newsletter_edition_items?: EditionItemRow[] | null;
 };
 
@@ -81,6 +101,70 @@ function tags(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
+}
+
+function frequencyWindowDays(frequency: EditionFrequency): number {
+  if (frequency === "weekly") return 7;
+  if (frequency === "monthly") return 30;
+  return 2;
+}
+
+function frequencyItemLimit(frequency: EditionFrequency): number {
+  if (frequency === "weekly") return 20;
+  if (frequency === "monthly") return 30;
+  return 10;
+}
+
+function effectiveArticleTime(article: ArticleArchiveItem): number {
+  const timestamp = new Date(article.publishedAt ?? article.createdAt ?? "").getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function articleSection(article: ArticleArchiveItem): string {
+  const mediaType = displayMediaType({
+    tags: article.tags,
+    source: article.sourceName,
+  });
+
+  if (mediaType === "video") return "Videos";
+  if (mediaType === "review") return "Reviews";
+  if (mediaType === "podcast") return "Podcasts";
+  return "News";
+}
+
+function editionTitle(
+  publicationName: string,
+  frequency: EditionFrequency,
+  editionDate: string,
+): string {
+  const label = frequency[0].toUpperCase() + frequency.slice(1);
+
+  return `${publicationName} ${label} Edition - ${editionDate}`;
+}
+
+function selectEditionArticles(
+  recentArticles: ArticleArchiveItem[],
+  fallbackArticles: ArticleArchiveItem[],
+  frequency: EditionFrequency,
+): ArticleArchiveItem[] {
+  const limit = frequencyItemLimit(frequency);
+  const seen = new Set<string>();
+  const selected: ArticleArchiveItem[] = [];
+
+  for (const article of [...recentArticles, ...fallbackArticles].sort(
+    (articleA, articleB) =>
+      effectiveArticleTime(articleB) - effectiveArticleTime(articleA),
+  )) {
+    if (seen.has(article.id)) continue;
+
+    selected.push(article);
+    seen.add(article.id);
+
+    if (selected.length >= limit) break;
+  }
+
+  return selected;
 }
 
 function articleFromRelation(
@@ -110,6 +194,12 @@ function articleFromRelation(
 
 function editionFromRow(row: EditionRow): NewsletterEdition {
   const vertical = firstRelation(row.verticals);
+  const rawSlug = vertical?.slug ?? null;
+  const publicSlug = rawSlug
+    ? adminSlugForPublicationSlug(rawSlug)
+      ? rawSlug
+      : publicSlugForAdminSlug(rawSlug) ?? rawSlug
+    : null;
   const items = (row.newsletter_edition_items ?? [])
     .map((item) => ({
       id: item.id,
@@ -129,6 +219,7 @@ function editionFromRow(row: EditionRow): NewsletterEdition {
     status: row.status,
     magicToken: row.magic_token,
     publicationName: vertical?.name ?? "MyNewsNetwork",
+    publicationSlug: publicSlug,
     items,
     createdAt: row.created_at,
   };
@@ -144,7 +235,7 @@ export async function getNewsletterEditionByToken(
   const result = await supabase
     .from("newsletter_editions")
     .select(
-      "id,vertical_id,reader_id,frequency,edition_date,title,status,magic_token,created_at,verticals(name),newsletter_edition_items(id,section,position,articles(id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,verticals(name,slug)))",
+      "id,vertical_id,reader_id,frequency,edition_date,title,status,magic_token,created_at,verticals(name,slug),newsletter_edition_items(id,section,position,articles(id,vertical_id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,verticals(name,slug)))",
     )
     .eq("magic_token", token)
     .maybeSingle<EditionRow>();
@@ -187,6 +278,91 @@ export async function listNewsletterEditions(): Promise<
     itemCount: row.newsletter_edition_items?.length ?? 0,
     createdAt: row.created_at,
   }));
+}
+
+export async function generateNewsletterEdition({
+  verticalSlug,
+  frequency = "daily",
+  readerEmail,
+}: {
+  verticalSlug: string;
+  frequency?: EditionFrequency;
+  readerEmail?: string | null;
+  readerPreferences?: Record<string, unknown> | null;
+}): Promise<GeneratedEdition | null> {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) return null;
+
+  const vertical = await getVerticalBySlug(verticalSlug);
+
+  if (!vertical?.databaseId) return null;
+
+  const reader = readerEmail
+    ? await getOrCreateReaderProfile(readerEmail, supabase)
+    : null;
+  const windowDays = frequencyWindowDays(frequency);
+  const editionDate = new Date().toISOString().slice(0, 10);
+  const recentArticles = await getArticleArchive({
+    verticalSlug: vertical.slug,
+    recentDays: windowDays,
+  });
+  const fallbackArticles = await getArticleArchive({ verticalSlug: vertical.slug });
+  const selectedArticles = selectEditionArticles(
+    recentArticles,
+    fallbackArticles,
+    frequency,
+  );
+  const magicToken = crypto.randomUUID();
+  const title = editionTitle(
+    vertical.publicationName ?? vertical.name,
+    frequency,
+    editionDate,
+  );
+
+  const editionResult = await supabase
+    .from("newsletter_editions")
+    .insert({
+      vertical_id: vertical.databaseId,
+      reader_id: reader?.id ?? null,
+      frequency,
+      edition_date: editionDate,
+      title,
+      status: selectedArticles.length ? "ready" : "draft",
+      magic_token: magicToken,
+    })
+    .select("id,magic_token")
+    .single<{ id: string; magic_token: string }>();
+
+  if (editionResult.error || !editionResult.data) {
+    console.error("Newsletter edition generation failed", editionResult.error);
+    return null;
+  }
+
+  if (selectedArticles.length) {
+    const itemResult = await supabase.from("newsletter_edition_items").insert(
+      selectedArticles.map((article, index) => ({
+        edition_id: editionResult.data.id,
+        article_id: article.id,
+        section: articleSection(article),
+        position: index + 1,
+      })),
+    );
+
+    if (itemResult.error) {
+      console.error("Newsletter edition item insert failed", itemResult.error);
+      return null;
+    }
+  }
+
+  return {
+    id: editionResult.data.id,
+    title,
+    magicToken: editionResult.data.magic_token,
+    itemCount: selectedArticles.length,
+    publicationName: vertical.publicationName ?? vertical.name,
+    frequency,
+  };
 }
 
 export async function createNewsletterEditionPlaceholder({
