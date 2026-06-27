@@ -110,10 +110,6 @@ export default async function PublicationFeedPage({
       profile={profile}
       title={`${profile.publicationName} Latest News`}
     >
-      <PublicationLinks
-        publications={publications}
-        profile={profile}
-      />
       <PublicationFeedControls
         articles={countArticles}
         currentCollection={selectedCollection}
@@ -121,6 +117,10 @@ export default async function PublicationFeedPage({
         currentSourceId={query?.source}
         publicationSlug={profile.slug}
         sources={sources}
+      />
+      <PublicationLinks
+        publications={publications}
+        profile={profile}
       />
       <ArchiveStoryCards
         articles={balanceLatestArticles(collectionArticles, {
