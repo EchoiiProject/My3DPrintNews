@@ -406,6 +406,9 @@ function articleCategory(article: Article): string {
 export function FeedStoryCards({
   displayMode = "standard",
   favourites,
+  hiddenKeys,
+  onHiddenKeysChange,
+  onHiddenSourceIdsChange,
   onToggleSourceFavourite,
   publicationId,
   publicationName = "My3DPrintNews",
@@ -416,6 +419,9 @@ export function FeedStoryCards({
 }: {
   displayMode?: "compact" | "standard" | "visual";
   favourites: Favourites;
+  hiddenKeys: string[];
+  onHiddenKeysChange: (keys: string[]) => void;
+  onHiddenSourceIdsChange: (sourceIds: string[]) => void;
   onToggleSourceFavourite: (source: string) => void;
   publicationId?: string;
   publicationName?: string;
@@ -427,8 +433,6 @@ export function FeedStoryCards({
   const isCompact = displayMode === "compact";
   const isVisual = displayMode === "visual";
   const [savedKeys, setSavedKeys] = useState<string[]>([]);
-  const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
-  const [hiddenSourceIds, setHiddenSourceIds] = useState<string[]>([]);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
   const [emailArticleRequest, setEmailArticleRequest] =
     useState<Article | null>(null);
@@ -440,24 +444,6 @@ export function FeedStoryCards({
   useEffect(() => {
     setReaderEmail(localStorage.getItem(READER_EMAIL_KEY) ?? "");
     setSavedKeys(savedArticles().map((article) => article.url));
-    setHiddenKeys(hiddenArticleKeys());
-    setHiddenSourceIds(activeHiddenSourceIds());
-
-    function handleSourcePreferencesChanged() {
-      setHiddenSourceIds(activeHiddenSourceIds());
-    }
-
-    window.addEventListener(
-      "my3dprintnews:source-preferences-changed",
-      handleSourcePreferencesChanged,
-    );
-
-    return () => {
-      window.removeEventListener(
-        "my3dprintnews:source-preferences-changed",
-        handleSourcePreferencesChanged,
-      );
-    };
   }, []);
 
   function setStatus(article: Article, message: string) {
@@ -562,7 +548,7 @@ export function FeedStoryCards({
     const next = Array.from(new Set([...hiddenArticleKeys(), key]));
 
     localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(next));
-    setHiddenKeys(next);
+    onHiddenKeysChange(next);
     setStatus(article, "Hidden from your feed.");
     void syncHiddenArticle(article);
   }
@@ -572,7 +558,7 @@ export function FeedStoryCards({
     const next = hiddenArticleKeys().filter((item) => item !== key);
 
     localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(next));
-    setHiddenKeys(next);
+    onHiddenKeysChange(next);
     setStatus(article, "Restored to your feed.");
     void syncUnhiddenArticle(article).then((ok) => {
       if (!ok) {
@@ -604,7 +590,7 @@ export function FeedStoryCards({
     ];
 
     localStorage.setItem(HIDDEN_SOURCES_KEY, JSON.stringify(next));
-    setHiddenSourceIds(activeHiddenSourceIds());
+    onHiddenSourceIdsChange(activeHiddenSourceIds());
     window.dispatchEvent(
       new CustomEvent("my3dprintnews:source-preferences-changed"),
     );
@@ -733,13 +719,7 @@ export function FeedStoryCards({
         }}
         open={Boolean(emailArticleRequest)}
       />
-      {stories
-        .filter(
-          (story) =>
-            !story.article.sourceId ||
-            !hiddenSourceIds.includes(story.article.sourceId),
-        )
-        .map((scoredArticle, index) => {
+      {stories.map((scoredArticle, index) => {
         const hasImage = Boolean(scoredArticle.article.imageUrl);
         const articleGridClass =
           hasImage && isCompact
@@ -1073,6 +1053,29 @@ export function FeedClient({
   const [activeCategoryFilter, setActiveCategoryFilter] =
     useState(allCategoryFilter);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
+  const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
+  const [hiddenSourceIds, setHiddenSourceIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setHiddenKeys(hiddenArticleKeys());
+    setHiddenSourceIds(activeHiddenSourceIds());
+
+    function handleSourcePreferencesChanged() {
+      setHiddenSourceIds(activeHiddenSourceIds());
+    }
+
+    window.addEventListener(
+      "my3dprintnews:source-preferences-changed",
+      handleSourcePreferencesChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "my3dprintnews:source-preferences-changed",
+        handleSourcePreferencesChanged,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!readLocalStorage) {
@@ -1128,28 +1131,42 @@ export function FeedClient({
       }),
     [articles, favourites, periodDays, preferences, requestedStoryCount],
   );
+  const visibleMatchedStories = useMemo(
+    () =>
+      matchedStories.filter((story) => {
+        if (hiddenKeys.includes(hiddenArticleKey(story.article))) {
+          return false;
+        }
+
+        return (
+          !story.article.sourceId ||
+          !hiddenSourceIds.includes(story.article.sourceId)
+        );
+      }),
+    [hiddenKeys, hiddenSourceIds, matchedStories],
+  );
 
   const focusCounts = useMemo(() => {
     const filters = preferenceFocusFilters(preferences);
 
     return filters.reduce<Record<string, number>>((counts, filter) => {
-      counts[filter.label] = matchedStories.filter((scoredArticle) =>
+      counts[filter.label] = visibleMatchedStories.filter((scoredArticle) =>
         matchesFocus(scoredArticle, filter),
       ).length;
 
       return counts;
     }, {});
-  }, [preferences, matchedStories]);
+  }, [preferences, visibleMatchedStories]);
 
   const focusedStories = useMemo(() => {
     if (!activeFocus) {
-      return matchedStories;
+      return visibleMatchedStories;
     }
 
-    return matchedStories.filter((scoredArticle) =>
+    return visibleMatchedStories.filter((scoredArticle) =>
       matchesFocus(scoredArticle, activeFocus),
     );
-  }, [activeFocus, matchedStories]);
+  }, [activeFocus, visibleMatchedStories]);
 
   const mediaCounts = useMemo(() => {
     const counts = new Map<DisplayMediaType, number>();
@@ -1769,6 +1786,9 @@ export function FeedClient({
                 <FeedStoryCards
                   displayMode={displayMode}
                   favourites={favourites}
+                  hiddenKeys={hiddenKeys}
+                  onHiddenKeysChange={setHiddenKeys}
+                  onHiddenSourceIdsChange={setHiddenSourceIds}
                   onToggleSourceFavourite={toggleSourceFavourite}
                   showFeedAds={showFeedAds}
                   stories={visibleStories}
