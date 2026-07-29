@@ -48,7 +48,11 @@ const SAVED_ITEMS_KEY = "my3dprintnews-saved-items";
 const READER_EMAIL_KEY = "my3dprintnews-reader-email";
 const HIDDEN_ITEMS_KEY = "my3dprintnews-hidden-items";
 const HIDDEN_SOURCES_KEY = "my3dprintnews-hidden-sources";
+const DISPLAY_MODE_KEY = "my3dprintnews-feed-display-mode";
 const allMediaFilter = "all";
+const allCategoryFilter = "all";
+const displayModes = ["compact", "standard", "visual"] as const;
+type DisplayMode = (typeof displayModes)[number];
 
 type SavedArticle = {
   articleId?: string;
@@ -369,6 +373,34 @@ function articleMediaType(article: Article): DisplayMediaType {
     tags: article.tags,
     source: article.source,
   });
+}
+
+function normaliseDisplayMode(value: string | null): DisplayMode {
+  return displayModes.includes(value as DisplayMode)
+    ? (value as DisplayMode)
+    : "standard";
+}
+
+function articleCategory(article: Article): string {
+  const excludedTags = new Set([
+    article.source,
+    "article",
+    "video",
+    "News",
+    "Video",
+    "Videos",
+    "YouTube",
+    "Podcast",
+    "Podcasts",
+    "Review",
+    "Reviews",
+    "Blog",
+    "Brand",
+    "Creator",
+  ]);
+  const category = article.tags.find((tag) => !excludedTags.has(tag));
+
+  return category ?? storyBadge(article);
 }
 
 export function FeedStoryCards({
@@ -1038,11 +1070,18 @@ export function FeedClient({
   const [activeMediaFilter, setActiveMediaFilter] = useState<
     DisplayMediaType | typeof allMediaFilter
   >(allMediaFilter);
+  const [activeCategoryFilter, setActiveCategoryFilter] =
+    useState(allCategoryFilter);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("standard");
 
   useEffect(() => {
     if (!readLocalStorage) {
       return;
     }
+
+    setDisplayMode(
+      normaliseDisplayMode(localStorage.getItem(DISPLAY_MODE_KEY)),
+    );
 
     const saved = localStorage.getItem(STORAGE_KEY);
 
@@ -1129,7 +1168,7 @@ export function FeedClient({
       .filter((option) => option.count > 0);
   }, [focusedStories]);
 
-  const visibleStories = useMemo(() => {
+  const categoryBaseStories = useMemo(() => {
     if (activeMediaFilter === allMediaFilter) {
       return focusedStories;
     }
@@ -1140,6 +1179,32 @@ export function FeedClient({
     );
   }, [activeMediaFilter, focusedStories]);
 
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    categoryBaseStories.forEach((scoredArticle) => {
+      const category = articleCategory(scoredArticle.article);
+
+      counts.set(category, (counts.get(category) ?? 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .sort(([, countA], [, countB]) => countB - countA)
+      .map(([label, count]) => ({ count, label }));
+  }, [categoryBaseStories]);
+
+  const visibleStories = useMemo(() => {
+    if (activeCategoryFilter === allCategoryFilter) {
+      return categoryBaseStories;
+    }
+
+    return categoryBaseStories.filter(
+      (scoredArticle) =>
+        articleCategory(scoredArticle.article).toLowerCase() ===
+        activeCategoryFilter,
+    );
+  }, [activeCategoryFilter, categoryBaseStories]);
+
   useEffect(() => {
     if (
       activeMediaFilter !== allMediaFilter &&
@@ -1149,10 +1214,29 @@ export function FeedClient({
     }
   }, [activeMediaFilter, mediaCounts]);
 
+  useEffect(() => {
+    if (
+      activeCategoryFilter !== allCategoryFilter &&
+      !categoryCounts.some(
+        (category) => category.label.toLowerCase() === activeCategoryFilter,
+      )
+    ) {
+      setActiveCategoryFilter(allCategoryFilter);
+    }
+  }, [activeCategoryFilter, categoryCounts]);
+
   function toggleFocus(filter: FocusFilter) {
     setActiveFocus((current) =>
       current?.label === filter.label ? null : filter,
     );
+  }
+
+  function chooseDisplayMode(mode: DisplayMode) {
+    setDisplayMode(mode);
+
+    if (readLocalStorage) {
+      localStorage.setItem(DISPLAY_MODE_KEY, mode);
+    }
   }
 
   const currentNewsletterPreferences = useMemo(
@@ -1627,7 +1711,63 @@ export function FeedClient({
                   ))}
                 </div>
 
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+                    <button
+                      className={[
+                        "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                        activeCategoryFilter === allCategoryFilter
+                          ? "bg-slate-950 text-white"
+                          : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                      ].join(" ")}
+                      onClick={() => setActiveCategoryFilter(allCategoryFilter)}
+                      type="button"
+                    >
+                      All categories ({categoryBaseStories.length})
+                    </button>
+                    {categoryCounts.slice(0, 6).map((category) => (
+                      <button
+                        className={[
+                          "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                          activeCategoryFilter === category.label.toLowerCase()
+                            ? "bg-slate-950 text-white"
+                            : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                        ].join(" ")}
+                        key={category.label}
+                        onClick={() =>
+                          setActiveCategoryFilter(category.label.toLowerCase())
+                        }
+                        type="button"
+                      >
+                        {category.label} ({category.count})
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+                    <span className="px-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      View
+                    </span>
+                    {displayModes.map((mode) => (
+                      <button
+                        className={[
+                          "min-h-8 rounded px-2.5 text-xs font-bold capitalize transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                          displayMode === mode
+                            ? "bg-blue-600 text-white"
+                            : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                        ].join(" ")}
+                        key={mode}
+                        onClick={() => chooseDisplayMode(mode)}
+                        type="button"
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <FeedStoryCards
+                  displayMode={displayMode}
                   favourites={favourites}
                   onToggleSourceFavourite={toggleSourceFavourite}
                   showFeedAds={showFeedAds}
