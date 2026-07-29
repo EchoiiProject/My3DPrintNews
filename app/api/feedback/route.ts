@@ -114,6 +114,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    message: "Thanks - your feedback has been sent to the publication team.",
+    message: "Thanks - your feedback has been sent to the editorial team.",
   });
 }

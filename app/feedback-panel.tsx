@@ -69,7 +69,7 @@ export function FeedbackPanel({
           tone: "success",
           message:
             result.message ??
-            "Thanks - your feedback has been sent to the publication team.",
+            "Thanks - your feedback has been sent to the editorial team.",
         });
       } else {
         setStatus({
@@ -100,7 +100,7 @@ export function FeedbackPanel({
             </h2>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
-            Private to the publication team
+            Private to the editorial team
           </span>
         </div>
 
@@ -170,7 +170,7 @@ export function FeedbackPanel({
               ].join(" ")}
             >
               {status?.message ??
-                "Thanks - your feedback has been sent to the publication team."}
+                "Thanks - your feedback has been sent to the editorial team."}
             </p>
           </div>
         </form>

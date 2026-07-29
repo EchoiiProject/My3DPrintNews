@@ -3,7 +3,7 @@ import { GlobalNav } from "../global-nav";
 
 const terms = [
   "My3DPrintNews is provided as-is as a personalised discovery and briefing service.",
-  "External links and original articles belong to their respective publishers, platforms, or creators.",
+  "External links and original articles belong to their respective publishers, websites, or creators.",
   "My3DPrintNews does not guarantee that feeds, summaries, links, videos, or availability will be complete, accurate, current, or uninterrupted.",
   "Users are responsible for how they use the information, external links, products, offers, downloads, models, and guidance they discover through the service.",
 ];

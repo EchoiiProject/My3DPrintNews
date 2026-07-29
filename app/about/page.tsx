@@ -16,7 +16,7 @@ export default function AboutPage() {
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
             My3DPrintNews helps readers follow the manufacturers, creators,
-            reviewers, materials, platforms and technologies shaping additive
+            reviewers, materials, printer ecosystems and technologies shaping additive
             manufacturing.
           </p>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">

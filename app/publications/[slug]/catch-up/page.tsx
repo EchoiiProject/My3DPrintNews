@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentSite } from "@/config/current-site";
 import { publicNetworkEnabled } from "@/config/launch-mode";
 import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
@@ -58,6 +58,10 @@ export default async function PublicationCatchUpPage({
 
   if (!publicNetworkEnabled && profile.adminSlug !== currentSite.verticalSlug) {
     notFound();
+  }
+
+  if (!publicNetworkEnabled) {
+    redirect("/catch-up");
   }
 
   const requestedDays = query?.days ? Number(query.days) : 7;

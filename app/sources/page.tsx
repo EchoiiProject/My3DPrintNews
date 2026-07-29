@@ -214,7 +214,7 @@ export default function SourcesPage() {
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
             Build a broader My3DPrintNews signal by choosing from available
-            brands, creators, sources, model platforms, topics and technologies.
+            brands, creators, sources, printer ecosystems, topics and technologies.
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <button

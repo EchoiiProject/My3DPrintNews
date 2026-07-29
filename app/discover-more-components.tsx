@@ -124,7 +124,9 @@ export function DiscoverMorePanel() {
     <section className="border-t border-slate-200/80 py-8">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-blue-700">Discover More</p>
+          <p className="text-sm font-semibold text-blue-700">
+            More Specialist Coverage
+          </p>
           <h2 className="mt-1 text-2xl font-bold text-slate-950">
             Enjoying {currentProfile.publicationName}?
           </h2>
@@ -133,7 +135,7 @@ export function DiscoverMorePanel() {
           className="inline-flex min-h-10 items-center justify-center rounded-md border border-blue-200 bg-white/90 px-3 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
           href="/discover-more"
         >
-          Explore all publications
+          Browse more coverage
         </Link>
       </div>
       <p className="mb-4 text-sm leading-6 text-slate-600">

@@ -36,7 +36,7 @@ import {
   weeklyDayOptions,
 } from "../preferences";
 import { AdPlacement } from "../ad-placement";
-import { MyNewsNetworkEmailDialog } from "../components/my-news-network-dialog";
+import { BrandEmailDialog } from "../components/my-news-network-dialog";
 
 const appConfig = currentSite.metadata;
 const SAVED_ITEMS_KEY = "my3dprintnews-saved-items";
@@ -667,7 +667,7 @@ export function FeedStoryCards({
 
   return (
     <div className="space-y-4">
-      <MyNewsNetworkEmailDialog
+      <BrandEmailDialog
         body={
           emailArticleRequest
             ? `Send "${emailArticleRequest.title}" to your email.`
@@ -1211,7 +1211,7 @@ export function FeedClient({
                     label: "Catch up on missed stories",
                   },
                   { href: "/sources", label: "Browse all sources" },
-                  { href: "/updates", label: "Latest platform updates" },
+                  { href: "/updates", label: "Updates" },
                 ]}
               />
             </div>

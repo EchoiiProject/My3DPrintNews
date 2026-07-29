@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentSite } from "@/config/current-site";
 import { publicNetworkEnabled } from "@/config/launch-mode";
 import {
@@ -66,6 +66,10 @@ export default async function PublicationFeedPage({
 
   if (!publicNetworkEnabled && profile.adminSlug !== currentSite.verticalSlug) {
     notFound();
+  }
+
+  if (!publicNetworkEnabled) {
+    redirect("/feed");
   }
 
   const sources = await getManagedSources(profile.adminSlug);

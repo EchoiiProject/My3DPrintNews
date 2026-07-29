@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentSite } from "@/config/current-site";
 import { publicNetworkEnabled } from "@/config/launch-mode";
 import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
@@ -53,6 +53,10 @@ export default async function PublicationHomePage({
 
   if (!publicNetworkEnabled && profile.adminSlug !== currentSite.verticalSlug) {
     notFound();
+  }
+
+  if (!publicNetworkEnabled) {
+    redirect("/");
   }
 
   const articles = await getArticleArchive({

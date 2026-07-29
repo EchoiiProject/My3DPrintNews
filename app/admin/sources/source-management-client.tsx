@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState } from "react";
-import { MyNewsNetworkConfirmDialog } from "@/app/components/my-news-network-dialog";
+import { BrandConfirmDialog } from "@/app/components/my-news-network-dialog";
 import type { ManagedSource, SourceDiagnostics, SourceType } from "@/lib/sources";
 import {
   publicationSlugForVertical,
@@ -1894,7 +1894,7 @@ export function SourceManagementClient({
         </div>
       </section>
 
-      <MyNewsNetworkConfirmDialog
+      <BrandConfirmDialog
         body={
           pendingBulkImport
             ? `You are about to import ${pendingBulkImport.rows.length} sources into ${pendingBulkImport.publicationName}.`
@@ -1907,7 +1907,7 @@ export function SourceManagementClient({
         open={Boolean(pendingBulkImport)}
       />
 
-      <MyNewsNetworkConfirmDialog
+      <BrandConfirmDialog
         body={
           pendingDeleteSource
             ? `Archive ${pendingDeleteSource.name}? It will be removed from active source management but existing article history will remain.`

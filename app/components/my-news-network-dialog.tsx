@@ -11,7 +11,7 @@ type DialogBaseProps = {
   title?: string;
 };
 
-export function MyNewsNetworkConfirmDialog({
+export function BrandConfirmDialog({
   body,
   children,
   confirmLabel = "Confirm",
@@ -58,7 +58,7 @@ export function MyNewsNetworkConfirmDialog({
   );
 }
 
-export function MyNewsNetworkEmailDialog({
+export function BrandEmailDialog({
   body,
   confirmLabel = "Continue",
   defaultEmail = "",

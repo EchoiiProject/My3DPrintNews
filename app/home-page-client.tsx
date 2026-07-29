@@ -187,7 +187,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
               {appConfig.tagline}
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Choose the brands, model platforms, technologies, and story types
+              Choose the brands, printer ecosystems, technologies, and story types
               you care about, then build a focused 3D printing news briefing.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">

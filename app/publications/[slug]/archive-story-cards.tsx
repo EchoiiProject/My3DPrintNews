@@ -11,7 +11,7 @@ import type { ScoredArticle } from "@/lib/matching";
 import { generateArticleTags } from "@/lib/matching";
 import { getPublishedTimestamp } from "@/lib/ranking";
 import { FeedStoryCards } from "@/app/feed/feed-client";
-import { MyNewsNetworkEmailDialog } from "@/app/components/my-news-network-dialog";
+import { BrandEmailDialog } from "@/app/components/my-news-network-dialog";
 import {
   defaultFavourites,
   FAVOURITES_KEY,
@@ -387,7 +387,7 @@ export function ArchiveStoryCards({
 
   return (
     <section className="mt-8">
-      <MyNewsNetworkEmailDialog
+      <BrandEmailDialog
         body={
           emailDialog === "latest-news"
             ? `Send today's Latest News from ${publicationName} to your email.`
