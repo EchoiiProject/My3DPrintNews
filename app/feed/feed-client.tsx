@@ -4,7 +4,12 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { currentSite } from "../../config/current-site";
 import type { Article } from "@/lib/rss";
-import { displayMediaLabel } from "@/lib/media-types";
+import {
+  displayMediaLabel,
+  displayMediaType,
+  mediaFilterOptions,
+  type DisplayMediaType,
+} from "@/lib/media-types";
 import {
   matchesFocus,
   preferenceFocusFilters,
@@ -43,6 +48,7 @@ const SAVED_ITEMS_KEY = "my3dprintnews-saved-items";
 const READER_EMAIL_KEY = "my3dprintnews-reader-email";
 const HIDDEN_ITEMS_KEY = "my3dprintnews-hidden-items";
 const HIDDEN_SOURCES_KEY = "my3dprintnews-hidden-sources";
+const allMediaFilter = "all";
 
 type SavedArticle = {
   articleId?: string;
@@ -351,6 +357,14 @@ function formatDate(value: string): string {
 
 function storyBadge(article: Article): string {
   return displayMediaLabel({
+    sourceType: article.type === "video" ? "youtube" : undefined,
+    tags: article.tags,
+    source: article.source,
+  });
+}
+
+function articleMediaType(article: Article): DisplayMediaType {
+  return displayMediaType({
     sourceType: article.type === "video" ? "youtube" : undefined,
     tags: article.tags,
     source: article.source,
@@ -1021,6 +1035,9 @@ export function FeedClient({
   } | null>(null);
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
   const [activeFocus, setActiveFocus] = useState<FocusFilter | null>(null);
+  const [activeMediaFilter, setActiveMediaFilter] = useState<
+    DisplayMediaType | typeof allMediaFilter
+  >(allMediaFilter);
 
   useEffect(() => {
     if (!readLocalStorage) {
@@ -1094,6 +1111,43 @@ export function FeedClient({
       matchesFocus(scoredArticle, activeFocus),
     );
   }, [activeFocus, matchedStories]);
+
+  const mediaCounts = useMemo(() => {
+    const counts = new Map<DisplayMediaType, number>();
+
+    focusedStories.forEach((scoredArticle) => {
+      const mediaType = articleMediaType(scoredArticle.article);
+
+      counts.set(mediaType, (counts.get(mediaType) ?? 0) + 1);
+    });
+
+    return mediaFilterOptions
+      .map((option) => ({
+        ...option,
+        count: counts.get(option.value) ?? 0,
+      }))
+      .filter((option) => option.count > 0);
+  }, [focusedStories]);
+
+  const visibleStories = useMemo(() => {
+    if (activeMediaFilter === allMediaFilter) {
+      return focusedStories;
+    }
+
+    return focusedStories.filter(
+      (scoredArticle) =>
+        articleMediaType(scoredArticle.article) === activeMediaFilter,
+    );
+  }, [activeMediaFilter, focusedStories]);
+
+  useEffect(() => {
+    if (
+      activeMediaFilter !== allMediaFilter &&
+      !mediaCounts.some((option) => option.value === activeMediaFilter)
+    ) {
+      setActiveMediaFilter(allMediaFilter);
+    }
+  }, [activeMediaFilter, mediaCounts]);
 
   function toggleFocus(filter: FocusFilter) {
     setActiveFocus((current) =>
@@ -1530,7 +1584,7 @@ export function FeedClient({
               </div>
             ) : null}
             <div>
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl font-bold text-slate-950">
                     {storySectionHeading ??
                       (hasPreferenceTags
@@ -1538,16 +1592,46 @@ export function FeedClient({
                         : "Latest general stories")}
                   </h2>
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {focusedStories.length}{" "}
+                    {visibleStories.length}{" "}
                     {hasPreferenceTags ? "matching stories" : "stories"}
                   </span>
+                </div>
+
+                <div className="mb-4 inline-flex max-w-full flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
+                  <button
+                    className={[
+                      "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                      activeMediaFilter === allMediaFilter
+                        ? "bg-slate-950 text-white"
+                        : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                    ].join(" ")}
+                    onClick={() => setActiveMediaFilter(allMediaFilter)}
+                    type="button"
+                  >
+                    All ({focusedStories.length})
+                  </button>
+                  {mediaCounts.map((option) => (
+                    <button
+                      className={[
+                        "min-h-8 rounded px-2.5 text-xs font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100",
+                        activeMediaFilter === option.value
+                          ? "bg-slate-950 text-white"
+                          : "text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+                      ].join(" ")}
+                      key={option.value}
+                      onClick={() => setActiveMediaFilter(option.value)}
+                      type="button"
+                    >
+                      {option.pluralLabel} ({option.count})
+                    </button>
+                  ))}
                 </div>
 
                 <FeedStoryCards
                   favourites={favourites}
                   onToggleSourceFavourite={toggleSourceFavourite}
                   showFeedAds={showFeedAds}
-                  stories={focusedStories}
+                  stories={visibleStories}
                 />
             </div>
             <div className="pt-2">
