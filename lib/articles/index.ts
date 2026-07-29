@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import { matchingConfig } from "@/config/preferences";
 import { adminSlugForPublicationSlug } from "@/config/verticals";
 import type { Article } from "@/lib/rss";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
@@ -224,11 +225,12 @@ type FeedArticleRecord = {
   image_url: string | null;
   published_at: string | null;
   source_name: string | null;
+  author: string | null;
   tags: unknown;
   created_at: string | null;
   vertical_sources?:
-    | { source_type: string | null }
-    | { source_type: string | null }[]
+    | { category: string | null; name: string | null; source_type: string | null }
+    | { category: string | null; name: string | null; source_type: string | null }[]
     | null;
 };
 
@@ -423,7 +425,7 @@ function cleanSummary(item: ParsedItem) {
   return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || null;
 }
 
-function sourceTypeTags(source: ManagedSource): string[] {
+function sourceTypeBaseTags(type: SourceType): string[] {
   const labelByType: Record<SourceType, string[]> = {
     rss: ["News"],
     youtube: ["Video", "YouTube", "Creator"],
@@ -433,7 +435,11 @@ function sourceTypeTags(source: ManagedSource): string[] {
     creator: ["Creator"],
   };
 
-  return labelByType[source.sourceType];
+  return labelByType[type];
+}
+
+function sourceTypeTags(source: ManagedSource): string[] {
+  return sourceTypeBaseTags(source.sourceType);
 }
 
 function toArchiveItem(record: ArticleRecord): ArticleArchiveItem {
@@ -483,27 +489,73 @@ function normaliseEditorialStatus(value: string | null | undefined): ArticleEdit
   return "published";
 }
 
+function articleTagsFromText(values: Array<string | null | undefined>): string[] {
+  const text = values.filter(Boolean).join(" ").toLowerCase();
+
+  return Object.entries(matchingConfig.scoringKeywords)
+    .filter(([, keywords]) => keywords.some((keyword) => text.includes(keyword)))
+    .map(([tag]) => tag);
+}
+
+function stringTags(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value
+        .map(String)
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : [];
+}
+
+function uniqueTags(tags: Array<string | null | undefined>): string[] {
+  return Array.from(
+    new Set(
+      tags
+        .filter((tag): tag is string => Boolean(tag?.trim()))
+        .map((tag) => tag.trim()),
+    ),
+  );
+}
+
 function toFeedArticle(record: FeedArticleRecord): Article {
   const source = Array.isArray(record.vertical_sources)
     ? record.vertical_sources[0]
     : record.vertical_sources;
   const sourceType = normaliseSourceType(source?.source_type);
-  const tags = Array.isArray(record.tags) ? record.tags.map(String) : [];
+  const sourceName = record.source_name ?? source?.name ?? "My3DPrintNews";
+  const mediaType = sourceType === "youtube" ? "video" : "article";
+  const storedTags = stringTags(record.tags);
+  const summary =
+    record.summary ??
+    "Publisher summary unavailable. Read the original article for full details.";
+  const generatedTags = articleTagsFromText([
+    record.title,
+    summary,
+    sourceName,
+    record.author,
+    source?.category,
+    ...storedTags,
+  ]);
+  const tags = uniqueTags([
+    sourceName,
+    mediaType,
+    ...sourceTypeBaseTags(sourceType),
+    source?.category,
+    ...storedTags,
+    ...generatedTags,
+  ]);
 
   return {
     id: record.id,
     sourceId: record.source_id,
     title: record.title,
     link: record.url,
-    source: record.source_name ?? "My3DPrintNews",
+    source: sourceName,
     publishedAt:
       record.published_at ?? record.created_at ?? new Date(0).toISOString(),
-    summary:
-      record.summary ??
-      "Publisher summary unavailable. Read the original article for full details.",
+    summary,
     tags,
     imageUrl: record.image_url ?? undefined,
-    type: sourceType === "youtube" ? "video" : "article",
+    type: mediaType,
   };
 }
 
@@ -906,7 +958,7 @@ export async function fetchArticlesForAllEnabledSources(): Promise<ArticleFetchR
   return fetchArticlesForSources(await getManagedSources(), "All publications");
 }
 
-export async function getLatestArticles(limit = 100): Promise<Article[]> {
+export async function getLatestArticles(limit = 500): Promise<Article[]> {
   const supabase = createServiceSupabaseClient();
 
   if (!supabase) return [];
@@ -914,7 +966,7 @@ export async function getLatestArticles(limit = 100): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
     .select(
-      "id,source_id,title,url,summary,image_url,published_at,source_name,tags,created_at,vertical_sources(source_type)",
+      "id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,vertical_sources(name,category,source_type)",
     )
     .not("editorial_status", "in", "(paused,hidden,blocked)")
     .order("published_at", { ascending: false, nullsFirst: false })
