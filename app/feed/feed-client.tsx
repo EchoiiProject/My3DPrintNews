@@ -18,7 +18,6 @@ import {
 } from "@/lib/ranking";
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
-import { DiscoverMorePanel } from "../discover-more-components";
 import { EditorialReportButton } from "../editorial-report-button";
 import { FeedbackPanel } from "../feedback-panel";
 import {
@@ -40,10 +39,10 @@ import { AdPlacement } from "../ad-placement";
 import { MyNewsNetworkEmailDialog } from "../components/my-news-network-dialog";
 
 const appConfig = currentSite.metadata;
-const SAVED_ITEMS_KEY = "mynewsnetwork-saved-items";
-const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
-const HIDDEN_ITEMS_KEY = "mynewsnetwork-hidden-items";
-const HIDDEN_SOURCES_KEY = "mynewsnetwork-hidden-sources";
+const SAVED_ITEMS_KEY = "my3dprintnews-saved-items";
+const READER_EMAIL_KEY = "my3dprintnews-reader-email";
+const HIDDEN_ITEMS_KEY = "my3dprintnews-hidden-items";
+const HIDDEN_SOURCES_KEY = "my3dprintnews-hidden-sources";
 
 type SavedArticle = {
   articleId?: string;
@@ -363,7 +362,7 @@ export function FeedStoryCards({
   favourites,
   onToggleSourceFavourite,
   publicationId,
-  publicationName = "MyNewsNetwork",
+  publicationName = "My3DPrintNews",
   publicationSlug,
   publicationUrl,
   showFeedAds = true,
@@ -403,13 +402,13 @@ export function FeedStoryCards({
     }
 
     window.addEventListener(
-      "mynewsnetwork:source-preferences-changed",
+      "my3dprintnews:source-preferences-changed",
       handleSourcePreferencesChanged,
     );
 
     return () => {
       window.removeEventListener(
-        "mynewsnetwork:source-preferences-changed",
+        "my3dprintnews:source-preferences-changed",
         handleSourcePreferencesChanged,
       );
     };
@@ -561,7 +560,7 @@ export function FeedStoryCards({
     localStorage.setItem(HIDDEN_SOURCES_KEY, JSON.stringify(next));
     setHiddenSourceIds(activeHiddenSourceIds());
     window.dispatchEvent(
-      new CustomEvent("mynewsnetwork:source-preferences-changed"),
+      new CustomEvent("my3dprintnews:source-preferences-changed"),
     );
     setSourceMenuArticleKey(null);
     setStatus(
@@ -1310,7 +1309,10 @@ export function FeedClient({
               </section>
             ) : null}
 
-            <section className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur">
+            <section
+              className="rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur"
+              id="newsletter"
+            >
               <p className="text-sm font-semibold text-blue-700">
                 Get email updates
               </p>
@@ -1378,7 +1380,7 @@ export function FeedClient({
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-slate-700">
                         We&apos;ll use these preferences to prepare your
-                        personalised MyNewsNetwork updates.
+                        personalised My3DPrintNews updates.
                       </p>
                     </div>
                     {!hasNewsletterSignal ? (
@@ -1563,7 +1565,6 @@ export function FeedClient({
         </div>
 
         <FeedbackPanel />
-        <DiscoverMorePanel />
         <FooterLinks />
       </section>
     </main>

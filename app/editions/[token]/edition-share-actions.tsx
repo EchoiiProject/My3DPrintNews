@@ -3,8 +3,8 @@
 import { EditorialReportButton } from "@/app/editorial-report-button";
 import { ReactNode, useEffect, useState } from "react";
 
-const HIDDEN_SOURCES_KEY = "mynewsnetwork-hidden-sources";
-const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
+const HIDDEN_SOURCES_KEY = "my3dprintnews-hidden-sources";
+const READER_EMAIL_KEY = "my3dprintnews-reader-email";
 
 type HiddenSourcePreference = {
   mutedUntil?: string | null;
@@ -34,7 +34,7 @@ function useShareStatus() {
 
 function hiddenItems(): string[] {
   try {
-    const value = localStorage.getItem("mynewsnetwork-hidden-items");
+    const value = localStorage.getItem("my3dprintnews-hidden-items");
 
     return value ? (JSON.parse(value) as string[]) : [];
   } catch {
@@ -72,7 +72,7 @@ function sourceIsHidden(sourceId?: string | null) {
 }
 
 function setHiddenItems(items: string[]) {
-  localStorage.setItem("mynewsnetwork-hidden-items", JSON.stringify(items));
+    localStorage.setItem("my3dprintnews-hidden-items", JSON.stringify(items));
 }
 
 function hiddenItemKey(articleId: string | null | undefined, url: string) {
@@ -161,21 +161,21 @@ export function ReaderHiddenItem({
       }
     }
 
-    window.addEventListener("mynewsnetwork:item-hidden", handleHidden);
+    window.addEventListener("my3dprintnews:item-hidden", handleHidden);
 
     function handleSourcePreferencesChanged() {
       setSourceHidden(sourceIsHidden(sourceId));
     }
 
     window.addEventListener(
-      "mynewsnetwork:source-preferences-changed",
+      "my3dprintnews:source-preferences-changed",
       handleSourcePreferencesChanged,
     );
 
     return () => {
-      window.removeEventListener("mynewsnetwork:item-hidden", handleHidden);
+      window.removeEventListener("my3dprintnews:item-hidden", handleHidden);
       window.removeEventListener(
-        "mynewsnetwork:source-preferences-changed",
+        "my3dprintnews:source-preferences-changed",
         handleSourcePreferencesChanged,
       );
     };
@@ -208,7 +208,7 @@ export function ReaderHiddenItem({
     setSourceHidden(false);
     setStatus("Source restored.");
     window.dispatchEvent(
-      new CustomEvent("mynewsnetwork:source-preferences-changed"),
+      new CustomEvent("my3dprintnews:source-preferences-changed"),
     );
     void syncUnhiddenSource(sourceId).then((ok) => {
       if (!ok) {
@@ -369,7 +369,7 @@ export function EditionItemShareActions({
     const next = Array.from(new Set([...existing, key]));
     const email = localStorage.getItem(READER_EMAIL_KEY);
 
-    localStorage.setItem("mynewsnetwork-hidden-items", JSON.stringify(next));
+    localStorage.setItem("my3dprintnews-hidden-items", JSON.stringify(next));
 
     if (email && articleId) {
       try {
@@ -389,7 +389,7 @@ export function EditionItemShareActions({
 
     showStatus("Hidden from your feed.");
     window.dispatchEvent(
-      new CustomEvent("mynewsnetwork:item-hidden", { detail: { key } }),
+      new CustomEvent("my3dprintnews:item-hidden", { detail: { key } }),
     );
   }
 
@@ -420,7 +420,7 @@ export function EditionItemShareActions({
         : `Hidden ${sourceName ?? "source"}.`,
     );
     window.dispatchEvent(
-      new CustomEvent("mynewsnetwork:source-preferences-changed"),
+      new CustomEvent("my3dprintnews:source-preferences-changed"),
     );
 
     const email = localStorage.getItem(READER_EMAIL_KEY);

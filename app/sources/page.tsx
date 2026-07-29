@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { RegistryItem, registry, selectableSources } from "../../config/registry";
-import { DiscoverMorePanel } from "../discover-more-components";
 import { FeedbackPanel } from "../feedback-panel";
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
@@ -214,7 +213,7 @@ export default function SourcesPage() {
             Select from all
           </h1>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            Build a broader MyNewsNetwork signal by choosing from available
+            Build a broader My3DPrintNews signal by choosing from available
             brands, creators, sources, model platforms, topics and technologies.
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -234,7 +233,7 @@ export default function SourcesPage() {
               links={[
                 { href: "/feed", label: "Latest News" },
                 { href: "/catch-up", label: "Catch Up" },
-                { href: "/updates", label: "Updates" },
+                { href: "/feed#newsletter", label: "Newsletter" },
               ]}
             />
           </div>
@@ -348,7 +347,6 @@ export default function SourcesPage() {
         </div>
 
         <FeedbackPanel />
-        <DiscoverMorePanel />
         <FooterLinks />
       </section>
     </main>

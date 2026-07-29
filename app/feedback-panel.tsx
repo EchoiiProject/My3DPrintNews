@@ -5,7 +5,7 @@ import { currentSite } from "@/config/current-site";
 import { FeedbackCategory } from "@/config/feedback";
 import { verticalBySlug, verticals } from "@/config/verticals";
 
-const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
+const READER_EMAIL_KEY = "my3dprintnews-reader-email";
 
 const feedbackOptions: {
   label: string;

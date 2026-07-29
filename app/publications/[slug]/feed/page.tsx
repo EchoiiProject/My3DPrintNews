@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { currentSite } from "@/config/current-site";
+import { publicNetworkEnabled } from "@/config/launch-mode";
 import {
   articleCollection,
   balanceLatestArticles,
@@ -33,7 +35,7 @@ export async function generateMetadata({
   const title = `${profile.publicationName} Latest News`;
 
   return {
-    title: `${title} | MyNewsNetwork`,
+    title: `${title} | My3DPrintNews`,
     description: profile.description,
     openGraph: {
       title,
@@ -62,8 +64,12 @@ export default async function PublicationFeedPage({
     notFound();
   }
 
+  if (!publicNetworkEnabled && profile.adminSlug !== currentSite.verticalSlug) {
+    notFound();
+  }
+
   const sources = await getManagedSources(profile.adminSlug);
-  const publications = await getPublicationProfiles();
+  const publications = publicNetworkEnabled ? await getPublicationProfiles() : [];
   const todayArticles = await getArticleArchive({
     publicOnly: true,
     verticalSlug: profile.adminSlug,

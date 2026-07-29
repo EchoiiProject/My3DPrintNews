@@ -1,28 +1,26 @@
-// Reusable personalised feed engine for the MyNewsNetwork platform.
 export const appConfig = {
-  name: "MyNewsNetwork",
-  tagline: "Personalised specialist news publications",
-  onboardingBadge: "Personalised specialist news",
+  name: "My3DPrintNews",
+  tagline: "Personalised 3D Printing News",
+  onboardingBadge: "3D printing briefing",
   feedIntro:
-    "Based on your feed preferences, here are the latest stories, videos and updates from the brands, creators and platforms you follow.",
+    "Personalised 3D printing news from manufacturers, creators, reviewers and industry experts.",
   updates: {
     badge: "Product notes",
-    title: "MyNewsNetwork Updates",
+    title: "My3DPrintNews Updates",
     intro:
-      "Follow the latest improvements to MyNewsNetwork as we build personalised specialist publications, source libraries, article archives and licence-holder tools.",
+      "Follow the latest improvements to My3DPrintNews as we build personalised 3D printing news, source libraries, article archives and reader tools.",
     feedbackCta: {
       heading: "Have feedback or want to suggest a source?",
-      text: "We welcome suggestions from readers, licence holders, organisations and publishers.",
+      text: "We welcome suggestions from readers, creators, organisations and publishers.",
       buttonLabel: "Contact us",
       href: "/contact",
     },
   },
   footerLinks: [
+    { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
     { label: "Privacy", href: "/privacy" },
     { label: "Terms", href: "/terms" },
-    { label: "Publisher Policy", href: "/publisher-policy" },
-    { label: "Updates", href: "/updates" },
-    { label: "Discover More", href: "/discover-more" },
+    { label: "Editorial Policy", href: "/editorial-policy" },
   ],
 };

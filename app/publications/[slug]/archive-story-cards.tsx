@@ -22,9 +22,9 @@ import {
 
 type DisplayMode = "compact" | "standard" | "visual";
 
-const DISPLAY_MODE_KEY = "mynewsnetwork-publication-feed-display-mode";
-const READER_EMAIL_KEY = "mynewsnetwork-reader-email";
-const HIDDEN_SOURCES_KEY = "mynewsnetwork-hidden-sources";
+const DISPLAY_MODE_KEY = "my3dprintnews-publication-feed-display-mode";
+const READER_EMAIL_KEY = "my3dprintnews-reader-email";
+const HIDDEN_SOURCES_KEY = "my3dprintnews-hidden-sources";
 const displayModes: DisplayMode[] = ["compact", "standard", "visual"];
 
 type HiddenSourcePreference = {
@@ -186,7 +186,7 @@ export function ArchiveStoryCards({
     }
 
     window.addEventListener(
-      "mynewsnetwork:source-preferences-changed",
+      "my3dprintnews:source-preferences-changed",
       handleSourcePreferencesChanged,
     );
 
@@ -200,7 +200,7 @@ export function ArchiveStoryCards({
 
     return () => {
       window.removeEventListener(
-        "mynewsnetwork:source-preferences-changed",
+        "my3dprintnews:source-preferences-changed",
         handleSourcePreferencesChanged,
       );
     };
@@ -354,7 +354,7 @@ export function ArchiveStoryCards({
     localStorage.setItem(HIDDEN_SOURCES_KEY, JSON.stringify(next));
     setHiddenSourcePreferences(activeHiddenSources());
     window.dispatchEvent(
-      new CustomEvent("mynewsnetwork:source-preferences-changed"),
+      new CustomEvent("my3dprintnews:source-preferences-changed"),
     );
 
     const email = localStorage.getItem(READER_EMAIL_KEY);

@@ -33,7 +33,7 @@ export function PublicationReaderHeader({
             className="inline-flex rounded-md bg-slate-950 px-3 py-2 text-sm font-black tracking-normal text-white hover:bg-blue-700"
             href="/"
           >
-            MyNewsNetwork
+            My3DPrintNews
           </Link>
           <p className="mt-3 text-sm font-black uppercase tracking-wide text-blue-700">
             {publicationName}

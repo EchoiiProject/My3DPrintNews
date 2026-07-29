@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { currentSite } from "@/config/current-site";
+import { publicNetworkEnabled } from "@/config/launch-mode";
 import { balanceLatestArticles, getArticleArchive } from "@/lib/articles";
 import {
   getPublicationProfileBySlug,
@@ -30,7 +32,7 @@ export async function generateMetadata({
   const title = `${profile.publicationName} Catch Up`;
 
   return {
-    title: `${title} | MyNewsNetwork`,
+    title: `${title} | My3DPrintNews`,
     description: profile.description,
     openGraph: {
       title,
@@ -54,9 +56,13 @@ export default async function PublicationCatchUpPage({
     notFound();
   }
 
+  if (!publicNetworkEnabled && profile.adminSlug !== currentSite.verticalSlug) {
+    notFound();
+  }
+
   const requestedDays = query?.days ? Number(query.days) : 7;
   const days = allowedWindows.includes(requestedDays) ? requestedDays : 7;
-  const publications = await getPublicationProfiles();
+  const publications = publicNetworkEnabled ? await getPublicationProfiles() : [];
   const articles = await getArticleArchive({
     publicOnly: true,
     verticalSlug: profile.adminSlug,

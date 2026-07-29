@@ -236,7 +236,7 @@ function editionFromRow(row: EditionRow): NewsletterEdition {
     title: row.title ?? "Newsletter edition",
     status: row.status,
     magicToken: row.magic_token,
-    publicationName: vertical?.name ?? "MyNewsNetwork",
+    publicationName: vertical?.name ?? "My3DPrintNews",
     publicationSlug: publicSlug,
     items,
     createdAt: row.created_at,
@@ -310,7 +310,7 @@ export async function listNewsletterEditions({
     status: row.status,
     editionDate: row.edition_date,
     frequency: row.frequency,
-    publicationName: firstRelation(row.verticals)?.name ?? "MyNewsNetwork",
+    publicationName: firstRelation(row.verticals)?.name ?? "My3DPrintNews",
     itemCount: row.newsletter_edition_items?.length ?? 0,
     createdAt: row.created_at,
   }));

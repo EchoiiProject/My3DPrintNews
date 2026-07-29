@@ -155,10 +155,10 @@ function CampaignSlot({
       ) : (
         <>
           <p className="text-xs font-bold uppercase tracking-wide text-blue-700">
-            Platform Campaign
+            Sponsored Placement
           </p>
           <h2 className="mt-1 text-xl font-bold text-blue-950">
-            MyNewsNetwork connects focused publications with specialist
+            My3DPrintNews connects focused readers with specialist
             communities.
           </h2>
         </>
@@ -401,7 +401,7 @@ export default async function EditionPage({
               <CampaignSlot
                 campaign={networkCampaign[0]}
                 fallback
-                label="Platform Campaign"
+                label="Sponsored Placement"
               />
               <div className="mt-8">
                 <PublicationReaderHeader
@@ -541,7 +541,7 @@ export default async function EditionPage({
                 className="mt-5 inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700"
                 href="/"
               >
-                Go to MyNewsNetwork
+                Go to My3DPrintNews
               </Link>
             </section>
           )}

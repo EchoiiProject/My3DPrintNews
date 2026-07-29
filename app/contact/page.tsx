@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { FooterLinks } from "../footer-links";
+import { GlobalNav } from "../global-nav";
 
 const reasons = [
   "General",
@@ -60,7 +60,7 @@ export default function ContactPage() {
         tone: response.ok && result.ok ? "success" : "error",
         message:
           response.ok && result.ok
-            ? "Thank you for contacting MyNewsNetwork. Your message has been received."
+            ? "Thank you for contacting My3DPrintNews. Your message has been received."
             : result.message ??
               "Something went wrong while preparing your message.",
       });
@@ -77,22 +77,7 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
-        <nav className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-          <Link
-            className="text-lg font-bold tracking-tight text-slate-950"
-            href="/"
-          >
-            MyNewsNetwork
-          </Link>
-          <div className="flex items-center gap-5 text-sm font-medium text-slate-600 sm:gap-6">
-            <Link className="hover:text-blue-700" href="/">
-              Publications
-            </Link>
-            <Link className="hover:text-blue-700" href="/publishers">
-              Publishers
-            </Link>
-          </div>
-        </nav>
+        <GlobalNav />
 
         <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[0.95fr_1.05fr] lg:py-16">
           <header>
@@ -100,7 +85,7 @@ export default function ContactPage() {
               Contact
             </p>
             <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
-              Contact MyNewsNetwork
+              Contact My3DPrintNews
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
               Users, publishers, and partners can get in touch about feedback,

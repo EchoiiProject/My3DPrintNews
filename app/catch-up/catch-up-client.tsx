@@ -33,8 +33,8 @@ export function CatchUpClient({
             <ActionLinks
               links={[
                 { href: "/feed", label: "Latest News" },
-                { href: "/sources", label: "Sources" },
-                { href: "/updates", label: "Updates" },
+                { href: "/feed#newsletter", label: "Newsletter" },
+                { href: "/about", label: "About" },
               ]}
             />
           </div>

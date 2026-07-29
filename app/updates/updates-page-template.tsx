@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DiscoverMorePanel } from "../discover-more-components";
 import { FeedbackPanel } from "../feedback-panel";
 import { FooterLinks } from "../footer-links";
 import { ActionLinks, GlobalNav } from "../global-nav";
@@ -49,9 +48,9 @@ export function UpdatesPageTemplate({
             <div className="mt-5">
               <ActionLinks
                 links={[
-                  { href: "/", label: "Network Home" },
-                  { href: "/discover-more", label: "Discover More" },
-                  { href: "/admin", label: "Platform Admin" },
+                  { href: "/", label: "Home" },
+                  { href: "/feed", label: "Latest News" },
+                  { href: "/feed#newsletter", label: "Newsletter" },
                 ]}
               />
             </div>
@@ -93,7 +92,6 @@ export function UpdatesPageTemplate({
         </div>
 
         <FeedbackPanel />
-        <DiscoverMorePanel />
         <FooterLinks />
       </section>
     </main>

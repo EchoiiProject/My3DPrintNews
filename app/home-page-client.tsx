@@ -4,12 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { currentSite } from "../config/current-site";
-import { featuredProducts } from "../config/products";
-import { DiscoverMorePanel } from "./discover-more-components";
 import { FeedbackPanel } from "./feedback-panel";
 import { FooterLinks } from "./footer-links";
 import { GlobalNav } from "./global-nav";
-import { ProductCard } from "./product-card";
 import { SponsorBanner } from "./sponsor-banner";
 import {
   defaultFavourites,
@@ -191,9 +188,22 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Choose the brands, model platforms, technologies, and story types
-              you care about,
-              then generate focused specialist Latest News.
+              you care about, then build a focused 3D printing news briefing.
             </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-bold text-white shadow-lg shadow-slate-950/15 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                href="/feed"
+              >
+                Latest News
+              </Link>
+              <Link
+                className="inline-flex min-h-12 items-center justify-center rounded-md border border-blue-200 bg-white px-5 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                href="/feed#newsletter"
+              >
+                Newsletter
+              </Link>
+            </div>
 
             <div
               className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur sm:p-5"
@@ -317,7 +327,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
                     Latest News Builder
                   </p>
                   <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                    Customise Your Latest News
+                    Customise Your 3D Printing News
                   </h2>
                   {preferences.sources.length ? (
                     <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -417,30 +427,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
           </section>
         </div>
 
-        <section className="border-t border-slate-200/80 py-8">
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-blue-700">
-                Featured Products
-              </p>
-              <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                Demo product promotions
-              </h2>
-            </div>
-            <p className="max-w-xl text-sm leading-6 text-slate-500">
-              Sample promotional inventory for future product discovery. This is
-              not an ecommerce checkout.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-
         <FeedbackPanel />
-        <DiscoverMorePanel />
 
         <FooterLinks />
       </section>

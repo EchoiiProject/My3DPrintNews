@@ -19,7 +19,7 @@ export function MyNewsNetworkConfirmDialog({
   onCancel,
   onConfirm,
   open,
-  title = "MyNewsNetwork",
+  title = "My3DPrintNews",
 }: DialogBaseProps & {
   heading: string;
   onConfirm: () => void;
@@ -66,7 +66,7 @@ export function MyNewsNetworkEmailDialog({
   onCancel,
   onSubmit,
   open,
-  title = "MyNewsNetwork",
+  title = "My3DPrintNews",
 }: DialogBaseProps & {
   defaultEmail?: string;
   heading: string;

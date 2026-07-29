@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { publicNetworkEnabled } from "@/config/launch-mode";
 import { articleCollection, type ArticleArchiveItem } from "@/lib/articles";
 import type { ManagedSource } from "@/lib/sources";
 import type { PublicationProfile } from "@/lib/publications";
@@ -36,18 +37,16 @@ export function PublicationShell({
   title: string;
 }) {
   const publicationLinks = [
-    { href: `/publications/${profile.slug}`, label: "Home" },
     { href: `/publications/${profile.slug}/feed`, label: "Latest News" },
     { href: `/publications/${profile.slug}/catch-up`, label: "Catch Up" },
-    { href: "/discover-more", label: "Discover More" },
-    { href: `/publications/${profile.slug}#feedback`, label: "Feedback" },
-    { href: `/admin/${profile.adminSlug}`, label: "Manage Publication" },
+    { href: `/publications/${profile.slug}/feed#newsletter`, label: "Newsletter" },
+    { href: "/about", label: "About" },
   ];
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#d9edff,transparent_32%),linear-gradient(135deg,#f8fbff_0%,#eef7ff_44%,#ffffff_100%)] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-12">
         {showGlobalNav ? (
-          <GlobalNav brandName="MyNewsNetwork" links={publicationLinks} />
+          <GlobalNav brandName="My3DPrintNews" links={publicationLinks} />
         ) : null}
         <div className="flex-1 py-10">
           <PublicationReaderHeader
@@ -74,6 +73,10 @@ export function PublicationLinks({
   publications?: PublicationProfile[];
   profile: PublicationProfile;
 }) {
+  if (!publicNetworkEnabled) {
+    return null;
+  }
+
   const currentName = profile.publicationName;
   const visibility = profile.visibility;
   const publicationStatus = profile.publicationStatus;

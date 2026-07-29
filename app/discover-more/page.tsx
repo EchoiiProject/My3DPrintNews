@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { publicNetworkEnabled } from "@/config/launch-mode";
 import { verticals, type Vertical } from "@/config/verticals";
 import { VerticalPublicationCard } from "../discover-more-components";
 import { FooterLinks } from "../footer-links";
@@ -59,6 +62,18 @@ function PublicationSection({
 }
 
 export default function DiscoverMorePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!publicNetworkEnabled) {
+      router.replace("/");
+    }
+  }, [router]);
+
+  if (!publicNetworkEnabled) {
+    return null;
+  }
+
   const industryPublications = publicationsByType("industry");
   const interestPublications = publicationsByType("interest");
   const placePublications = publicationsByType("place");

@@ -2,13 +2,12 @@ import Link from "next/link";
 const primaryLinks = [
   { href: "/feed", label: "Latest News" },
   { href: "/catch-up", label: "Catch Up" },
-  { href: "/sources", label: "Sources" },
-  { href: "/updates", label: "Updates" },
-  { href: "/discover-more", label: "Discover More" },
+  { href: "/feed#newsletter", label: "Newsletter" },
+  { href: "/about", label: "About" },
 ];
 
 export function GlobalNav({
-  brandName = "MyNewsNetwork",
+  brandName = "My3DPrintNews",
   links = primaryLinks,
 }: {
   brandName?: string;

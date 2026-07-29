@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { currentSite } from "@/config/current-site";
+import { publicNetworkEnabled } from "@/config/launch-mode";
 import { verticalBySlug, verticals, type Vertical } from "@/config/verticals";
 import { publicationPath, publicationProfileFromVertical } from "@/lib/publications";
 
@@ -109,6 +110,10 @@ export function VerticalPublicationCard({
 }
 
 export function DiscoverMorePanel() {
+  if (!publicNetworkEnabled) {
+    return null;
+  }
+
   const currentVertical = getCurrentVertical();
   const currentProfile = publicationProfileFromVertical(currentVertical);
   const recommendations = publicRecommendations
