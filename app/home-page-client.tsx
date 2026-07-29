@@ -173,23 +173,20 @@ export function HomePageClient() {
           <SponsorBanner sponsor={currentSite.currentSponsor} />
         </div>
 
-        <div className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-12">
-          <div className="max-w-3xl lg:sticky lg:top-6">
-            <p className="mb-5 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-              {appConfig.onboardingBadge}
-            </p>
-            <h1 className="text-5xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl lg:text-7xl">
+        <div className="grid flex-1 items-start gap-7 py-7 md:py-9 lg:grid-cols-[1.02fr_0.98fr] lg:gap-10 lg:py-10 xl:grid-cols-[1.08fr_0.92fr]">
+          <div className="max-w-3xl lg:sticky lg:top-6 lg:pt-2">
+            <h1 className="text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl lg:text-7xl">
               {appConfig.name}
             </h1>
-            <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-700 sm:text-2xl">
+            <p className="mt-4 max-w-2xl text-xl leading-8 text-slate-700 sm:text-2xl">
               Your Personalised 3D Printing News
             </p>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Follow the brands, creators and technologies you care about.
               Build a personalised news feed that cuts through the noise and
               brings together the 3D printing stories that matter to you.
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-bold text-white shadow-lg shadow-slate-950/15 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                 href="/feed"
@@ -205,10 +202,10 @@ export function HomePageClient() {
             </div>
 
             <div
-              className="mt-8 rounded-lg border border-slate-200 bg-white/88 p-4 shadow-xl shadow-blue-950/8 backdrop-blur sm:p-5"
+              className="mt-6 rounded-lg border border-slate-200/80 bg-white/82 p-4 shadow-md shadow-blue-950/5 backdrop-blur sm:p-5"
               id="delivery"
             >
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     Frequency
@@ -300,9 +297,9 @@ export function HomePageClient() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
-                className="inline-flex min-h-16 items-center justify-center rounded-md bg-blue-600 px-9 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 hover:shadow-blue-600/30 active:translate-y-px active:bg-blue-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                className="inline-flex min-h-14 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 hover:shadow-blue-600/25 active:translate-y-px active:bg-blue-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:min-h-16 sm:text-lg"
                 onClick={buildFeed}
                 type="button"
               >
@@ -316,16 +313,16 @@ export function HomePageClient() {
 
           <section
             aria-label="Preference selector"
-            className="relative rounded-lg border border-slate-200 bg-white/88 p-4 shadow-2xl shadow-blue-950/10 backdrop-blur sm:p-5"
+            className="relative rounded-lg border border-slate-200/80 bg-white/78 p-4 shadow-lg shadow-blue-950/5 backdrop-blur sm:p-5 lg:mt-2"
             id="topics"
           >
-            <div className="mb-5 border-b border-slate-100 pb-4">
+            <div className="mb-4 border-b border-slate-100 pb-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-blue-700">
                     Personalise Your News
                   </p>
-                  <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                  <h2 className="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">
                     Build Your Personalised News Feed
                   </h2>
                   {preferences.sources.length ? (
@@ -343,7 +340,7 @@ export function HomePageClient() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {preferenceGroups.map((group) => {
                 const summary = selectedSummary(
                   preferences[group.key as MultiSelectKey].length,
