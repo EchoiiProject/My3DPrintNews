@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import { adminSlugForPublicationSlug } from "@/config/verticals";
+import type { Article } from "@/lib/rss";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import {
   getManagedSources,
@@ -211,6 +212,23 @@ type ArticleRecord = {
   verticals?:
     | { name: string | null; slug: string | null }
     | { name: string | null; slug: string | null }[]
+    | null;
+};
+
+type FeedArticleRecord = {
+  id: string;
+  source_id: string | null;
+  title: string;
+  url: string;
+  summary: string | null;
+  image_url: string | null;
+  published_at: string | null;
+  source_name: string | null;
+  tags: unknown;
+  created_at: string | null;
+  vertical_sources?:
+    | { source_type: string | null }
+    | { source_type: string | null }[]
     | null;
 };
 
@@ -463,6 +481,30 @@ function normaliseEditorialStatus(value: string | null | undefined): ArticleEdit
   }
 
   return "published";
+}
+
+function toFeedArticle(record: FeedArticleRecord): Article {
+  const source = Array.isArray(record.vertical_sources)
+    ? record.vertical_sources[0]
+    : record.vertical_sources;
+  const sourceType = normaliseSourceType(source?.source_type);
+  const tags = Array.isArray(record.tags) ? record.tags.map(String) : [];
+
+  return {
+    id: record.id,
+    sourceId: record.source_id,
+    title: record.title,
+    link: record.url,
+    source: record.source_name ?? "My3DPrintNews",
+    publishedAt:
+      record.published_at ?? record.created_at ?? new Date(0).toISOString(),
+    summary:
+      record.summary ??
+      "Publisher summary unavailable. Read the original article for full details.",
+    tags,
+    imageUrl: record.image_url ?? undefined,
+    type: sourceType === "youtube" ? "video" : "article",
+  };
 }
 
 async function updateSourceAfterFetch(
@@ -862,6 +904,28 @@ export async function fetchArticlesForVertical(
 
 export async function fetchArticlesForAllEnabledSources(): Promise<ArticleFetchResult> {
   return fetchArticlesForSources(await getManagedSources(), "All publications");
+}
+
+export async function getLatestArticles(limit = 100): Promise<Article[]> {
+  const supabase = createServiceSupabaseClient();
+
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("articles")
+    .select(
+      "id,source_id,title,url,summary,image_url,published_at,source_name,tags,created_at,vertical_sources(source_type)",
+    )
+    .not("editorial_status", "in", "(paused,hidden,blocked)")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(limit);
+
+  if (error || !data) {
+    console.warn("[articles] Latest article lookup failed.", error);
+    return [];
+  }
+
+  return (data as FeedArticleRecord[]).map(toFeedArticle);
 }
 
 export async function getArticleArchive(filters: {
