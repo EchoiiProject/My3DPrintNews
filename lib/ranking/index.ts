@@ -25,6 +25,22 @@ export type RankedFeedOptions = {
   periodDays?: number;
 };
 
+const maxConsecutiveSourceItems = 2;
+const maxConsecutiveCollectionItems = 2;
+const genericCollectionTags = new Set([
+  "article",
+  "video",
+  "news",
+  "youtube",
+  "podcast",
+  "podcasts",
+  "review",
+  "reviews",
+  "blog",
+  "brand",
+  "creator",
+]);
+
 export function getPublishedTimestamp(value: string): number | null {
   const timestamp = new Date(value).getTime();
 
@@ -200,6 +216,99 @@ export function sortRankedArticles(
   return a.originalIndex - b.originalIndex;
 }
 
+function articleCollection(article: Article): string {
+  const sourceTag = normaliseTag(article.source);
+  const collection = article.tags.find((tag) => {
+    const normalisedTag = normaliseTag(tag);
+
+    return (
+      normalisedTag !== sourceTag &&
+      !genericCollectionTags.has(normalisedTag)
+    );
+  });
+
+  if (collection) return collection;
+
+  return article.type === "video" ? "Videos" : "News";
+}
+
+function hasRepeatedRecentValues(values: string[], maxConsecutive: number) {
+  return (
+    values.length === maxConsecutive &&
+    new Set(values.map(normaliseTag)).size === 1
+  );
+}
+
+function balanceScoreGroup(articles: ScoredArticle[]): ScoredArticle[] {
+  const pending = [...articles];
+  const balanced: ScoredArticle[] = [];
+
+  while (pending.length) {
+    const recentSources = balanced
+      .slice(-maxConsecutiveSourceItems)
+      .map((item) => item.article.source);
+    const recentCollections = balanced
+      .slice(-maxConsecutiveCollectionItems)
+      .map((item) => articleCollection(item.article));
+    const repeatedSource = hasRepeatedRecentValues(
+      recentSources,
+      maxConsecutiveSourceItems,
+    )
+      ? recentSources[0]
+      : null;
+    const repeatedCollection = hasRepeatedRecentValues(
+      recentCollections,
+      maxConsecutiveCollectionItems,
+    )
+      ? recentCollections[0]
+      : null;
+    const preferredIndex = pending.findIndex((item) => {
+      const sourceMatches =
+        repeatedSource &&
+        normaliseTag(item.article.source) === normaliseTag(repeatedSource);
+      const collectionMatches =
+        repeatedCollection &&
+        normaliseTag(articleCollection(item.article)) ===
+          normaliseTag(repeatedCollection);
+
+      return !sourceMatches && !collectionMatches;
+    });
+    const fallbackIndex =
+      preferredIndex >= 0
+        ? preferredIndex
+        : pending.findIndex((item) => {
+            return (
+              !repeatedSource ||
+              normaliseTag(item.article.source) !== normaliseTag(repeatedSource)
+            );
+          });
+    const nextIndex = fallbackIndex >= 0 ? fallbackIndex : 0;
+    const [nextArticle] = pending.splice(nextIndex, 1);
+
+    if (nextArticle) {
+      balanced.push(nextArticle);
+    }
+  }
+
+  return balanced;
+}
+
+function balanceRankedArticles(articles: ScoredArticle[]): ScoredArticle[] {
+  const groups: ScoredArticle[][] = [];
+
+  for (const article of articles) {
+    const lastGroup = groups[groups.length - 1];
+
+    if (lastGroup?.[0]?.score === article.score) {
+      lastGroup.push(article);
+    } else {
+      groups.push([article]);
+    }
+  }
+
+  return groups.flatMap(balanceScoreGroup);
+}
+
 export function hasPersonalisedSignal(
   preferences: Preferences,
   favourites: Favourites,
@@ -226,8 +335,9 @@ export function rankFeedArticles(
     )
     .filter((article) => !hasSignal || article.score > 0)
     .sort(sortRankedArticles);
+  const balanced = balanceRankedArticles(ranked);
 
   return typeof options.limit === "number"
-    ? ranked.slice(0, options.limit)
-    : ranked;
+    ? balanced.slice(0, options.limit)
+    : balanced;
 }
