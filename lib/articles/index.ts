@@ -57,6 +57,17 @@ export type ArticleFetchResult = {
   failedSourceDetails: FailedSourceDetail[];
 };
 
+export type LatestArticlesResult = {
+  articles: Article[];
+  errorMessage?: string;
+  status: "ok" | "empty" | "error" | "unconfigured";
+};
+
+export type LatestArticlesOptions = {
+  limit?: number;
+  verticalSlug?: string;
+};
+
 function archiveTimestamp(article: ArticleArchiveItem): number {
   const timestamp = new Date(
     article.publishedAt ?? article.createdAt ?? "",
@@ -229,8 +240,20 @@ type FeedArticleRecord = {
   tags: unknown;
   created_at: string | null;
   vertical_sources?:
-    | { category: string | null; name: string | null; source_type: string | null }
-    | { category: string | null; name: string | null; source_type: string | null }[]
+    | {
+        category: string | null;
+        enabled: boolean | null;
+        name: string | null;
+        source_type: string | null;
+        status: string | null;
+      }
+    | {
+        category: string | null;
+        enabled: boolean | null;
+        name: string | null;
+        source_type: string | null;
+        status: string | null;
+      }[]
     | null;
 };
 
@@ -557,6 +580,19 @@ function toFeedArticle(record: FeedArticleRecord): Article {
     imageUrl: record.image_url ?? undefined,
     type: mediaType,
   };
+}
+
+function sourceAllowsPublicArticles(record: FeedArticleRecord): boolean {
+  const source = Array.isArray(record.vertical_sources)
+    ? record.vertical_sources[0]
+    : record.vertical_sources;
+
+  if (!source) return true;
+  if (source.enabled === false) return false;
+
+  return !["archived", "inactive", "placeholder"].includes(
+    source.status ?? "",
+  );
 }
 
 async function updateSourceAfterFetch(
@@ -958,26 +994,88 @@ export async function fetchArticlesForAllEnabledSources(): Promise<ArticleFetchR
   return fetchArticlesForSources(await getManagedSources(), "All publications");
 }
 
-export async function getLatestArticles(limit = 500): Promise<Article[]> {
+function latestArticlesOptions(
+  options: LatestArticlesOptions | number = {},
+): Required<Pick<LatestArticlesOptions, "limit">> &
+  Pick<LatestArticlesOptions, "verticalSlug"> {
+  return typeof options === "number"
+    ? { limit: options }
+    : { limit: 500, ...options };
+}
+
+export async function getLatestArticlesResult(
+  options: LatestArticlesOptions | number = {},
+): Promise<LatestArticlesResult> {
+  const { limit, verticalSlug } = latestArticlesOptions(options);
   const supabase = createServiceSupabaseClient();
 
-  if (!supabase) return [];
+  if (!supabase) {
+    const errorMessage = "Supabase service credentials are not configured.";
 
-  const { data, error } = await supabase
+    console.warn(`[articles] ${errorMessage}`);
+    return {
+      articles: [],
+      errorMessage,
+      status: "unconfigured",
+    };
+  }
+
+  const vertical = verticalSlug ? await getVerticalBySlug(verticalSlug) : null;
+
+  if (verticalSlug && !vertical?.databaseId) {
+    const errorMessage = `Publication archive is not configured for ${verticalSlug}.`;
+
+    console.error(`[articles] ${errorMessage}`);
+    return {
+      articles: [],
+      errorMessage,
+      status: "error",
+    };
+  }
+
+  let query = supabase
     .from("articles")
     .select(
-      "id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,vertical_sources(name,category,source_type)",
+      "id,source_id,title,url,summary,image_url,author,published_at,source_name,tags,created_at,vertical_sources(name,category,source_type,enabled,status)",
     )
-    .not("editorial_status", "in", "(paused,hidden,blocked)")
+    .not("editorial_status", "in", "(paused,excluded,hidden,blocked)")
     .order("published_at", { ascending: false, nullsFirst: false })
     .limit(limit);
 
-  if (error || !data) {
-    console.warn("[articles] Latest article lookup failed.", error);
-    return [];
+  if (vertical?.databaseId) {
+    query = query.eq("vertical_id", vertical.databaseId);
   }
 
-  return (data as FeedArticleRecord[]).map(toFeedArticle);
+  const { data, error } = await query;
+
+  if (error || !data) {
+    const errorMessage =
+      error?.message ?? "Latest article lookup returned no data.";
+
+    console.error("[articles] Latest article lookup failed.", error);
+    return {
+      articles: [],
+      errorMessage,
+      status: "error",
+    };
+  }
+
+  const articles = (data as FeedArticleRecord[])
+    .filter(sourceAllowsPublicArticles)
+    .map(toFeedArticle);
+
+  return {
+    articles,
+    status: articles.length ? "ok" : "empty",
+  };
+}
+
+export async function getLatestArticles(
+  options: LatestArticlesOptions | number = {},
+): Promise<Article[]> {
+  const result = await getLatestArticlesResult(options);
+
+  return result.articles;
 }
 
 export async function getArticleArchive(filters: {

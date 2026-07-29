@@ -17,6 +17,7 @@ import {
   type FocusFilter,
 } from "@/lib/matching";
 import {
+  balanceFeedArticles,
   getPublishedTimestamp,
   hasPersonalisedSignal,
   rankFeedArticles,
@@ -53,6 +54,7 @@ const allMediaFilter = "all";
 const allCategoryFilter = "all";
 const displayModes = ["compact", "standard", "visual"] as const;
 type DisplayMode = (typeof displayModes)[number];
+type FeedLoadStatus = "ok" | "empty" | "error" | "unconfigured";
 
 type SavedArticle = {
   articleId?: string;
@@ -407,6 +409,7 @@ export function FeedStoryCards({
   displayMode = "standard",
   favourites,
   hiddenKeys,
+  hiddenSourceIds,
   onHiddenKeysChange,
   onHiddenSourceIdsChange,
   onToggleSourceFavourite,
@@ -419,9 +422,10 @@ export function FeedStoryCards({
 }: {
   displayMode?: "compact" | "standard" | "visual";
   favourites: Favourites;
-  hiddenKeys: string[];
-  onHiddenKeysChange: (keys: string[]) => void;
-  onHiddenSourceIdsChange: (sourceIds: string[]) => void;
+  hiddenKeys?: string[];
+  hiddenSourceIds?: string[];
+  onHiddenKeysChange?: (keys: string[]) => void;
+  onHiddenSourceIdsChange?: (sourceIds: string[]) => void;
   onToggleSourceFavourite: (source: string) => void;
   publicationId?: string;
   publicationName?: string;
@@ -433,6 +437,8 @@ export function FeedStoryCards({
   const isCompact = displayMode === "compact";
   const isVisual = displayMode === "visual";
   const [savedKeys, setSavedKeys] = useState<string[]>([]);
+  const [localHiddenKeys, setLocalHiddenKeys] = useState<string[]>([]);
+  const [localHiddenSourceIds, setLocalHiddenSourceIds] = useState<string[]>([]);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
   const [emailArticleRequest, setEmailArticleRequest] =
     useState<Article | null>(null);
@@ -444,7 +450,30 @@ export function FeedStoryCards({
   useEffect(() => {
     setReaderEmail(localStorage.getItem(READER_EMAIL_KEY) ?? "");
     setSavedKeys(savedArticles().map((article) => article.url));
+    setLocalHiddenKeys(hiddenArticleKeys());
+    setLocalHiddenSourceIds(activeHiddenSourceIds());
+
+    function handleSourcePreferencesChanged() {
+      setLocalHiddenSourceIds(activeHiddenSourceIds());
+    }
+
+    window.addEventListener(
+      "my3dprintnews:source-preferences-changed",
+      handleSourcePreferencesChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "my3dprintnews:source-preferences-changed",
+        handleSourcePreferencesChanged,
+      );
+    };
   }, []);
+  const effectiveHiddenKeys = hiddenKeys ?? localHiddenKeys;
+  const effectiveHiddenSourceIds = hiddenSourceIds ?? localHiddenSourceIds;
+  const updateHiddenKeys = onHiddenKeysChange ?? setLocalHiddenKeys;
+  const updateHiddenSourceIds =
+    onHiddenSourceIdsChange ?? setLocalHiddenSourceIds;
 
   function setStatus(article: Article, message: string) {
     setActionStatus((current) => ({
@@ -548,7 +577,7 @@ export function FeedStoryCards({
     const next = Array.from(new Set([...hiddenArticleKeys(), key]));
 
     localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(next));
-    onHiddenKeysChange(next);
+    updateHiddenKeys(next);
     setStatus(article, "Hidden from your feed.");
     void syncHiddenArticle(article);
   }
@@ -558,7 +587,7 @@ export function FeedStoryCards({
     const next = hiddenArticleKeys().filter((item) => item !== key);
 
     localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(next));
-    onHiddenKeysChange(next);
+    updateHiddenKeys(next);
     setStatus(article, "Restored to your feed.");
     void syncUnhiddenArticle(article).then((ok) => {
       if (!ok) {
@@ -590,7 +619,7 @@ export function FeedStoryCards({
     ];
 
     localStorage.setItem(HIDDEN_SOURCES_KEY, JSON.stringify(next));
-    onHiddenSourceIdsChange(activeHiddenSourceIds());
+    updateHiddenSourceIds(activeHiddenSourceIds());
     window.dispatchEvent(
       new CustomEvent("my3dprintnews:source-preferences-changed"),
     );
@@ -719,7 +748,13 @@ export function FeedStoryCards({
         }}
         open={Boolean(emailArticleRequest)}
       />
-      {stories.map((scoredArticle, index) => {
+      {stories
+        .filter(
+          (story) =>
+            !story.article.sourceId ||
+            !effectiveHiddenSourceIds.includes(story.article.sourceId),
+        )
+        .map((scoredArticle, index) => {
         const hasImage = Boolean(scoredArticle.article.imageUrl);
         const articleGridClass =
           hasImage && isCompact
@@ -738,7 +773,7 @@ export function FeedStoryCards({
         const badge = storyBadge(scoredArticle.article);
         const articleKey = savedArticleKey(scoredArticle.article);
         const hiddenKey = hiddenArticleKey(scoredArticle.article);
-        const isHidden = hiddenKeys.includes(hiddenKey);
+        const isHidden = effectiveHiddenKeys.includes(hiddenKey);
         const isSaved = savedKeys.includes(scoredArticle.article.link);
         const sourceMenuOpen = sourceMenuArticleKey === articleKey;
 
@@ -1011,6 +1046,8 @@ export function FeedStoryCards({
 export function FeedClient({
   articles,
   usingFallback,
+  feedLoadError,
+  feedLoadStatus = usingFallback ? "unconfigured" : "ok",
   initialPreferences = defaultPreferences,
   initialFavourites = defaultFavourites,
   readLocalStorage = true,
@@ -1022,6 +1059,8 @@ export function FeedClient({
   periodDays,
 }: {
   articles: Article[];
+  feedLoadError?: string;
+  feedLoadStatus?: FeedLoadStatus;
   usingFallback: boolean;
   initialPreferences?: Preferences;
   initialFavourites?: Favourites;
@@ -1123,13 +1162,20 @@ export function FeedClient({
 
   const hasPreferenceTags = hasPersonalisedSignal(preferences, favourites);
   const requestedStoryCount = Number(preferences.storiesPerUpdate);
+  const balancedArticles = useMemo(() => balanceFeedArticles(articles), [articles]);
   const matchedStories = useMemo(
     () =>
-      rankFeedArticles(articles, preferences, favourites, {
+      rankFeedArticles(balancedArticles, preferences, favourites, {
         limit: requestedStoryCount,
         periodDays,
       }),
-    [articles, favourites, periodDays, preferences, requestedStoryCount],
+    [
+      balancedArticles,
+      favourites,
+      periodDays,
+      preferences,
+      requestedStoryCount,
+    ],
   );
   const visibleMatchedStories = useMemo(
     () =>
@@ -1344,7 +1390,7 @@ export function FeedClient({
         {showHeader ? (
           <header className="py-9 sm:py-12">
             <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-              {usingFallback ? "Placeholder briefing" : "Live RSS briefing"}
+              {usingFallback ? "Placeholder briefing" : "Archived briefing"}
             </p>
             <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
               Your Personalised Feed
@@ -1652,6 +1698,32 @@ export function FeedClient({
           </aside>
 
           <section className="space-y-5" aria-label="Personalised stories">
+            {feedLoadStatus === "error" ||
+            (feedLoadStatus === "unconfigured" && !usingFallback) ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-900 shadow-xl shadow-red-950/8">
+                <h2 className="text-xl font-bold">
+                  We could not load the article archive
+                </h2>
+                <p className="mt-2 text-sm leading-6">
+                  The feed is connected to the stored article archive, but the
+                  database lookup failed. This has been logged for review.
+                </p>
+                {feedLoadError ? (
+                  <p className="mt-3 text-xs font-semibold">{feedLoadError}</p>
+                ) : null}
+              </div>
+            ) : null}
+            {feedLoadStatus === "empty" ? (
+              <div className="rounded-lg border border-slate-200 bg-white/88 p-5 shadow-xl shadow-blue-950/8 backdrop-blur">
+                <h2 className="text-xl font-bold text-slate-950">
+                  No archived stories yet
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  The article archive is reachable, but it does not contain any
+                  public stories yet.
+                </p>
+              </div>
+            ) : null}
             {activeFocus ? (
               <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-lg font-bold text-blue-950">
@@ -1787,6 +1859,7 @@ export function FeedClient({
                   displayMode={displayMode}
                   favourites={favourites}
                   hiddenKeys={hiddenKeys}
+                  hiddenSourceIds={hiddenSourceIds}
                   onHiddenKeysChange={setHiddenKeys}
                   onHiddenSourceIdsChange={setHiddenSourceIds}
                   onToggleSourceFavourite={toggleSourceFavourite}

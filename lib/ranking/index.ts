@@ -198,21 +198,6 @@ export function sortRankedArticles(
     return b.score - a.score;
   }
 
-  const aTimestamp = getPublishedTimestamp(a.article.publishedAt);
-  const bTimestamp = getPublishedTimestamp(b.article.publishedAt);
-
-  if (aTimestamp !== null && bTimestamp !== null) {
-    return bTimestamp - aTimestamp;
-  }
-
-  if (aTimestamp !== null) {
-    return -1;
-  }
-
-  if (bTimestamp !== null) {
-    return 1;
-  }
-
   return a.originalIndex - b.originalIndex;
 }
 
@@ -239,17 +224,21 @@ function hasRepeatedRecentValues(values: string[], maxConsecutive: number) {
   );
 }
 
-function balanceScoreGroup(articles: ScoredArticle[]): ScoredArticle[] {
-  const pending = [...articles];
-  const balanced: ScoredArticle[] = [];
+function balanceItems<T>(
+  items: T[],
+  getSource: (item: T) => string,
+  getCollection: (item: T) => string,
+): T[] {
+  const pending = [...items];
+  const balanced: T[] = [];
 
   while (pending.length) {
     const recentSources = balanced
       .slice(-maxConsecutiveSourceItems)
-      .map((item) => item.article.source);
+      .map(getSource);
     const recentCollections = balanced
       .slice(-maxConsecutiveCollectionItems)
-      .map((item) => articleCollection(item.article));
+      .map(getCollection);
     const repeatedSource = hasRepeatedRecentValues(
       recentSources,
       maxConsecutiveSourceItems,
@@ -265,10 +254,10 @@ function balanceScoreGroup(articles: ScoredArticle[]): ScoredArticle[] {
     const preferredIndex = pending.findIndex((item) => {
       const sourceMatches =
         repeatedSource &&
-        normaliseTag(item.article.source) === normaliseTag(repeatedSource);
+        normaliseTag(getSource(item)) === normaliseTag(repeatedSource);
       const collectionMatches =
         repeatedCollection &&
-        normaliseTag(articleCollection(item.article)) ===
+        normaliseTag(getCollection(item)) ===
           normaliseTag(repeatedCollection);
 
       return !sourceMatches && !collectionMatches;
@@ -279,7 +268,7 @@ function balanceScoreGroup(articles: ScoredArticle[]): ScoredArticle[] {
         : pending.findIndex((item) => {
             return (
               !repeatedSource ||
-              normaliseTag(item.article.source) !== normaliseTag(repeatedSource)
+              normaliseTag(getSource(item)) !== normaliseTag(repeatedSource)
             );
           });
     const nextIndex = fallbackIndex >= 0 ? fallbackIndex : 0;
@@ -293,20 +282,12 @@ function balanceScoreGroup(articles: ScoredArticle[]): ScoredArticle[] {
   return balanced;
 }
 
-function balanceRankedArticles(articles: ScoredArticle[]): ScoredArticle[] {
-  const groups: ScoredArticle[][] = [];
-
-  for (const article of articles) {
-    const lastGroup = groups[groups.length - 1];
-
-    if (lastGroup?.[0]?.score === article.score) {
-      lastGroup.push(article);
-    } else {
-      groups.push([article]);
-    }
-  }
-
-  return groups.flatMap(balanceScoreGroup);
+export function balanceFeedArticles(articles: Article[]): Article[] {
+  return balanceItems(
+    articles,
+    (article) => article.source,
+    articleCollection,
+  );
 }
 
 export function hasPersonalisedSignal(
@@ -335,9 +316,8 @@ export function rankFeedArticles(
     )
     .filter((article) => !hasSignal || article.score > 0)
     .sort(sortRankedArticles);
-  const balanced = balanceRankedArticles(ranked);
 
   return typeof options.limit === "number"
-    ? balanced.slice(0, options.limit)
-    : balanced;
+    ? ranked.slice(0, options.limit)
+    : ranked;
 }

@@ -1,16 +1,24 @@
-import { getLatestArticles } from "@/lib/articles";
+import { currentSite } from "@/config/current-site";
+import { getLatestArticlesResult } from "@/lib/articles";
 import { FeedClient } from "./feed-client";
 import { placeholderStories } from "./placeholder-stories";
 
 export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
-  const articles = await getLatestArticles();
+  const result = await getLatestArticlesResult({
+    verticalSlug: currentSite.verticalSlug,
+  });
+  const usingFallback =
+    result.status === "unconfigured" && process.env.NODE_ENV !== "production";
+  const articles = usingFallback ? placeholderStories : result.articles;
 
   return (
     <FeedClient
-      articles={articles.length ? articles : placeholderStories}
-      usingFallback={!articles.length}
+      articles={articles}
+      feedLoadError={result.errorMessage}
+      feedLoadStatus={result.status}
+      usingFallback={usingFallback}
     />
   );
 }
