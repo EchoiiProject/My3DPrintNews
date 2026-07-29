@@ -49,7 +49,7 @@ export function UpdatesPageTemplate({
               <ActionLinks
                 links={[
                   { href: "/", label: "Home" },
-                  { href: "/feed", label: "Latest News" },
+                  { href: "/feed", label: "My News Feed" },
                   { href: "/feed#newsletter", label: "Newsletter" },
                 ]}
               />

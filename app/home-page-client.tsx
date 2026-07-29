@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
 import { currentSite } from "../config/current-site";
 import { FeedbackPanel } from "./feedback-panel";
 import { FooterLinks } from "./footer-links";
@@ -77,7 +76,7 @@ function selectedSummary(count: number, label: string): string | null {
   return `${count} ${label}${count === 1 ? "" : "s"} selected`;
 }
 
-export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
+export function HomePageClient() {
   const router = useRouter();
   const [preferences, setPreferences] =
     useState<Preferences>(defaultPreferences);
@@ -176,7 +175,6 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
 
         <div className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-12">
           <div className="max-w-3xl lg:sticky lg:top-6">
-            <div className="mb-4">{buildBadge}</div>
             <p className="mb-5 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
               {appConfig.onboardingBadge}
             </p>
@@ -184,18 +182,19 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
               {appConfig.name}
             </h1>
             <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-700 sm:text-2xl">
-              {appConfig.tagline}
+              Your Personalised 3D Printing News
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Choose the brands, printer ecosystems, technologies, and story types
-              you care about, then build a focused 3D printing news briefing.
+              Follow the brands, creators and technologies you care about.
+              Build a personalised news feed that cuts through the noise and
+              brings together the 3D printing stories that matter to you.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-bold text-white shadow-lg shadow-slate-950/15 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                 href="/feed"
               >
-                Latest News
+                My News Feed
               </Link>
               <Link
                 className="inline-flex min-h-12 items-center justify-center rounded-md border border-blue-200 bg-white px-5 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
@@ -307,7 +306,7 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
                 onClick={buildFeed}
                 type="button"
               >
-                Build My Latest News
+                Build My News Feed
               </button>
               <span className="text-sm font-medium text-slate-500">
                 Saved locally on this device.
@@ -324,10 +323,10 @@ export function HomePageClient({ buildBadge }: { buildBadge: ReactNode }) {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-blue-700">
-                    Latest News Builder
+                    Personalise Your News
                   </p>
                   <h2 className="mt-1 text-2xl font-bold text-slate-950">
-                    Customise Your 3D Printing News
+                    Build Your Personalised News Feed
                   </h2>
                   {preferences.sources.length ? (
                     <p className="mt-1 text-sm font-semibold text-slate-500">

@@ -460,7 +460,7 @@ export default async function EditionPage({
                           className="inline-flex min-h-10 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-bold text-white hover:bg-blue-700"
                           href={liveFeedHref}
                         >
-                          Continue to Latest News
+                          Continue to My News Feed
                         </Link>
                         <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500">
                           Manage Newsletter Preferences coming soon

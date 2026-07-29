@@ -207,7 +207,7 @@ export default function SourcesPage() {
 
         <header className="py-9 sm:py-12">
           <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white/75 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-100/60">
-            Expanded Latest News builder
+            Expanded news feed builder
           </p>
           <h1 className="text-4xl font-bold leading-tight tracking-normal text-slate-950 sm:text-6xl">
             Select from all
@@ -222,7 +222,7 @@ export default function SourcesPage() {
               onClick={buildFeed}
               type="button"
             >
-              Build My Latest News
+              Build My News Feed
             </button>
             <span className="text-sm font-semibold text-slate-500">
               Selections save automatically on this device.
