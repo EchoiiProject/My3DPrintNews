@@ -214,6 +214,14 @@ export default async function SavedFeedPage({
               label="Favourite Sources"
               values={favourites.sources}
             />
+            <ProfileSummary
+              label="Favourite Topics"
+              values={favourites.topics}
+            />
+            <ProfileSummary
+              label="Favourite Technologies"
+              values={favourites.technology}
+            />
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link

@@ -203,6 +203,11 @@ export default async function NewsletterPreviewPage({
         />
         <SummaryList label="Favourite Creators" values={favourites.creators} />
         <SummaryList label="Favourite Sources" values={favourites.sources} />
+        <SummaryList label="Favourite Topics" values={favourites.topics} />
+        <SummaryList
+          label="Favourite Technologies"
+          values={favourites.technology}
+        />
       </section>
 
       <section className="mt-6">

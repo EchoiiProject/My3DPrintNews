@@ -1227,8 +1227,7 @@ export function FeedClient({
       .map((option) => ({
         ...option,
         count: counts.get(option.value) ?? 0,
-      }))
-      .filter((option) => option.count > 0);
+      }));
   }, [focusedStories]);
 
   const categoryBaseStories = useMemo(() => {
@@ -1271,7 +1270,7 @@ export function FeedClient({
   useEffect(() => {
     if (
       activeMediaFilter !== allMediaFilter &&
-      !mediaCounts.some((option) => option.value === activeMediaFilter)
+      !mediaFilterOptions.some((option) => option.value === activeMediaFilter)
     ) {
       setActiveMediaFilter(allMediaFilter);
     }
@@ -1403,7 +1402,7 @@ export function FeedClient({
                 className="inline-flex min-h-12 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
                 href="/"
               >
-                Edit my feed
+                Edit My Feed
               </Link>
               <ActionLinks
                 links={[
@@ -1411,7 +1410,7 @@ export function FeedClient({
                     href: "/catch-up",
                     label: "Catch up on missed stories",
                   },
-                  { href: "/sources", label: "Browse all sources" },
+                  { href: "/sources", label: "Browse Sources" },
                   { href: "/updates", label: "Updates" },
                 ]}
               />
@@ -1505,6 +1504,14 @@ export function FeedClient({
                 <FavouriteSection
                   label="Favourite Sources"
                   values={favourites.sources}
+                />
+                <FavouriteSection
+                  label="Favourite Topics"
+                  values={favourites.topics}
+                />
+                <FavouriteSection
+                  label="Favourite Technologies"
+                  values={favourites.technology}
                 />
               </div>
               </section>
@@ -1646,6 +1653,14 @@ export function FeedClient({
                       <SummaryList
                         label="Favourite Sources"
                         values={favourites.sources}
+                      />
+                      <SummaryList
+                        label="Favourite Topics"
+                        values={favourites.topics}
+                      />
+                      <SummaryList
+                        label="Favourite Technologies"
+                        values={favourites.technology}
                       />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">

@@ -45,6 +45,8 @@ function favouritesSummary(favourites: Favourites): string[] {
     `Favourite Platforms: ${list(favourites.modelPlatforms)}`,
     `Favourite Creators: ${list(favourites.creators)}`,
     `Favourite Sources: ${list(favourites.sources)}`,
+    `Favourite Topics: ${list(favourites.topics)}`,
+    `Favourite Technologies: ${list(favourites.technology)}`,
   ];
 }
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 const primaryLinks = [
   { href: "/feed", label: "Latest News" },
   { href: "/catch-up", label: "Catch Up" },
+  { href: "/sources", label: "Browse Sources" },
   { href: "/feed#newsletter", label: "Newsletter" },
   { href: "/about", label: "About" },
 ];

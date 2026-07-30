@@ -5,6 +5,8 @@ export type Favourites = {
   modelPlatforms: string[];
   creators: string[];
   sources: string[];
+  topics: string[];
+  technology: string[];
 };
 
 type FavouriteKey = keyof Favourites;
@@ -17,6 +19,8 @@ export const defaultFavourites: Favourites = {
   modelPlatforms: [],
   creators: [],
   sources: [],
+  topics: [],
+  technology: [],
 };
 
 export function normaliseFavourites(saved: LegacyFavourites): Favourites {
@@ -31,6 +35,10 @@ export function normaliseFavourites(saved: LegacyFavourites): Favourites {
       ? saved.creators
       : defaultFavourites.creators,
     sources: Array.isArray(saved.sources) ? saved.sources : defaultFavourites.sources,
+    topics: Array.isArray(saved.topics) ? saved.topics : defaultFavourites.topics,
+    technology: Array.isArray(saved.technology)
+      ? saved.technology
+      : defaultFavourites.technology,
   };
 }
 
@@ -39,7 +47,9 @@ export function isFavouriteKey(value: string): value is FavouriteKey {
     value === "brands" ||
     value === "modelPlatforms" ||
     value === "creators" ||
-    value === "sources"
+    value === "sources" ||
+    value === "topics" ||
+    value === "technology"
   );
 }
 
@@ -52,6 +62,10 @@ export function favouriteKeyForPreferenceGroup(
 
   if (value === "models") {
     return "modelPlatforms";
+  }
+
+  if (value === "topics" || value === "technology") {
+    return value;
   }
 
   return null;
@@ -80,5 +94,7 @@ export function favouriteBoostValues(favourites: Favourites): string[] {
     ...favourites.modelPlatforms,
     ...favourites.creators,
     ...favourites.sources,
+    ...favourites.topics,
+    ...favourites.technology,
   ];
 }

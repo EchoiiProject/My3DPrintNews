@@ -13,6 +13,9 @@ import { matchingConfig } from "../../config/preferences";
 const favouriteCreatorBoost = 1_000_000;
 const favouriteSourceBoost = 100_000;
 const favouriteBrandBoost = 10_000;
+const favouriteModelPlatformBoost = 5_000;
+const favouriteTopicBoost = 5_000;
+const favouriteTechnologyBoost = 5_000;
 const preferenceBoost = 100;
 const brandTags: Record<string, string> = matchingConfig.brandTags;
 const modelTags: Record<string, string> = matchingConfig.modelTags;
@@ -108,6 +111,14 @@ function favouriteBrandMatches(
   });
 }
 
+function favouriteTagMatches(
+  values: string[],
+  generatedTags: string[],
+  tags: Record<string, string>,
+): string[] {
+  return values.filter((value) => matchesTag(generatedTags, tags[value] ?? value));
+}
+
 function preferenceMatches(
   generatedTags: string[],
   preferences: Preferences,
@@ -168,16 +179,41 @@ function scoreArticleWithFavourites(
   );
   const sourceMatches = favouriteSourceMatches(article, favourites);
   const brandMatches = favouriteBrandMatches(generatedTags, favourites);
+  const modelPlatformMatches = favouriteTagMatches(
+    favourites.modelPlatforms,
+    generatedTags,
+    modelTags,
+  );
+  const topicMatches = favouriteTagMatches(
+    favourites.topics,
+    generatedTags,
+    topicTags,
+  );
+  const technologyMatches = favouriteTagMatches(
+    favourites.technology,
+    generatedTags,
+    technologyTags,
+  );
   const matchedBecause = unique([
     ...creatorMatches.map((creator) => `Favourite Creator: ${creator}`),
     ...sourceMatches.map((source) => `Favourite Source: ${source}`),
     ...brandMatches.map((brand) => `Favourite Brand: ${brand}`),
+    ...modelPlatformMatches.map(
+      (modelPlatform) => `Favourite Model Platform: ${modelPlatform}`,
+    ),
+    ...topicMatches.map((topic) => `Favourite Topic: ${topic}`),
+    ...technologyMatches.map(
+      (technology) => `Favourite Technology: ${technology}`,
+    ),
     ...matchedPreferences,
   ]);
   const score =
     creatorMatches.length * favouriteCreatorBoost +
     sourceMatches.length * favouriteSourceBoost +
     brandMatches.length * favouriteBrandBoost +
+    modelPlatformMatches.length * favouriteModelPlatformBoost +
+    topicMatches.length * favouriteTopicBoost +
+    technologyMatches.length * favouriteTechnologyBoost +
     selectedTags.filter((tag) => matchesTag(generatedTags, tag)).length *
       preferenceBoost;
 
@@ -296,9 +332,12 @@ export function hasPersonalisedSignal(
 ): boolean {
   return (
     selectedPreferenceTags(preferences).length > 0 ||
+    favourites.brands.length > 0 ||
+    favourites.modelPlatforms.length > 0 ||
     favourites.creators.length > 0 ||
     favourites.sources.length > 0 ||
-    favourites.brands.length > 0
+    favourites.topics.length > 0 ||
+    favourites.technology.length > 0
   );
 }
 
