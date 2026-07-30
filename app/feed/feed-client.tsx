@@ -1829,7 +1829,7 @@ export function FeedClient({
                     onClick={() => setActiveMediaFilter(allMediaFilter)}
                     type="button"
                   >
-                    All ({focusedStories.length})
+                    All ({archiveFocusedStories.length})
                   </button>
                   {mediaCounts.map((option) => (
                     <button
@@ -1860,7 +1860,7 @@ export function FeedClient({
                       onClick={() => setActiveCategoryFilter(allCategoryFilter)}
                       type="button"
                     >
-                      All categories ({categoryBaseStories.length})
+                      All categories ({archiveCategoryBaseStories.length})
                     </button>
                     {categoryCounts.slice(0, 6).map((category) => (
                       <button
