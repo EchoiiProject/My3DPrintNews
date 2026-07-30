@@ -1163,23 +1163,16 @@ export function FeedClient({
   const hasPreferenceTags = hasPersonalisedSignal(preferences, favourites);
   const requestedStoryCount = Number(preferences.storiesPerUpdate);
   const balancedArticles = useMemo(() => balanceFeedArticles(articles), [articles]);
-  const matchedStories = useMemo(
+  const archiveMatchedStories = useMemo(
     () =>
       rankFeedArticles(balancedArticles, preferences, favourites, {
-        limit: requestedStoryCount,
         periodDays,
       }),
-    [
-      balancedArticles,
-      favourites,
-      periodDays,
-      preferences,
-      requestedStoryCount,
-    ],
+    [balancedArticles, favourites, periodDays, preferences],
   );
-  const visibleMatchedStories = useMemo(
+  const availableArchiveStories = useMemo(
     () =>
-      matchedStories.filter((story) => {
+      archiveMatchedStories.filter((story) => {
         if (hiddenKeys.includes(hiddenArticleKey(story.article))) {
           return false;
         }
@@ -1189,35 +1182,39 @@ export function FeedClient({
           !hiddenSourceIds.includes(story.article.sourceId)
         );
       }),
-    [hiddenKeys, hiddenSourceIds, matchedStories],
+    [archiveMatchedStories, hiddenKeys, hiddenSourceIds],
+  );
+  const defaultMatchedStories = useMemo(
+    () => availableArchiveStories.slice(0, requestedStoryCount),
+    [availableArchiveStories, requestedStoryCount],
   );
 
   const focusCounts = useMemo(() => {
     const filters = preferenceFocusFilters(preferences);
 
     return filters.reduce<Record<string, number>>((counts, filter) => {
-      counts[filter.label] = visibleMatchedStories.filter((scoredArticle) =>
+      counts[filter.label] = availableArchiveStories.filter((scoredArticle) =>
         matchesFocus(scoredArticle, filter),
       ).length;
 
       return counts;
     }, {});
-  }, [preferences, visibleMatchedStories]);
+  }, [availableArchiveStories, preferences]);
 
-  const focusedStories = useMemo(() => {
+  const archiveFocusedStories = useMemo(() => {
     if (!activeFocus) {
-      return visibleMatchedStories;
+      return availableArchiveStories;
     }
 
-    return visibleMatchedStories.filter((scoredArticle) =>
+    return availableArchiveStories.filter((scoredArticle) =>
       matchesFocus(scoredArticle, activeFocus),
     );
-  }, [activeFocus, visibleMatchedStories]);
+  }, [activeFocus, availableArchiveStories]);
 
   const mediaCounts = useMemo(() => {
     const counts = new Map<DisplayMediaType, number>();
 
-    focusedStories.forEach((scoredArticle) => {
+    archiveFocusedStories.forEach((scoredArticle) => {
       const mediaType = articleMediaType(scoredArticle.article);
 
       counts.set(mediaType, (counts.get(mediaType) ?? 0) + 1);
@@ -1228,7 +1225,57 @@ export function FeedClient({
         ...option,
         count: counts.get(option.value) ?? 0,
       }));
-  }, [focusedStories]);
+  }, [archiveFocusedStories]);
+
+  const archiveCategoryBaseStories = useMemo(() => {
+    if (activeMediaFilter === allMediaFilter) {
+      return archiveFocusedStories;
+    }
+
+    return archiveFocusedStories.filter(
+      (scoredArticle) =>
+        articleMediaType(scoredArticle.article) === activeMediaFilter,
+    );
+  }, [activeMediaFilter, archiveFocusedStories]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    archiveCategoryBaseStories.forEach((scoredArticle) => {
+      const category = articleCategory(scoredArticle.article);
+
+      counts.set(category, (counts.get(category) ?? 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .sort(([, countA], [, countB]) => countB - countA)
+      .map(([label, count]) => ({ count, label }));
+  }, [archiveCategoryBaseStories]);
+
+  const displayBaseStories = useMemo(() => {
+    const hasActiveArchiveFilter =
+      Boolean(activeFocus) ||
+      activeMediaFilter !== allMediaFilter ||
+      activeCategoryFilter !== allCategoryFilter;
+
+    return hasActiveArchiveFilter ? availableArchiveStories : defaultMatchedStories;
+  }, [
+    activeCategoryFilter,
+    activeFocus,
+    activeMediaFilter,
+    availableArchiveStories,
+    defaultMatchedStories,
+  ]);
+
+  const focusedStories = useMemo(() => {
+    if (!activeFocus) {
+      return displayBaseStories;
+    }
+
+    return displayBaseStories.filter((scoredArticle) =>
+      matchesFocus(scoredArticle, activeFocus),
+    );
+  }, [activeFocus, displayBaseStories]);
 
   const categoryBaseStories = useMemo(() => {
     if (activeMediaFilter === allMediaFilter) {
@@ -1240,20 +1287,6 @@ export function FeedClient({
         articleMediaType(scoredArticle.article) === activeMediaFilter,
     );
   }, [activeMediaFilter, focusedStories]);
-
-  const categoryCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-
-    categoryBaseStories.forEach((scoredArticle) => {
-      const category = articleCategory(scoredArticle.article);
-
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-    });
-
-    return Array.from(counts.entries())
-      .sort(([, countA], [, countB]) => countB - countA)
-      .map(([label, count]) => ({ count, label }));
-  }, [categoryBaseStories]);
 
   const visibleStories = useMemo(() => {
     if (activeCategoryFilter === allCategoryFilter) {
